@@ -20,6 +20,7 @@ require __DIR__ . '/Fixture.php';
 $suites = array(
 	__DIR__ . '/SettingsTest.php',
 	__DIR__ . '/RegistryTest.php',
+	__DIR__ . '/PipelineTest.php',
 	__DIR__ . '/PresentationTest.php',
 	// Last: it defines FLUENTCART_VERSION, which nothing else may see.
 	__DIR__ . '/BootstrapGuardTest.php',

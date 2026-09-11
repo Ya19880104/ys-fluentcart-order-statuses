@@ -9,11 +9,20 @@ namespace YangSheep\FluentCart\OrderStatuses;
 
 use YangSheep\FluentCart\OrderStatuses\Admin\AdminMenu;
 use YangSheep\FluentCart\OrderStatuses\Admin\ColorStyles;
+use YangSheep\FluentCart\OrderStatuses\Admin\OrdersListMeta;
+use YangSheep\FluentCart\OrderStatuses\Admin\OrderWidget;
+use YangSheep\FluentCart\OrderStatuses\Admin\SavedViews;
 use YangSheep\FluentCart\OrderStatuses\Front\FrontStyles;
+use YangSheep\FluentCart\OrderStatuses\History\Recorder;
 use YangSheep\FluentCart\OrderStatuses\Payment\RequirementGuard;
 use YangSheep\FluentCart\OrderStatuses\Payment\RestoreHandler;
+use YangSheep\FluentCart\OrderStatuses\Pipeline\LinkedShipping;
+use YangSheep\FluentCart\OrderStatuses\Pipeline\StrictGuard;
+use YangSheep\FluentCart\OrderStatuses\Reports\DailySummary;
+use YangSheep\FluentCart\OrderStatuses\Rest\ReportController;
 use YangSheep\FluentCart\OrderStatuses\Rest\StatusController;
 use YangSheep\FluentCart\OrderStatuses\Support\OrderContext;
+use YangSheep\FluentCart\OrderStatuses\Support\Schema;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -49,13 +58,32 @@ final class Bootstrap {
 			return;
 		}
 
+		// The history table is created on activation, but a plugin that was
+		// updated in place (or copied over an older copy) never runs that hook.
+		// This is one option read when the version already matches.
+		Schema::maybeUpgrade();
+
 		( new StatusRegistry() )->register();
 		( new OrderContext() )->register();
 		( new RequirementGuard() )->register();
 		( new RestoreHandler() )->register();
+
+		// Order matters between these three, and it is expressed as hook
+		// priorities on `fluent_cart/order_status_changed`: RestoreHandler (5)
+		// settles what the status actually is, LinkedShipping (20) reacts to
+		// the settled value, Recorder (30) writes down what happened.
+		( new LinkedShipping() )->register();
+		( new StrictGuard() )->register();
+		( new Recorder() )->register();
+
 		( new StatusController() )->register();
+		( new ReportController() )->register();
 		( new AdminMenu() )->register();
 		( new ColorStyles() )->register();
+		( new SavedViews() )->register();
+		( new OrdersListMeta() )->register();
+		( new OrderWidget() )->register();
+		( new DailySummary() )->register();
 		( new FrontStyles() )->register();
 	}
 

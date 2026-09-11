@@ -3,7 +3,7 @@
  * Plugin Name: YS FluentCart Order Statuses
  * Plugin URI: https://yangsheep.com.tw
  * Description: Custom order and shipping statuses for FluentCart — add your own workflow states (with colours, payment conditions and a "keep this status after payment" guard), and rename the built-in ones. Nothing in FluentCart core is patched.
- * Version: 0.1.0
+ * Version: 0.2.0
  * Author: YANGSHEEP DESIGN
  * Author URI: https://yangsheep.com.tw
  * Text Domain: ys-fluentcart-order-statuses
@@ -21,7 +21,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // ── Plugin constants ─────────────────────────────────────────────────────────
 
-define( 'YS_FCT_STATUS_VERSION', '0.1.0' );
+define( 'YS_FCT_STATUS_VERSION', '0.2.0' );
 define( 'YS_FCT_STATUS_FILE', __FILE__ );
 define( 'YS_FCT_STATUS_DIR', plugin_dir_path( __FILE__ ) );
 define( 'YS_FCT_STATUS_URL', plugin_dir_url( __FILE__ ) );
@@ -64,6 +64,21 @@ register_activation_hook(
 			\YangSheep\FluentCart\OrderStatuses\Settings::OPTION,
 			\YangSheep\FluentCart\OrderStatuses\Settings::defaults()
 		);
+
+		\YangSheep\FluentCart\OrderStatuses\Support\Schema::install();
+	}
+);
+
+// ── Deactivation ─────────────────────────────────────────────────────────────
+// Only the cron event. The settings, the history table and — above all — the
+// order rows sitting on custom slugs are left exactly as they are: deactivating
+// is not uninstalling, and a shop that switches this off for ten minutes must
+// get its workflow history back when it switches it on again.
+
+register_deactivation_hook(
+	YS_FCT_STATUS_FILE,
+	static function () {
+		\YangSheep\FluentCart\OrderStatuses\Reports\DailySummary::clearSchedule();
 	}
 );
 

@@ -91,7 +91,32 @@ final class StatusRegistry {
 	 * @return array
 	 */
 	public function editableOrderStatuses( $statuses ) {
-		return $this->merge( $statuses, 'order', 'order', true );
+		return self::inPipelineOrder( $this->merge( $statuses, 'order', 'order', true ) );
+	}
+
+	/**
+	 * Sort a slug => label map so the pipeline reads in workflow order.
+	 *
+	 * The FluentCart order screen renders this map as a dropdown in array order
+	 * and offers no hook of its own for ordering it, so the array order is the
+	 * only lever there is. Pipeline steps come first, in the order the operator
+	 * arranged them ("Paid → In production → Shipment scheduled → Shipped");
+	 * everything else keeps the position core gave it, underneath.
+	 *
+	 * @param array $statuses Slug => label.
+	 * @return array
+	 */
+	public static function inPipelineOrder( array $statuses ) {
+		$ordered = array();
+
+		foreach ( Settings::pipeline( self::settings() ) as $slug ) {
+			if ( isset( $statuses[ $slug ] ) ) {
+				$ordered[ $slug ] = $statuses[ $slug ];
+				unset( $statuses[ $slug ] );
+			}
+		}
+
+		return $ordered + $statuses;
 	}
 
 	/**

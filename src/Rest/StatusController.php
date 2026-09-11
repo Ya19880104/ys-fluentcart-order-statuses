@@ -10,6 +10,7 @@ namespace YangSheep\FluentCart\OrderStatuses\Rest;
 use YangSheep\FluentCart\OrderStatuses\Settings;
 use YangSheep\FluentCart\OrderStatuses\StatusRegistry;
 use YangSheep\FluentCart\OrderStatuses\Support\ActivityLog;
+use YangSheep\FluentCart\OrderStatuses\Support\Labels;
 use YangSheep\FluentCart\OrderStatuses\Support\OrderRepository;
 use YangSheep\FluentCart\OrderStatuses\Support\Permissions;
 
@@ -347,36 +348,12 @@ final class StatusController {
 	 * Hardcoded rather than read back through `Status::getOrderStatuses()`:
 	 * that method is filtered by this very plugin, so reading it here would
 	 * show the operator their own overrides as if they were the defaults, and
-	 * "reset to default" would then be a no-op.
+	 * "reset to default" would then be a no-op. See `Support\Labels`.
 	 *
 	 * @return array<string,array<string,string>>
 	 */
 	private function builtinLabels() {
-		return array(
-			'order'    => array(
-				'processing' => __( 'Processing', 'ys-fluentcart-order-statuses' ),
-				'completed'  => __( 'Completed', 'ys-fluentcart-order-statuses' ),
-				'on-hold'    => __( 'On Hold', 'ys-fluentcart-order-statuses' ),
-				'canceled'   => __( 'Canceled', 'ys-fluentcart-order-statuses' ),
-				'failed'     => __( 'Failed', 'ys-fluentcart-order-statuses' ),
-			),
-			'payment'  => array(
-				'pending'            => __( 'Pending', 'ys-fluentcart-order-statuses' ),
-				'paid'               => __( 'Paid', 'ys-fluentcart-order-statuses' ),
-				'partially_paid'     => __( 'Partially Paid', 'ys-fluentcart-order-statuses' ),
-				'failed'             => __( 'Failed', 'ys-fluentcart-order-statuses' ),
-				'refunded'           => __( 'Refunded', 'ys-fluentcart-order-statuses' ),
-				'partially_refunded' => __( 'Partially Refunded', 'ys-fluentcart-order-statuses' ),
-				'authorized'         => __( 'Authorized', 'ys-fluentcart-order-statuses' ),
-				'payment_scheduled'  => __( 'Payment Scheduled', 'ys-fluentcart-order-statuses' ),
-			),
-			'shipping' => array(
-				'unshipped'   => __( 'Unshipped', 'ys-fluentcart-order-statuses' ),
-				'shipped'     => __( 'Shipped', 'ys-fluentcart-order-statuses' ),
-				'delivered'   => __( 'Delivered', 'ys-fluentcart-order-statuses' ),
-				'unshippable' => __( 'Unshippable', 'ys-fluentcart-order-statuses' ),
-			),
-		);
+		return Labels::builtin();
 	}
 
 	/**

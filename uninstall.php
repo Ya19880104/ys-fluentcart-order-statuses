@@ -31,3 +31,18 @@ if ( ! $ys_fct_status_should_remove ) {
 
 delete_option( 'ys_fct_status_settings' );
 delete_option( 'ys_fct_status_remove_data' );
+delete_option( 'ys_fct_status_summary_last_sent' );
+delete_option( 'ys_fct_status_db_version' );
+
+// The status history goes with the definitions — it is a table of slugs whose
+// only translation just got deleted.
+global $wpdb;
+
+//phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.DirectDatabaseQuery.SchemaChange,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+$wpdb->query( 'DROP TABLE IF EXISTS `' . $wpdb->prefix . 'ys_fct_status_history`' );
+
+$ys_fct_status_cron = wp_next_scheduled( 'ys_fct_status_daily_summary' );
+
+if ( $ys_fct_status_cron ) {
+	wp_unschedule_event( $ys_fct_status_cron, 'ys_fct_status_daily_summary' );
+}

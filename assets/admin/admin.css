@@ -119,3 +119,178 @@
 .ys-fct-status-admin .button-link-delete {
 	color: #b32d2e;
 }
+
+/* ── v0.2: the workflow preview ───────────────────────────────────────────── */
+
+.ys-fct-status-admin .ys-fct-status-pipeline {
+	max-width: 70em;
+	margin: 16px 0;
+	padding: 12px 16px;
+	background: #fff;
+	border: 1px solid #dcdcde;
+	border-radius: 3px;
+}
+
+.ys-fct-status-admin .ys-fct-status-pipeline h3 {
+	margin-top: 0;
+}
+
+.ys-fct-status-admin .ys-fct-status-steps {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin: 12px 0;
+	padding: 0;
+	list-style: none;
+	counter-reset: ys-step;
+}
+
+.ys-fct-status-admin .ys-fct-status-step-item {
+	--ys-step-color: #64748b;
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	padding: 8px 12px 8px 34px;
+	background: #f6f7f7;
+	border: 1px solid #dcdcde;
+	border-left: 4px solid var(--ys-step-color);
+	border-radius: 3px;
+	counter-increment: ys-step;
+}
+
+/* The number is generated rather than printed so reordering cannot desync it. */
+.ys-fct-status-admin .ys-fct-status-step-item::before {
+	content: counter(ys-step);
+	position: absolute;
+	top: 50%;
+	left: 10px;
+	transform: translateY(-50%);
+	width: 18px;
+	height: 18px;
+	line-height: 18px;
+	text-align: center;
+	font-size: 11px;
+	color: #fff;
+	background: var(--ys-step-color);
+	border-radius: 50%;
+}
+
+.ys-fct-status-admin .ys-fct-status-step-note {
+	font-size: 11px;
+	color: #646970;
+}
+
+.ys-fct-status-admin .ys-fct-status-step {
+	display: inline-block;
+	min-width: 20px;
+	margin-bottom: 4px;
+	padding: 1px 0;
+	text-align: center;
+	font-size: 11px;
+	color: #646970;
+	background: #f0f0f1;
+	border-radius: 9px;
+}
+
+/* ── v0.2: the report ─────────────────────────────────────────────────────── */
+
+.ys-fct-status-admin .ys-fct-status-range {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px;
+}
+
+.ys-fct-status-admin .ys-fct-status-report-note:empty {
+	display: none;
+}
+
+.ys-fct-status-admin .ys-fct-status-report-table {
+	max-width: 70em;
+	margin-bottom: 12px;
+}
+
+.ys-fct-status-admin .ys-fct-status-report-table th,
+.ys-fct-status-admin .ys-fct-status-report-table td {
+	padding: 8px 10px;
+	vertical-align: middle;
+}
+
+.ys-fct-status-admin .ys-fct-status-num,
+.ys-fct-status-admin .ys-fct-status-num-inline {
+	text-align: right;
+	font-variant-numeric: tabular-nums;
+}
+
+.ys-fct-status-admin .ys-fct-status-num-inline {
+	display: inline-block;
+	min-width: 3em;
+	margin-left: 8px;
+}
+
+.ys-fct-status-admin .ys-fct-status-late {
+	color: #b32d2e;
+	font-weight: 600;
+}
+
+.ys-fct-status-admin .ys-fct-status-dot {
+	display: inline-block;
+	width: 10px;
+	height: 10px;
+	border-radius: 50%;
+	vertical-align: baseline;
+}
+
+/* The chart is two spans and a width — no library, no canvas, and it prints. */
+.ys-fct-status-admin .ys-fct-status-bar {
+	display: inline-block;
+	width: 160px;
+	max-width: 40vw;
+	height: 10px;
+	background: #f0f0f1;
+	border-radius: 5px;
+	overflow: hidden;
+	vertical-align: middle;
+}
+
+.ys-fct-status-admin .ys-fct-status-bar-fill {
+	display: block;
+	height: 100%;
+	min-width: 2px;
+	border-radius: 5px;
+}
+
+.ys-fct-status-admin .ys-fct-status-funnel {
+	max-width: 70em;
+	margin-bottom: 12px;
+}
+
+.ys-fct-status-admin .ys-fct-status-funnel-row {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 6px 0;
+	border-bottom: 1px solid #f0f0f1;
+}
+
+.ys-fct-status-admin .ys-fct-status-funnel-label {
+	flex: 0 0 16em;
+	max-width: 16em;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.ys-fct-status-admin .ys-fct-status-funnel-count {
+	flex: 0 0 4em;
+	text-align: right;
+	font-variant-numeric: tabular-nums;
+	font-weight: 600;
+}
+
+@media screen and (max-width: 782px) {
+	.ys-fct-status-admin .ys-fct-status-funnel-label {
+		flex-basis: 9em;
+	}
+}

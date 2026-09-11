@@ -116,6 +116,12 @@
 	function markDirty() {
 		dirty = true;
 		notice( t( 'unsaved' ), 'warning' );
+
+		// The workflow preview is a separate <ol>, so redrawing it on every
+		// keystroke cannot steal focus from the field being typed into.
+		if ( model ) {
+			renderSteps();
+		}
 	}
 
 	// ── rendering ────────────────────────────────────────────────────────────
@@ -268,6 +274,28 @@
 		return ( usage[ axis ] && usage[ axis ][ slug ] ) || 0;
 	}
 
+	/**
+	 * Everything `linked_shipping_status` may point at: the built-in shipping
+	 * statuses plus whatever custom ones are defined on the other tab. Rebuilt
+	 * on every render rather than cached, because adding a shipping status and
+	 * then linking to it without saving in between is the obvious thing to do.
+	 */
+	function shippingOptions() {
+		var options = [ { value: '', label: t( 'linkedNone' ) } ];
+
+		Object.keys( builtin.shipping || {} ).forEach( function ( slug ) {
+			options.push( { value: slug, label: builtin.shipping[ slug ] } );
+		} );
+
+		model.shipping.forEach( function ( definition ) {
+			if ( definition.slug ) {
+				options.push( { value: definition.slug, label: definition.label || definition.slug } );
+			}
+		} );
+
+		return options;
+	}
+
 	function targetOptions( axis, exceptSlug ) {
 		var options = [];
 
@@ -375,14 +403,25 @@
 		body.textContent = '';
 
 		if ( ! model[ axis ].length ) {
-			var columns = 'order' === axis ? 9 : 7;
+			var columns = 'order' === axis ? 10 : 7;
 			body.appendChild( el( 'tr', {}, [ el( 'td', { colspan: String( columns ), class: 'ys-fct-status-empty', text: t( 'noCustom' ) } ) ] ) );
 			return;
 		}
 
 		model[ axis ].forEach( function ( definition, index ) {
+			var firstCell = [];
+
+			if ( 'order' === axis ) {
+				// Step 1 is the built-in entry status, so a custom status at
+				// index 0 is step 2. Showing the number here is what makes the
+				// up/down buttons obviously mean "reorder the workflow".
+				firstCell.push( el( 'span', { class: 'ys-fct-status-step', text: String( index + 2 ) } ) );
+			}
+
+			firstCell.push( moveButtons( axis, index ) );
+
 			var cells = [
-				el( 'td', {}, [ moveButtons( axis, index ) ] ),
+				el( 'td', {}, firstCell ),
 				el( 'td', {}, [
 					textCell( definition, 'label', t( 'labelPlaceholder' ) ),
 					el( 'br' ),
@@ -403,6 +442,13 @@
 					{ value: 'keep', label: t( 'keep' ) },
 					{ value: 'let_core_decide', label: t( 'letCore' ) }
 				], t( 'afterPayment' ) ) ] ) );
+
+				cells.push( el( 'td', {}, [ selectCell(
+					definition,
+					'linked_shipping_status',
+					shippingOptions(),
+					t( 'linkedShipping' )
+				) ] ) );
 			}
 
 			cells.push( el( 'td', {}, [
@@ -557,6 +603,81 @@
 		target.appendChild( list );
 	}
 
+	function renderSteps() {
+		var list = root.querySelector( '[data-ys-steps]' );
+
+		if ( ! list ) {
+			return;
+		}
+
+		list.textContent = '';
+
+		var entrySlug = cfg.entrySlug || 'processing';
+		var entryOverride = ( model.overrides.order && model.overrides.order[ entrySlug ] ) || {};
+		var entryLabel = entryOverride.label || ( builtin.order && builtin.order[ entrySlug ] ) || entrySlug;
+
+		list.appendChild( stepItem( entryLabel, entryOverride.color || '', t( 'stepEntry' ) ) );
+
+		model[ 'order' ].forEach( function ( definition ) {
+			if ( false === definition.enabled ) {
+				return;
+			}
+
+			var note = definition.linked_shipping_status
+				? t( 'linkedShipping' ) + ' ' + definition.linked_shipping_status
+				: '';
+
+			list.appendChild( stepItem( definition.label || definition.slug, definition.color, note ) );
+		} );
+	}
+
+	function stepItem( label, color, note ) {
+		var children = [ el( 'strong', { text: label } ) ];
+
+		if ( note ) {
+			children.push( el( 'span', { class: 'ys-fct-status-step-note', text: note } ) );
+		}
+
+		return el( 'li', {
+			class: 'ys-fct-status-step-item',
+			style: color ? '--ys-step-color:' + color : null
+		}, children );
+	}
+
+	function renderTools() {
+		var restore = root.querySelector( '[data-ys-restore-toggle]' );
+
+		if ( restore ) {
+			restore.checked = 'no' !== model.restore_on_payment;
+		}
+
+		var strict = root.querySelector( '[data-ys-strict-toggle]' );
+
+		if ( strict ) {
+			strict.checked = 'yes' === model.pipeline_strict;
+		}
+
+		var stall = root.querySelector( '[data-ys-stall-days]' );
+
+		if ( stall ) {
+			stall.value = model.stall_days;
+		}
+
+		model.daily_summary = model.daily_summary || { enabled: 'no', email: '' };
+
+		var summary = root.querySelector( '[data-ys-summary-toggle]' );
+
+		if ( summary ) {
+			summary.checked = 'yes' === model.daily_summary.enabled;
+		}
+
+		var email = root.querySelector( '[data-ys-summary-email]' );
+
+		if ( email ) {
+			email.value = model.daily_summary.email || '';
+		}
+	}
+
 	function renderAll() {
 		renderAxis( 'order' );
 		renderAxis( 'shipping' );
@@ -564,12 +685,8 @@
 		renderOverrides( 'payment' );
 		renderOverrides( 'shipping' );
 		renderUsageSummary();
-
-		var toggle = root.querySelector( '[data-ys-restore-toggle]' );
-
-		if ( toggle ) {
-			toggle.checked = 'no' !== model.restore_on_payment;
-		}
+		renderSteps();
+		renderTools();
 	}
 
 	// ── state ────────────────────────────────────────────────────────────────
@@ -580,6 +697,17 @@
 
 		[ 'order', 'payment', 'shipping' ].forEach( function ( axis ) {
 			model.overrides[ axis ] = model.overrides[ axis ] || {};
+		} );
+
+		// A settings document written by 0.1.0 has none of the pipeline keys.
+		// The server fills them in on read, but the screen must not depend on
+		// that to render — an empty select is a worse bug than a default.
+		model.pipeline_strict = model.pipeline_strict || 'no';
+		model.stall_days = model.stall_days || 3;
+		model.daily_summary = model.daily_summary || { enabled: 'no', email: '' };
+
+		model.order.forEach( function ( definition ) {
+			definition.linked_shipping_status = definition.linked_shipping_status || '';
 		} );
 
 		builtin = payload.builtin || {};
@@ -619,13 +747,21 @@
 		tab.addEventListener( 'click', function ( event ) {
 			event.preventDefault();
 
+			var name = tab.getAttribute( 'data-ys-tab' );
+
 			root.querySelectorAll( '[data-ys-tab]' ).forEach( function ( other ) {
 				other.classList.toggle( 'nav-tab-active', other === tab );
 			} );
 
 			root.querySelectorAll( '[data-ys-panel]' ).forEach( function ( panel ) {
-				panel.hidden = panel.getAttribute( 'data-ys-panel' ) !== tab.getAttribute( 'data-ys-tab' );
+				panel.hidden = panel.getAttribute( 'data-ys-panel' ) !== name;
 			} );
+
+			// The report is several GROUP BY queries; it is fetched when the
+			// tab is first opened rather than on every page load.
+			if ( 'reports' === name && ! report.loaded ) {
+				loadReport();
+			}
 		} );
 	} );
 
@@ -647,11 +783,13 @@
 			if ( 'order' === axis ) {
 				definition.payment_requirement = 'any';
 				definition.on_payment = 'keep';
+				definition.linked_shipping_status = '';
 			}
 
 			model[ axis ].push( definition );
 			markDirty();
 			renderAxis( axis );
+			renderSteps();
 		} );
 	} );
 
@@ -659,14 +797,416 @@
 		button.addEventListener( 'click', save );
 	} );
 
-	var restoreToggle = root.querySelector( '[data-ys-restore-toggle]' );
+	function bindToggle( selector, apply ) {
+		var node = root.querySelector( selector );
 
-	if ( restoreToggle ) {
-		restoreToggle.addEventListener( 'change', function () {
-			model.restore_on_payment = restoreToggle.checked ? 'yes' : 'no';
+		if ( ! node ) {
+			return;
+		}
+
+		node.addEventListener( 'change', function () {
+			apply( node );
 			markDirty();
 		} );
 	}
+
+	bindToggle( '[data-ys-restore-toggle]', function ( node ) {
+		model.restore_on_payment = node.checked ? 'yes' : 'no';
+	} );
+
+	bindToggle( '[data-ys-strict-toggle]', function ( node ) {
+		model.pipeline_strict = node.checked ? 'yes' : 'no';
+	} );
+
+	bindToggle( '[data-ys-summary-toggle]', function ( node ) {
+		model.daily_summary.enabled = node.checked ? 'yes' : 'no';
+	} );
+
+	var stallDays = root.querySelector( '[data-ys-stall-days]' );
+
+	if ( stallDays ) {
+		stallDays.addEventListener( 'input', function () {
+			model.stall_days = parseInt( stallDays.value, 10 ) || 1;
+			markDirty();
+		} );
+	}
+
+	var summaryEmail = root.querySelector( '[data-ys-summary-email]' );
+
+	if ( summaryEmail ) {
+		summaryEmail.addEventListener( 'input', function () {
+			model.daily_summary.email = summaryEmail.value.trim();
+			markDirty();
+		} );
+	}
+
+	var templateButton = root.querySelector( '[data-ys-template]' );
+
+	if ( templateButton ) {
+		templateButton.addEventListener( 'click', function () {
+			if ( ! window.confirm( t( 'templateConfirm' ) ) ) {
+				return;
+			}
+
+			notice( t( 'templateWorking' ), 'info' );
+
+			request( 'template', { method: 'POST', body: {} } )
+				.then( function ( payload ) {
+					// The template writes straight to the option, so the screen
+					// has to be reloaded from the server rather than patched:
+					// anything unsaved in the form was not part of that merge.
+					return request( 'settings' ).then( function ( fresh ) {
+						adopt( fresh );
+						notice( payload.message, 'success' );
+					} );
+				} )
+				.catch( function ( error ) {
+					notice( error.message || t( 'saveFailed' ), 'error' );
+				} );
+		} );
+	}
+
+	var backfillButton = root.querySelector( '[data-ys-backfill]' );
+
+	if ( backfillButton ) {
+		backfillButton.addEventListener( 'click', function () {
+			if ( ! window.confirm( t( 'backfillConfirm' ) ) ) {
+				return;
+			}
+
+			notice( t( 'backfillWorking' ), 'info' );
+
+			request( 'reports/backfill', { method: 'POST', body: {} } )
+				.then( function ( payload ) {
+					notice( payload.message, 'success' );
+					setHistoryCount( payload.rows );
+					report.loaded = false;
+				} )
+				.catch( function ( error ) {
+					notice( error.message || t( 'saveFailed' ), 'error' );
+				} );
+		} );
+	}
+
+	var summaryTest = root.querySelector( '[data-ys-summary-test]' );
+
+	if ( summaryTest ) {
+		summaryTest.addEventListener( 'click', function () {
+			notice( t( 'summaryWorking' ), 'info' );
+
+			request( 'reports/summary-test', { method: 'POST', body: {} } )
+				.then( function ( payload ) {
+					notice( payload.message, payload.sent ? 'success' : 'warning' );
+				} )
+				.catch( function ( error ) {
+					notice( error.message || t( 'saveFailed' ), 'error' );
+				} );
+		} );
+	}
+
+	function setHistoryCount( rows ) {
+		var node = root.querySelector( '[data-ys-history-count]' );
+
+		if ( node ) {
+			node.textContent = sprintf( t( 'historyCount' ), [ rows ] );
+		}
+	}
+
+	// ── the report tab ───────────────────────────────────────────────────────
+
+	var report = { loaded: false, data: null };
+
+	function reportRange() {
+		var since = root.querySelector( '[data-ys-range="since"]' );
+		var until = root.querySelector( '[data-ys-range="until"]' );
+
+		return {
+			since: since && since.value ? since.value : '',
+			until: until && until.value ? until.value : ''
+		};
+	}
+
+	function reportQuery() {
+		var range = reportRange();
+		var parts = [];
+
+		if ( range.since ) {
+			parts.push( 'since=' + encodeURIComponent( range.since ) );
+		}
+
+		if ( range.until ) {
+			parts.push( 'until=' + encodeURIComponent( range.until ) );
+		}
+
+		return parts.length ? '?' + parts.join( '&' ) : '';
+	}
+
+	function loadReport() {
+		var note = root.querySelector( '[data-ys-report-note]' );
+
+		if ( note ) {
+			note.textContent = t( 'reportLoading' );
+		}
+
+		request( 'reports/overview' + reportQuery() )
+			.then( function ( payload ) {
+				report.loaded = true;
+				report.data = payload;
+				renderReport( payload );
+			} )
+			.catch( function ( error ) {
+				if ( note ) {
+					note.textContent = error.message || t( 'reportFailed' );
+				}
+			} );
+	}
+
+	function renderReport( data ) {
+		var note = root.querySelector( '[data-ys-report-note]' );
+
+		if ( note ) {
+			note.textContent = '';
+
+			if ( data.currencies && data.currencies.length > 1 ) {
+				note.appendChild( el( 'p', {
+					class: 'notice notice-warning inline',
+					text: sprintf( t( 'mixedCurrency' ), [ data.currencies.join( ', ' ) ] )
+				} ) );
+			}
+
+			if ( ! data.history_rows ) {
+				note.appendChild( el( 'p', { class: 'notice notice-info inline', text: t( 'noHistoryYet' ) } ) );
+			}
+		}
+
+		setHistoryCount( data.history_rows );
+		renderFunnel( data.funnel, data.orders_url );
+		renderDistribution( 'order', data.order_statuses );
+		renderDistribution( 'shipping', data.shipping_statuses );
+		renderDwell( data.dwell );
+		renderStalled( data.stalled, data.orders_url );
+	}
+
+	function renderFunnel( steps, ordersUrl ) {
+		var target = root.querySelector( '[data-ys-funnel]' );
+
+		if ( ! target ) {
+			return;
+		}
+
+		target.textContent = '';
+
+		if ( ! steps || ! steps.length ) {
+			target.appendChild( el( 'p', { class: 'description', text: t( 'noData' ) } ) );
+			return;
+		}
+
+		var widest = steps.reduce( function ( max, step ) {
+			return Math.max( max, step.total_count );
+		}, 0 );
+
+		steps.forEach( function ( step ) {
+			var share = widest ? Math.round( ( step.total_count / widest ) * 100 ) : 0;
+
+			target.appendChild( el( 'div', { class: 'ys-fct-status-funnel-row' }, [
+				el( 'span', { class: 'ys-fct-status-funnel-label' }, [
+					el( 'span', { class: 'ys-fct-status-dot', style: 'background:' + ( step.color || '#64748b' ) } ),
+					document.createTextNode( ' ' + step.label )
+				] ),
+				el( 'span', { class: 'ys-fct-status-bar' }, [
+					el( 'span', {
+						class: 'ys-fct-status-bar-fill',
+						style: 'width:' + share + '%;background:' + ( step.color || '#64748b' )
+					} )
+				] ),
+				el( 'a', {
+					class: 'ys-fct-status-funnel-count',
+					href: ordersUrl || cfg.ordersUrl || '#',
+					text: String( step.total_count )
+				} )
+			] ) );
+		} );
+	}
+
+	function table( headings, rows, emptyText ) {
+		if ( ! rows.length ) {
+			return el( 'p', { class: 'description', text: emptyText } );
+		}
+
+		var head = el( 'tr', {}, headings.map( function ( heading ) {
+			return el( 'th', { scope: 'col', text: heading } );
+		} ) );
+
+		return el( 'table', { class: 'widefat striped ys-fct-status-report-table' }, [
+			el( 'thead', {}, [ head ] ),
+			el( 'tbody', {}, rows )
+		] );
+	}
+
+	function money( cents ) {
+		return ( cents / 100 ).toFixed( 2 );
+	}
+
+	function renderDistribution( axis, rows ) {
+		var target = root.querySelector( '[data-ys-distribution="' + axis + '"]' );
+
+		if ( ! target ) {
+			return;
+		}
+
+		target.textContent = '';
+
+		rows = rows || [];
+
+		var widest = rows.reduce( function ( max, row ) {
+			return Math.max( max, row.total_count );
+		}, 0 );
+
+		var body = rows.map( function ( row ) {
+			var share = widest ? Math.round( ( row.total_count / widest ) * 100 ) : 0;
+
+			return el( 'tr', {}, [
+				el( 'td', {}, [
+					el( 'span', { class: 'ys-fct-status-dot', style: 'background:' + ( row.color || '#64748b' ) } ),
+					document.createTextNode( ' ' + row.label ),
+					el( 'br' ),
+					el( 'code', { text: row.slug } )
+				] ),
+				el( 'td', { class: 'ys-fct-status-num', text: String( row.paid_count ) } ),
+				el( 'td', { class: 'ys-fct-status-num', text: money( row.paid_amount ) } ),
+				el( 'td', { class: 'ys-fct-status-num', text: String( row.unpaid_count ) } ),
+				el( 'td', { class: 'ys-fct-status-num', text: money( row.unpaid_amount ) } ),
+				el( 'td', {}, [
+					el( 'span', { class: 'ys-fct-status-bar' }, [
+						el( 'span', {
+							class: 'ys-fct-status-bar-fill',
+							style: 'width:' + share + '%;background:' + ( row.color || '#64748b' )
+						} )
+					] ),
+					el( 'span', { class: 'ys-fct-status-num-inline', text: String( row.total_count ) } )
+				] )
+			] );
+		} );
+
+		target.appendChild( table(
+			[
+				t( 'colStatus' ),
+				t( 'colPaid' ) + ' · ' + t( 'colOrders' ),
+				t( 'colPaid' ) + ' · ' + t( 'colAmount' ),
+				t( 'colUnpaid' ) + ' · ' + t( 'colOrders' ),
+				t( 'colUnpaid' ) + ' · ' + t( 'colAmount' ),
+				t( 'colTotal' )
+			],
+			body,
+			t( 'noData' )
+		) );
+	}
+
+	function renderDwell( rows ) {
+		var target = root.querySelector( '[data-ys-dwell]' );
+
+		if ( ! target ) {
+			return;
+		}
+
+		target.textContent = '';
+
+		var body = ( rows || [] ).filter( function ( row ) {
+			return row.is_custom || row.samples > 0;
+		} ).map( function ( row ) {
+			return el( 'tr', {}, [
+				el( 'td', {}, [
+					el( 'span', { class: 'ys-fct-status-dot', style: 'background:' + ( row.color || '#64748b' ) } ),
+					document.createTextNode( ' ' + row.label )
+				] ),
+				el( 'td', { class: 'ys-fct-status-num', text: String( row.samples ) } ),
+				el( 'td', { class: 'ys-fct-status-num', text: row.avg_days + ' ' + t( 'days' ) } ),
+				el( 'td', { class: 'ys-fct-status-num', text: row.max_days + ' ' + t( 'days' ) } )
+			] );
+		} );
+
+		target.appendChild( table(
+			[ t( 'colStatus' ), t( 'colStays' ), t( 'colAverage' ), t( 'colLongest' ) ],
+			body,
+			t( 'noDwell' )
+		) );
+	}
+
+	function renderStalled( stalled, ordersUrl ) {
+		var target = root.querySelector( '[data-ys-stalled]' );
+
+		if ( ! target ) {
+			return;
+		}
+
+		target.textContent = '';
+
+		stalled = stalled || { days: 0, orders: [] };
+
+		var body = stalled.orders.map( function ( order ) {
+			return el( 'tr', {}, [
+				el( 'td', {}, [
+					el( 'a', {
+						href: ( ordersUrl || cfg.ordersUrl || '#' ) + '/' + order.order_id,
+						text: '#' + order.order_id
+					} )
+				] ),
+				el( 'td', { text: order.label || order.status } ),
+				el( 'td', { text: order.entered_at } ),
+				el( 'td', { class: 'ys-fct-status-num ys-fct-status-late', text: String( order.days ) } )
+			] );
+		} );
+
+		target.appendChild( table(
+			[ t( 'colOrder' ), t( 'colStatus' ), t( 'colSince' ), t( 'colDays' ) ],
+			body,
+			sprintf( t( 'noStalled' ), [ stalled.days ] )
+		) );
+	}
+
+	function download( filename, content, mime ) {
+		var blob = new window.Blob( [ content ], { type: mime } );
+		var url = window.URL.createObjectURL( blob );
+		var link = el( 'a', { href: url, download: filename } );
+
+		document.body.appendChild( link );
+		link.click();
+		link.remove();
+		window.URL.revokeObjectURL( url );
+	}
+
+	var refreshButton = root.querySelector( '[data-ys-report-refresh]' );
+
+	if ( refreshButton ) {
+		refreshButton.addEventListener( 'click', loadReport );
+	}
+
+	var clearButton = root.querySelector( '[data-ys-report-clear]' );
+
+	if ( clearButton ) {
+		clearButton.addEventListener( 'click', function () {
+			root.querySelectorAll( '[data-ys-range]' ).forEach( function ( field ) {
+				field.value = '';
+			} );
+
+			loadReport();
+		} );
+	}
+
+	root.querySelectorAll( '[data-ys-export-report]' ).forEach( function ( button ) {
+		button.addEventListener( 'click', function () {
+			var type = button.getAttribute( 'data-ys-export-report' );
+			var separator = reportQuery() ? '&' : '?';
+
+			request( 'reports/export' + reportQuery() + separator + 'type=' + encodeURIComponent( type ) )
+				.then( function ( payload ) {
+					download( payload.filename, payload.csv, 'text/csv;charset=utf-8' );
+				} )
+				.catch( function ( error ) {
+					notice( error.message || t( 'reportFailed' ), 'error' );
+				} );
+		} );
+	} );
 
 	var exportButton = root.querySelector( '[data-ys-export]' );
 

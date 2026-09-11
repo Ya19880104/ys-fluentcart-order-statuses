@@ -94,4 +94,34 @@ final class OrderContext {
 	public static function set( $orderId ) {
 		self::$orderId = (int) $orderId;
 	}
+
+	/**
+	 * The order status a REST request is asking for, or ''.
+	 *
+	 * Shared by the two `rest_pre_dispatch` vetoes (`Payment\RequirementGuard`
+	 * and `Pipeline\StrictGuard`) so they agree on exactly which requests they
+	 * are looking at: `PUT /…/orders/{id}/statuses` with
+	 * `action=change_order_status`. Anything else — a shipping change, a
+	 * mark-as-paid, a refund — is none of their business.
+	 *
+	 * @param mixed $request REST request.
+	 * @return string
+	 */
+	public static function requestedOrderStatus( $request ) {
+		if ( ! is_object( $request ) || ! method_exists( $request, 'get_route' ) ) {
+			return '';
+		}
+
+		if ( ! preg_match( '#/orders/\d+/statuses$#', (string) $request->get_route() ) ) {
+			return '';
+		}
+
+		if ( 'change_order_status' !== (string) $request->get_param( 'action' ) ) {
+			return '';
+		}
+
+		$statuses = $request->get_param( 'statuses' );
+
+		return is_array( $statuses ) && isset( $statuses['order_status'] ) ? (string) $statuses['order_status'] : '';
+	}
 }

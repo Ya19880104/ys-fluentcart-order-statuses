@@ -44,8 +44,12 @@ YsStatusTest::group( 'Settings::sanitize — defaults and shape' );
 
 $clean = Settings::sanitize( array() );
 
-YsStatusTest::same( 1, $clean['version'], 'schema version is stamped' );
+YsStatusTest::same( Settings::SCHEMA_VERSION, $clean['version'], 'schema version is stamped' );
+YsStatusTest::same( 2, Settings::SCHEMA_VERSION, 'v0.2 ships schema 2' );
 YsStatusTest::same( 'yes', $clean['restore_on_payment'], 'restore is on by default' );
+YsStatusTest::same( 'no', $clean['pipeline_strict'], 'strict workflow is off by default' );
+YsStatusTest::same( 3, $clean['stall_days'], 'the stuck-order threshold defaults to three days' );
+YsStatusTest::same( 'no', $clean['daily_summary']['enabled'], 'the daily summary is off by default' );
 YsStatusTest::same( array(), $clean['order'], 'no custom order statuses by default' );
 YsStatusTest::same( array( 'order', 'payment', 'shipping' ), array_keys( $clean['overrides'] ), 'all three override axes exist' );
 

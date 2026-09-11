@@ -29,8 +29,15 @@ final class Settings {
 
 	const OPTION = 'ys_fct_status_settings';
 
-	/** Schema version of the stored row / exported JSON. */
-	const SCHEMA_VERSION = 1;
+	/**
+	 * Schema version of the stored row / exported JSON.
+	 *
+	 * 1 → 2 added `linked_shipping_status` to an order definition and the
+	 * pipeline/report switches below. Both are additive and `sanitize()` fills
+	 * in the defaults, so a version-1 row (or a version-1 export) is read
+	 * without a migration step.
+	 */
+	const SCHEMA_VERSION = 2;
 
 	/** `wp_fct_orders.status`, `.shipping_status` and `.payment_status` are all VARCHAR(20). */
 	const MAX_SLUG_LENGTH = 20;
@@ -68,17 +75,38 @@ final class Settings {
 	const DEFAULT_COLOR = '#64748b';
 
 	/**
+	 * The built-in order status the pipeline starts from.
+	 *
+	 * Not a custom status: it is what core writes the moment payment lands, so
+	 * "paid" is step 0 of every pipeline whether the operator asked for it or
+	 * not. The template relabels it rather than adding a status beside it.
+	 */
+	const PIPELINE_ENTRY = 'processing';
+
+	/** Default "this order has been sitting here too long" threshold, in days. */
+	const DEFAULT_STALL_DAYS = 3;
+
+	/**
 	 * The shipped defaults: no custom statuses, no overrides, restore switched on.
 	 *
 	 * @return array
 	 */
 	public static function defaults() {
 		return array(
-			'version'          => self::SCHEMA_VERSION,
+			'version'            => self::SCHEMA_VERSION,
 			'restore_on_payment' => 'yes',
-			'order'            => array(),
-			'shipping'         => array(),
-			'overrides'        => array(
+			// Off by design: a shop that has just installed the plugin has no
+			// pipeline yet, and a strict mode with nothing to be strict about
+			// would only refuse status changes that used to work.
+			'pipeline_strict'    => 'no',
+			'stall_days'         => self::DEFAULT_STALL_DAYS,
+			'daily_summary'      => array(
+				'enabled' => 'no',
+				'email'   => '',
+			),
+			'order'              => array(),
+			'shipping'           => array(),
+			'overrides'          => array(
 				'order'    => array(),
 				'payment'  => array(),
 				'shipping' => array(),
@@ -128,11 +156,40 @@ final class Settings {
 		$out = self::defaults();
 
 		$out['restore_on_payment'] = ( isset( $raw['restore_on_payment'] ) && 'no' === $raw['restore_on_payment'] ) ? 'no' : 'yes';
+		$out['pipeline_strict']    = ( isset( $raw['pipeline_strict'] ) && 'yes' === $raw['pipeline_strict'] ) ? 'yes' : 'no';
 
-		foreach ( self::AXES as $axis ) {
-			$definitions = isset( $raw[ $axis ] ) && is_array( $raw[ $axis ] ) ? $raw[ $axis ] : array();
-			$out[ $axis ] = self::sanitizeDefinitions( $definitions, $axis );
-		}
+		$out['stall_days'] = isset( $raw['stall_days'] )
+			? max( 1, min( 365, (int) $raw['stall_days'] ) )
+			: self::DEFAULT_STALL_DAYS;
+
+		$summary = isset( $raw['daily_summary'] ) && is_array( $raw['daily_summary'] ) ? $raw['daily_summary'] : array();
+		$email   = isset( $summary['email'] ) ? sanitize_email( (string) $summary['email'] ) : '';
+
+		$out['daily_summary'] = array(
+			// An enabled summary with nowhere to send it is a cron job that
+			// fails silently every night, so the address decides.
+			'enabled' => ( isset( $summary['enabled'] ) && 'yes' === $summary['enabled'] && '' !== $email ) ? 'yes' : 'no',
+			'email'   => $email,
+		);
+
+		// Shipping first: an order status may point at a custom shipping status,
+		// and the pointer can only be validated against a list that has already
+		// been through this sanitiser.
+		$out['shipping'] = self::sanitizeDefinitions(
+			isset( $raw['shipping'] ) && is_array( $raw['shipping'] ) ? $raw['shipping'] : array(),
+			'shipping'
+		);
+
+		$shippingSlugs = array_merge(
+			self::BUILTIN_SHIPPING,
+			array_column( $out['shipping'], 'slug' )
+		);
+
+		$out['order'] = self::sanitizeDefinitions(
+			isset( $raw['order'] ) && is_array( $raw['order'] ) ? $raw['order'] : array(),
+			'order',
+			$shippingSlugs
+		);
 
 		$overrides = isset( $raw['overrides'] ) && is_array( $raw['overrides'] ) ? $raw['overrides'] : array();
 
@@ -146,11 +203,12 @@ final class Settings {
 	}
 
 	/**
-	 * @param array  $definitions List of raw definitions.
-	 * @param string $axis        'order' or 'shipping'.
+	 * @param array    $definitions   List of raw definitions.
+	 * @param string   $axis          'order' or 'shipping'.
+	 * @param string[] $shippingSlugs Shipping slugs `linked_shipping_status` may point at.
 	 * @return array Re-indexed list, sorted by sort_order then label.
 	 */
-	private static function sanitizeDefinitions( array $definitions, $axis ) {
+	private static function sanitizeDefinitions( array $definitions, $axis, array $shippingSlugs = array() ) {
 		$clean = array();
 		$seen  = array();
 
@@ -184,6 +242,15 @@ final class Settings {
 			if ( 'order' === $axis ) {
 				$row['payment_requirement'] = self::enum( $definition, 'payment_requirement', self::PAYMENT_REQUIREMENTS, 'any' );
 				$row['on_payment']          = self::enum( $definition, 'on_payment', self::ON_PAYMENT, 'keep' );
+
+				$linked = isset( $definition['linked_shipping_status'] )
+					? self::sanitizeSlug( $definition['linked_shipping_status'] )
+					: '';
+
+				// A pointer at a shipping status that does not exist would make
+				// every transition into this status log a failure, so it is
+				// dropped here rather than discovered at run time.
+				$row['linked_shipping_status'] = in_array( $linked, $shippingSlugs, true ) ? $linked : '';
 			}
 
 			$clean[] = $row;
@@ -339,6 +406,62 @@ final class Settings {
 		$all = self::all();
 
 		return 'yes' === $all['restore_on_payment'];
+	}
+
+	/**
+	 * The order-status pipeline, in the order the operator arranged it.
+	 *
+	 * `processing` is step 0 and is not configurable: FluentCart writes it the
+	 * moment a payment is recorded (see `Payment\RestoreHandler`), so every
+	 * paid order passes through it on the way to the first custom step. The
+	 * remaining steps are the enabled custom order statuses in list order —
+	 * the sort order on the settings screen *is* the pipeline order, which is
+	 * why the screen shows the step number beside each row.
+	 *
+	 * @param array $settings Optional pre-read settings.
+	 * @return string[] Slugs, index 0 first.
+	 */
+	public static function pipeline( array $settings = null ) {
+		$settings = null === $settings ? self::all() : $settings;
+
+		$steps = array( self::PIPELINE_ENTRY );
+
+		foreach ( self::customStatuses( 'order', $settings ) as $slug => $definition ) {
+			$steps[] = $slug;
+		}
+
+		return $steps;
+	}
+
+	/**
+	 * @param string $slug     Order status slug.
+	 * @param array  $settings Optional pre-read settings.
+	 * @return int Zero-based pipeline position, or -1 when the slug is not in it.
+	 */
+	public static function pipelinePosition( $slug, array $settings = null ) {
+		$position = array_search( (string) $slug, self::pipeline( $settings ), true );
+
+		return false === $position ? -1 : (int) $position;
+	}
+
+	/**
+	 * @param array $settings Optional pre-read settings.
+	 * @return bool Whether only single steps along the pipeline are allowed.
+	 */
+	public static function pipelineStrict( array $settings = null ) {
+		$settings = null === $settings ? self::all() : $settings;
+
+		return 'yes' === $settings['pipeline_strict'];
+	}
+
+	/**
+	 * @param array $settings Optional pre-read settings.
+	 * @return int Days after which an order is reported as stuck.
+	 */
+	public static function stallDays( array $settings = null ) {
+		$settings = null === $settings ? self::all() : $settings;
+
+		return (int) $settings['stall_days'];
 	}
 
 	/**

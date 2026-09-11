@@ -163,4 +163,18 @@ if ( ! function_exists( 'add_filter' ) ) {
 	function absint( $value ) {
 		return abs( (int) $value );
 	}
+
+	/**
+	 * Close enough for the sanitiser's purposes: WordPress strips the illegal
+	 * characters and then validates, and the tests only care that a malformed
+	 * address comes back empty and a good one comes back unchanged.
+	 *
+	 * @param string $email Raw address.
+	 * @return string
+	 */
+	function sanitize_email( $email ) {
+		$email = trim( (string) $email );
+
+		return false === filter_var( $email, FILTER_VALIDATE_EMAIL ) ? '' : $email;
+	}
 }

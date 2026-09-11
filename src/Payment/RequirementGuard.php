@@ -63,16 +63,7 @@ final class RequirementGuard {
 			return $result;
 		}
 
-		if ( ! preg_match( '#/orders/\d+/statuses$#', (string) $request->get_route() ) ) {
-			return $result;
-		}
-
-		if ( 'change_order_status' !== (string) $request->get_param( 'action' ) ) {
-			return $result;
-		}
-
-		$statuses  = $request->get_param( 'statuses' );
-		$newStatus = is_array( $statuses ) && isset( $statuses['order_status'] ) ? (string) $statuses['order_status'] : '';
+		$newStatus = OrderContext::requestedOrderStatus( $request );
 
 		if ( '' === $newStatus ) {
 			return $result;

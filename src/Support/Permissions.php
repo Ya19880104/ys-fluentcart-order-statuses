@@ -24,6 +24,9 @@ final class Permissions {
 	/** FluentCart permission this screen is the settings side of. */
 	const FCT_PERMISSION = 'orders/manage';
 
+	/** What it takes to read an order's history. */
+	const FCT_VIEW_PERMISSION = 'orders/view';
+
 	/**
 	 * @return bool
 	 */
@@ -37,6 +40,35 @@ final class Permissions {
 		if ( class_exists( $manager ) && method_exists( $manager, 'hasPermission' ) ) {
 			try {
 				return (bool) $manager::hasPermission( array( self::FCT_PERMISSION ) );
+			} catch ( \Throwable $e ) {
+				return false;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Who may read an order's status history.
+	 *
+	 * Lower bar than `canManage()` on purpose: the order-page widget is
+	 * read-only history about an order the viewer already has open, so a role
+	 * that can look at orders can look at how they got there. It is still a
+	 * bar — FluentCart's widgets route admits `customers/view` alone, and a
+	 * customer-only role has no business reading order workflow.
+	 *
+	 * @return bool
+	 */
+	public static function canViewOrders() {
+		if ( current_user_can( self::FALLBACK_CAP ) ) {
+			return true;
+		}
+
+		$manager = '\\FluentCart\\App\\Services\\Permission\\PermissionManager';
+
+		if ( class_exists( $manager ) && method_exists( $manager, 'hasPermission' ) ) {
+			try {
+				return (bool) $manager::hasPermission( array( self::FCT_VIEW_PERMISSION ) );
 			} catch ( \Throwable $e ) {
 				return false;
 			}
