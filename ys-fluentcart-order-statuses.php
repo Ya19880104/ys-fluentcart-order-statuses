@@ -28,8 +28,16 @@ define( 'YS_FCT_STATUS_URL', plugin_dir_url( __FILE__ ) );
 define( 'YS_FCT_STATUS_SLUG', 'ys-fluentcart-order-statuses' );
 
 // The oldest FluentCart whose status filters this add-on relies on. 1.6.0 is
-// what the production store runs; 1.6.3 is what it is tested against.
+// still common in production; 1.6.3 is what it is tested against.
 define( 'YS_FCT_STATUS_MIN_FLUENTCART', '1.6.0' );
+
+// ── Vendor autoload (YS Plugin Hub Client — enables auto-updates) ─────────────
+// The Hub client is self-contained (its own PSR-4 autoloader + duplicate-load
+// guard) and does not depend on FluentCart.
+
+if ( file_exists( YS_FCT_STATUS_DIR . 'vendor/autoload.php' ) ) {
+	require_once YS_FCT_STATUS_DIR . 'vendor/autoload.php';
+}
 
 // ── PSR-4 autoloader ─────────────────────────────────────────────────────────
 // YangSheep\FluentCart\OrderStatuses\ maps to src/.
@@ -85,3 +93,23 @@ register_deactivation_hook(
 // ── Bootstrap ────────────────────────────────────────────────────────────────
 
 \YangSheep\FluentCart\OrderStatuses\Bootstrap::init();
+
+// ── YS Plugin Hub Client registration (priority 5, before the main bootstrap) ─
+// Registers this plugin with the YS Plugin Hub so it can receive auto-updates.
+
+add_action(
+	'plugins_loaded',
+	static function () {
+		if ( class_exists( '\YangSheep\PluginHubClient\YSPluginHubClient' ) ) {
+			\YangSheep\PluginHubClient\YSPluginHubClient::register(
+				array(
+					'slug'        => YS_FCT_STATUS_SLUG,
+					'version'     => YS_FCT_STATUS_VERSION,
+					'plugin_file' => YS_FCT_STATUS_FILE,
+					'name'        => 'YS FluentCart Order Statuses',
+				)
+			);
+		}
+	},
+	5
+);

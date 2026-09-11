@@ -680,6 +680,6 @@ Each scenario file rewrites `ys_fct_status_settings` and creates `STATUS-`
 orders; they touch nothing else. Run them in the order above if you want the
 site left holding the 0.3 configuration.
 
-Results and database evidence: [`docs/TEST-REPORT.md`](docs/TEST-REPORT.md) (0.1),
-[`docs/TEST-REPORT-v0.2.md`](docs/TEST-REPORT-v0.2.md) (0.2) and
-[`docs/TEST-REPORT-v0.3.md`](docs/TEST-REPORT-v0.3.md) (0.3).
+The suites, the fixtures and the per-release test reports (with the database
+evidence behind every assertion) live in the development tree and are not part
+of the published package.

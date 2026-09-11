@@ -31,8 +31,8 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * The paid/unpaid split uses `OrderRepository::PAID_STATUSES`, which mirrors
  * core's `getOrderPaymentSuccessStatuses()` — "money arrived", including a
- * partial payment or a partial refund. That is the distinction the client asked
- * about, and it is a payment-status question, never an order-status one.
+ * partial payment or a partial refund. That is the distinction a shop actually
+ * asks about, and it is a payment-status question, never an order-status one.
  */
 final class ReportService {
 
