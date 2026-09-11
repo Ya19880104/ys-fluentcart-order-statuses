@@ -31,8 +31,8 @@ if ( ! function_exists( 'ys_status_fixture' ) ) {
 		return array(
 			'product_id'   => $postId,
 			'variation_id' => (int) $wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$wpdb->prefix}fct_product_variations WHERE post_id = %d", $postId ) ),
-			'customer_id'  => (int) $wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$wpdb->prefix}fct_customers WHERE email = %s", 'status-shopper@aisale.local' ) ),
-			'user_id'      => (int) $wpdb->get_var( $wpdb->prepare( "SELECT user_id FROM {$wpdb->prefix}fct_customers WHERE email = %s", 'status-shopper@aisale.local' ) ),
+			'customer_id'  => (int) $wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$wpdb->prefix}fct_customers WHERE email = %s", 'status-shopper@example.test' ) ),
+			'user_id'      => (int) $wpdb->get_var( $wpdb->prepare( "SELECT user_id FROM {$wpdb->prefix}fct_customers WHERE email = %s", 'status-shopper@example.test' ) ),
 			'price'        => 6000,
 		);
 	}

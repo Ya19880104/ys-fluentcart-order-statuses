@@ -659,7 +659,9 @@ DailySummary::run();
 
 ys_pipe_assert( 'R7 it does not send twice in one day', 1, count( $mails ) );
 
-echo '  ->   subject: ' . $mails[0]['subject'] . PHP_EOL;
+// The store's own name opens the subject line; masked so a committed run of this
+// script never carries it.
+echo '  ->   subject: ' . preg_replace( '/^\[[^\]]*\]/', '[store name]', $mails[0]['subject'] ) . PHP_EOL;
 
 $settings['daily_summary'] = array( 'enabled' => 'no', 'email' => '' );
 

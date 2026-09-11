@@ -2,12 +2,11 @@
 /**
  * Local fixtures for the T1–T15 walkthrough.
  *
- *   php G:/tmp/aisale-fc-local/downloads/wp-cli.phar --path=G:/tmp/aisale-fc-local/site \
- *       eval-file wp-content/plugins/ys-fluentcart-order-statuses/tests/seed-fixtures.php
+ *   wp eval-file wp-content/plugins/ys-fluentcart-order-statuses/tests/seed-fixtures.php
  *
  * Creates, idempotently and with a STATUS- prefix on everything:
  *   - one physical product `STATUS-Physical-01` ($60) with a single variation
- *   - one FluentCart customer `status-shopper@aisale.local` (+ WP user)
+ *   - one FluentCart customer `status-shopper@example.test` (+ WP user)
  *
  * Orders are created on demand by `tests/status-scenarios.php`, not here.
  * Nothing outside those names is read or written.
@@ -104,7 +103,7 @@ $wpdb->update(
 
 // ── Customer ─────────────────────────────────────────────────────────────────
 
-$email  = 'status-shopper@aisale.local';
+$email  = 'status-shopper@example.test';
 $userId = email_exists( $email );
 
 if ( ! $userId ) {

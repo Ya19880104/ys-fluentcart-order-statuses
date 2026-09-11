@@ -1,0 +1,162 @@
+
+# P1 — one-click template
+  ok   P1 three workflow steps exist
+  ok   P1 the pipeline starts at processing
+  ok   P1 processing is relabelled
+  ok   P1 the last step links to shipped
+  ok   P1 FluentCart offers the steps in its editable list
+  ok   P1 FluentCart shows the relabelled processing
+  ok   P1 the dropdown reads in workflow order
+  ok   P1 an unpaid order is refused the first step
+  ok   P1 and the refusal explains that the order is not paid
+  ok   P1 the unpaid order did not move
+
+# P2 — paid → in production → scheduled → shipped
+  ok   P2 paying puts the order on step 1
+  ok   P2 the payment status is paid
+  ok   P2 in_production accepted
+  ok   P2 in_production written to the database
+  ok   P2 in_production left the shipping status alone
+  ok   P2 ship_scheduled accepted
+  ok   P2 ship_scheduled written to the database
+  ok   P2 ship_scheduled left the shipping status alone
+  ok   P2 shipped_done accepted
+  ok   P2 the order status is shipped_done
+  ok   P2 the linked shipping status was applied
+  ok   P2 fulfilled_quantity followed core's own logic
+  ok   P2 shipping_status_changed_to_shipped fired
+  ok   P2 order_status_changed_to_shipped_done fired
+  ok   P2 the activity explains the automatic shipping change
+  ok   P2 the history table recorded every step, on both axes
+  ok   P2 the linked write is attributed
+
+# P3 — strict workflow refuses a skipped step
+  ok   P3 the skip is refused
+  ok   P3 the order did not move
+  ok   P3 the message names the step that was missed
+  ok   P3 the skipped step is dropped from core's write allow-list
+  ok   P3 the adjacent step is still in it
+  ok   P3 the next step is still allowed
+  ok   P3 one step back is allowed too
+  ok   P3 leaving the workflow is always allowed
+  ok   P3 with strict off the same skip is accepted
+  ok   P3 and it really skipped
+
+# P4 — a digital order has no shipping status to set
+  ok   P4 the digital order starts with no shipping status
+  ok   P4 the order status change is accepted
+  ok   P4 the order status changed
+  ok   P4 the shipping status was left empty
+  ok   P4 the activity explains the skip
+
+# P5 — payment does not overwrite a workflow status
+  ok   P5 an unpaid order can be put on the relaxed step
+  ok   P5 the workflow status survived the payment
+  ok   P5 the payment still landed
+  ok   P5 the activity records the restore
+  ok   P5 the no-op round trip through processing is not recorded
+
+# R1 — saved views on the Orders list
+  ok   R1 one view per workflow step
+  ok   R1 the view slug is namespaced
+  ok   R1 the name carries the live count
+  ->   view names: ["In production (12)","Shipment scheduled (0)","Shipped (21)"]
+  ->   first view: {"id":"ys_status_in_production","slug":"ys_status_in_production","name":"In production (12)","description":"Paid, and the goods are being made.","is_public":1,"owner_id":0,"query_params":{"filter_type":"simple","search":"status = in_production"}}
+  ok   R1 the orders list still answers
+  ok   R1 the saved view answers
+  ok   R1 and returns only that status
+  ok   R1 the count matches the database
+  ->   saved view returned 21 order(s), all on shipped_done
+
+# R2 — distribution, funnel and dwell match the database
+  ok   R2 in_production paid count
+  ok   R2 in_production unpaid count
+  ok   R2 in_production paid amount
+  ok   R2 ship_scheduled paid count
+  ok   R2 ship_scheduled unpaid count
+  ok   R2 ship_scheduled paid amount
+  ok   R2 shipped_done paid count
+  ok   R2 shipped_done unpaid count
+  ok   R2 shipped_done paid amount
+  ok   R2 processing paid count
+  ok   R2 processing unpaid count
+  ok   R2 processing paid amount
+  ok   R2 completed paid count
+  ok   R2 completed unpaid count
+  ok   R2 completed paid amount
+  ok   R2 the funnel follows the pipeline
+  ok   R2 the funnel numbers the steps
+  ok   R2 dwell time is reported for in_production
+  ok   R2 dwell only counts stays that ended
+  ->   in_production: {"slug":"in_production","label":"In production","color":"#b45309","is_custom":true,"samples":40,"avg_days":0.63,"max_days":5}
+  ok   R2 the dwell sample count matches a hand-written join
+
+# R3 — the stuck-order list
+  ok   R3 a brand new order is not stuck
+  ok   R3 the threshold is the configured one
+  ok   R3 the backdated order is now listed
+  ok   R3 with the right status
+  ok   R3 and about five days on it
+  ok   R3 a completed order is never counted as stuck
+
+# R4 — the order page widget
+  ok   R4 the widget is registered
+  ok   R4 it is an html widget
+  ok   R4 it lists the last step
+  ok   R4 it lists the shipping axis too
+  ok   R4 it reports how long each stay was
+  ok   R4 nothing unescaped reaches the innerHTML
+  ok   R4 FluentCart's own widgets route serves it
+  ok   R4 and it is in the response
+
+# R5 — backfill from the activity log
+  ok   R5 at least one historic change was recovered
+  ok   R5 across more than one order
+  ok   R5 the table grew
+  ->   backfill: {"parsed":760,"skipped":153,"removed":758,"orders":429}
+  ok   R5 running it twice does not duplicate anything
+  ok   R5 the second pass removes its own previous rows first
+  ok   R5 hook-written rows were not touched
+  ->   history rows: backfill=760 hooks=153
+  ok   R5 the overdue order is overdue again
+
+# R6 — CSV export
+  ok   R6 distribution export answers
+  ok   R6 distribution starts with a UTF-8 BOM
+  ok   R6 distribution has a filename
+  ok   R6 distribution has a header and at least one row
+  ->   distribution header: "Status","Slug","Custom","Paid orders","Paid amount (minor units)","Unpaid orders","Unpaid amount (minor units)","Total orders","Total amount (minor units)"
+  ->   distribution row 1:  "Paid","processing","no","33","198000","12","72000","45","270000"
+  ok   R6 dwell export answers
+  ok   R6 dwell starts with a UTF-8 BOM
+  ok   R6 dwell has a filename
+  ok   R6 dwell has a header and at least one row
+  ->   dwell header: "Status","Slug","Completed stays","Average days","Longest days"
+  ->   dwell row 1:  "Paid","processing","316","0","0"
+  ok   R6 stalled export answers
+  ok   R6 stalled starts with a UTF-8 BOM
+  ok   R6 stalled has a filename
+  ok   R6 stalled has a header and at least one row
+  ->   stalled header: "Order","Status","Slug","Payment status","Total (minor units)","Currency","Entered status (UTC)","Days in status"
+  ->   stalled row 1:  "496","In production","in_production","paid","6000","USD","2026-09-06 10:16:49","5"
+  ok   R6 an unknown report type is refused
+
+# R7 — the daily summary e-mail
+  ok   R7 nothing is sent while the summary is off
+  ok   R7 and no cron event is scheduled
+  ok   R7 switching it on sends one message
+  ok   R7 to the configured address
+  ok   R7 the subject counts the overdue orders
+  ok   R7 the body lists the workflow steps
+  ok   R7 the body lists the stuck order
+  ok   R7 a cron event is scheduled
+  ok   R7 it does not send twice in one day
+  ->   subject: [store name] Order workflow summary — 1 order(s) need attention
+  ok   R7 turning it off unschedules the event
+
+# Order ids
+{"P1":490,"P2":491,"P3":492,"P3b":493,"P4":494,"P5":495,"R3":496}
+history rows: 913
+history table: wp_ys_fct_status_history
+
+PASS — 118 assertions.

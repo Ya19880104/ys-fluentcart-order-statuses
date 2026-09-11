@@ -1,14 +1,14 @@
 # YS FluentCart Order Statuses 0.1.0 — test report
 
-**Environment** — WordPress 7.1, FluentCart 1.6.3, PHP 8.x, MariaDB 11.4, local
-site `G:\tmp\aisale-fc-local\site` at `http://127.0.0.1:8099`, currency USD, COD
+**Environment** — WordPress 7.1, FluentCart 1.6.3, PHP 8.x, MariaDB 11.4, a local
+development site, currency USD, COD
 (offline) gateway enabled. `ys-fluentcart-price-calculator` 0.2.1 and
 `ys-fluentcart-store-credit` 0.2.0 were active throughout; neither was modified
 and another engineer was working on the latter on the same site at the same
 time.
 
 **Fixtures** — `STATUS-Physical-01` (physical, $60, product 21 / variation 9) and
-the customer `status-shopper@aisale.local` (customer 47 / WP user 43), created by
+the customer `status-shopper@example.test` (customer 47 / WP user 43), created by
 `tests/seed-fixtures.php`. Every order created by the walkthrough carries the
 note `STATUS- fixture order`. No existing product, order, customer or store
 setting was altered.
@@ -20,11 +20,10 @@ setting was altered.
 php tests/run.php                                  # PASS — 128 assertions
 
 # Integration walkthrough, against the real site
-WP="php G:/tmp/aisale-fc-local/downloads/wp-cli.phar --path=G:/tmp/aisale-fc-local/site"
-$WP eval-file tests/seed-fixtures.php              # once
-$WP eval-file tests/status-scenarios.php           # PASS — 67 assertions  (full output: docs/scenario-output.txt)
-$WP eval-file tests/revenue-probe.php              # T14
-$WP eval-file tests/measure-editable-filter.php    # the §2.2 measurement
+wp eval-file tests/seed-fixtures.php              # once
+wp eval-file tests/status-scenarios.php           # PASS — 67 assertions  (full output: docs/scenario-output.txt)
+wp eval-file tests/revenue-probe.php              # T14
+wp eval-file tests/measure-editable-filter.php    # the §2.2 measurement
 ```
 
 Every status change in the walkthrough goes through FluentCart's **own** REST
@@ -574,7 +573,7 @@ reports `{total: 98, unlabelled: 0}`.
 
 **Side effects on the shared site** — none outside the fixtures. Products,
 customers, store settings, pages, currency and gateways untouched; no database
-reset; `php -S` and MariaDB never restarted; the other two YS plugins never
+reset; the web server and the database were never restarted; the other two YS plugins never
 deactivated or modified.
 
 ---

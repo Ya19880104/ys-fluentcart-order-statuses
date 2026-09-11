@@ -5,6 +5,81 @@ All notable changes to YS FluentCart Order Statuses.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] — 2026-09-11
+
+Custom order statuses become a **workflow** rather than a set, and the plugin
+grows a report of its own. Developed against FluentCart 1.6.3; minimum supported
+1.6.0. Upgrading from 0.1.0 changes nothing about an existing configuration —
+the new fields default to off and a 0.1.0 settings document is read unchanged.
+
+### Added
+
+- **A pipeline.** The custom order statuses are an ordered sequence, starting at
+  the built-in `processing` (which FluentCart writes the moment payment lands and
+  which the template relabels to "Paid"). The order they are listed in on the
+  settings screen is the order they appear in on FluentCart's own status
+  dropdown — array order is the only lever that map offers.
+- **A one-click template** for the standard workflow: *Paid → In production →
+  Shipment scheduled → Shipped*, plus suggested names for the built-in statuses.
+  It is never written automatically, never overwrites anything already
+  configured, and applying it twice does nothing.
+- **`linked_shipping_status`.** A custom order status can name one shipping
+  status to set alongside it. The write goes through
+  `OrderResource::updateStatuses()`, so `fulfilled_quantity` and the
+  `shipping_status_changed_to_*` events behave exactly as they do for a manual
+  change. Digital and non-shippable orders are skipped with a line in the
+  activity timeline. One direction only — shipping never drives the order status.
+- **`pipeline_strict`** (off by default): an order on a workflow step may only
+  move to the adjacent one, and a skip is refused with a message naming the step
+  that was missed. Leaving the workflow (complete, cancel, hold) and joining it
+  from outside are always allowed.
+- **A status-history table**, `{prefix}ys_fct_status_history`, written from
+  `fluent_cart/order_status_changed` and `fluent_cart/shipping_status_changed`.
+  It is what the dwell times are measured from. Installed with `dbDelta` behind a
+  versioned option, so an in-place update creates it without a reactivation.
+- **Backfill from FluentCart's activity log** — a one-off, best-effort import of
+  the status changes from before the plugin was installed. Lines it cannot read
+  are skipped and counted; running it twice does not duplicate anything.
+- **An Order Status Report tab**: distribution per status split by whether money
+  arrived, the workflow as a funnel, average and longest time per step, the
+  orders that have been on one step too long, and CSV for each. Pure CSS charts,
+  no third-party JavaScript. The README explains why it is not under
+  FluentCart → Reports.
+- **Saved views on the Orders list** — one per custom order status, through
+  `fluent_cart/admin_table_saved_views`.
+- **A "Status history" widget** on the order page, through
+  `fluent_cart/widgets/single_order_page`: both axes on one timeline, with how
+  long each stay lasted.
+- **An optional daily summary e-mail** (WP-Cron plus a catch-up on the next admin
+  page load, because cron on a quiet shop is not a scheduler).
+- **`ys_status_meta` on each row of `fluent_cart/orders_list`** — label, colour,
+  step number and days in status. The admin SPA does not render unknown keys;
+  this is for anything reading `GET /orders` directly.
+- New REST routes under `ys-fct-status/v1`: `reports/overview`,
+  `reports/history`, `reports/export`, `reports/backfill`,
+  `reports/summary-test` and `template`. Same bar as the rest — capability plus
+  nonce.
+- New hooks: `ys_fct_status/linked_shipping_applied` and
+  `ys_fct_status/record_restore_history`.
+
+### Fixed
+
+- A badge lost its colour a moment after being relabelled whenever two statuses
+  on different axes render the same word — which the template makes the common
+  case, since its last order status and the built-in shipping status are both
+  "Shipped". Slug spellings now outrank label spellings when claiming a rendered
+  word, and a badge already carrying the configured label is left alone on later
+  passes.
+- The fixture customer's e-mail address and the local development paths were
+  removed from the repository.
+
+### Changed
+
+- Schema version 2. `linked_shipping_status`, `pipeline_strict`, `stall_days`
+  and `daily_summary` are added on read, so a 0.1.0 export still imports.
+- Uninstall (opt-in, unchanged) now also drops the history table and clears the
+  cron event. Deactivating still changes nothing at all.
+
 ## [0.1.0] — 2026-09-11
 
 First release. Developed against FluentCart 1.6.3; minimum supported 1.6.0.
@@ -56,4 +131,5 @@ First release. Developed against FluentCart 1.6.3; minimum supported 1.6.0.
   settings unless `YS_FCT_STATUS_REMOVE_DATA` is defined.
 - Custom payment statuses are deliberately out of scope for v1.
 
+[0.2.0]: https://yangsheep.com.tw
 [0.1.0]: https://yangsheep.com.tw

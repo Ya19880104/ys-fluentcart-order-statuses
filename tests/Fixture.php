@@ -8,7 +8,7 @@
 declare( strict_types=1 );
 
 /**
- * The AiSALE-shaped configuration: a paid-only sourcing step on the order axis,
+ * A proxy-shopping shaped configuration: a paid-only sourcing step on the order axis,
  * a warehouse step on the shipping axis, and relabelled built-ins.
  */
 final class YsStatusFixture {
