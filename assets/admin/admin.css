@@ -322,3 +322,21 @@
 		flex-basis: 9em;
 	}
 }
+
+/* The read-only e-mail line on a status row. FluentCart owns the switch; this
+   only reports what it currently says. */
+.ys-fct-status-admin .ys-fct-status-email {
+	display: inline-block;
+	margin-top: 4px;
+	font-size: 12px;
+	color: #646970;
+}
+
+.ys-fct-status-admin .ys-fct-status-email-on {
+	color: #007017;
+}
+
+.ys-fct-status-admin .ys-fct-status-email-off {
+	color: #8c8f94;
+	font-weight: 400;
+}

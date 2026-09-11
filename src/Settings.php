@@ -36,8 +36,15 @@ final class Settings {
 	 * pipeline/report switches below. Both are additive and `sanitize()` fills
 	 * in the defaults, so a version-1 row (or a version-1 export) is read
 	 * without a migration step.
+	 *
+	 * 2 → 3 added the e-mail content option (`Email\ContentStore`). It is a
+	 * second option rather than a key in this one — it is keyed by notification
+	 * name, not by status, and it is written by FluentCart's own editor rather
+	 * than by this plugin's settings screen — so the export document carries it
+	 * beside `settings` rather than inside it, and an export written by 0.3 (no
+	 * such key) imports unchanged.
 	 */
-	const SCHEMA_VERSION = 2;
+	const SCHEMA_VERSION = 3;
 
 	/** `wp_fct_orders.status`, `.shipping_status` and `.payment_status` are all VARCHAR(20). */
 	const MAX_SLUG_LENGTH = 20;

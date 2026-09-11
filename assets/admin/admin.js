@@ -22,6 +22,7 @@
 	var model = null;
 	var builtin = {};
 	var usage = { order: {}, shipping: {} };
+	var emails = { order: {}, shipping: {} };
 	var dirty = false;
 
 	// ── helpers ──────────────────────────────────────────────────────────────
@@ -426,7 +427,9 @@
 				el( 'td', {}, [
 					textCell( definition, 'label', t( 'labelPlaceholder' ) ),
 					el( 'br' ),
-					textCell( definition, 'description', t( 'description' ) )
+					textCell( definition, 'description', t( 'description' ) ),
+					el( 'br' ),
+					emailCell( axis, definition )
 				] ),
 				el( 'td', {}, [ slugCell( definition ) ] ),
 				el( 'td', {}, [ colorCell( definition ) ] )
@@ -463,6 +466,55 @@
 
 			body.appendChild( el( 'tr', { 'data-ys-slug-row': definition.slug || '' }, cells ) );
 		} );
+	}
+
+	/**
+	 * The one line about e-mail on a status row.
+	 *
+	 * Read-only on purpose: FluentCart owns the on/off switch, the subject and
+	 * the body, and a second toggle here would be a second source of truth for
+	 * a value this plugin does not store. The line says what FluentCart's own
+	 * configuration currently says, and links to where it is changed.
+	 */
+	function emailCell( axis, definition ) {
+		var wrap = el( 'span', { class: 'ys-fct-status-email' } );
+		var state = ( emails[ axis ] || {} )[ definition.slug ] || null;
+
+		wrap.appendChild( document.createTextNode( t( 'emailLabel' ) + ': ' ) );
+
+		if ( ! state ) {
+			// A status that has never been saved has no notification yet — the
+			// registry is built from the stored settings, not from this form.
+			wrap.appendChild( el( 'em', { text: t( 'emailUnsaved' ) } ) );
+			return wrap;
+		}
+
+		var on = [];
+
+		if ( state.customer ) {
+			on.push( t( 'emailCustomer' ) );
+		}
+
+		if ( state.admin ) {
+			on.push( t( 'emailAdmin' ) );
+		}
+
+		wrap.appendChild( el( 'strong', {
+			class: on.length ? 'ys-fct-status-email-on' : 'ys-fct-status-email-off',
+			text: on.length ? on.join( ', ' ) : t( 'emailOff' )
+		} ) );
+
+		if ( cfg.emailsUrl ) {
+			wrap.appendChild( document.createTextNode( ' — ' ) );
+			wrap.appendChild( el( 'a', {
+				href: cfg.emailsUrl,
+				target: '_blank',
+				rel: 'noopener',
+				text: t( 'emailEdit' )
+			} ) );
+		}
+
+		return wrap;
 	}
 
 	function slugCell( definition ) {
@@ -751,6 +803,7 @@
 
 		builtin = payload.builtin || {};
 		usage = payload.usage || { order: {}, shipping: {} };
+		emails = payload.emails || { order: {}, shipping: {} };
 		dirty = false;
 
 		renderAll();

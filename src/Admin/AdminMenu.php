@@ -91,6 +91,10 @@ final class AdminMenu {
 							'linked_shipping_status' => '',
 						),
 						'ordersUrl'  => esc_url_raw( admin_url( 'admin.php?page=fluent-cart#/orders' ) ),
+						// FluentCart's own notification screen. This plugin adds
+						// no on/off switch of its own — everything about the
+						// mail is edited there, and this is the way in.
+						'emailsUrl'  => esc_url_raw( admin_url( 'admin.php?page=fluent-cart#/settings/email_notifications' ) ),
 						'entrySlug'  => Settings::PIPELINE_ENTRY,
 						'shipEntry'  => Settings::SHIPPING_PIPELINE_ENTRY,
 						'shipExit'   => Settings::SHIPPING_PIPELINE_EXIT,
@@ -412,6 +416,12 @@ final class AdminMenu {
 			'reqUnpaid'         => __( 'Unpaid orders only', 'ys-fluentcart-order-statuses' ),
 			'keep'              => __( 'Keep this status', 'ys-fluentcart-order-statuses' ),
 			'letCore'           => __( 'Let FluentCart set Processing', 'ys-fluentcart-order-statuses' ),
+			'emailLabel'        => __( 'E-mail', 'ys-fluentcart-order-statuses' ),
+			'emailOff'          => __( 'off', 'ys-fluentcart-order-statuses' ),
+			'emailCustomer'     => __( 'customer', 'ys-fluentcart-order-statuses' ),
+			'emailAdmin'        => __( 'admin', 'ys-fluentcart-order-statuses' ),
+			'emailEdit'         => __( 'edit in Email Notifications', 'ys-fluentcart-order-statuses' ),
+			'emailUnsaved'      => __( 'save this status first', 'ys-fluentcart-order-statuses' ),
 			/* translators: %d: number of orders currently using this status */
 			'inUseRemove'       => __( 'This status is still on %d order(s). Move them to another status before removing it.', 'ys-fluentcart-order-statuses' ),
 			/* translators: %s: status label */

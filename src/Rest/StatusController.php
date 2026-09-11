@@ -7,6 +7,8 @@
 
 namespace YangSheep\FluentCart\OrderStatuses\Rest;
 
+use YangSheep\FluentCart\OrderStatuses\Email\ContentStore;
+use YangSheep\FluentCart\OrderStatuses\Email\NotificationRegistry;
 use YangSheep\FluentCart\OrderStatuses\Settings;
 use YangSheep\FluentCart\OrderStatuses\StatusRegistry;
 use YangSheep\FluentCart\OrderStatuses\Support\ActivityLog;
@@ -111,6 +113,7 @@ final class StatusController {
 				'settings' => Settings::all(),
 				'builtin'  => $this->builtinLabels(),
 				'usage'    => $this->usageMap(),
+				'emails'   => NotificationRegistry::stateMap(),
 			)
 		);
 	}
@@ -149,12 +152,19 @@ final class StatusController {
 		$saved = Settings::save( $incoming );
 
 		StatusRegistry::flushCache();
+		NotificationRegistry::flushCache();
+
+		// A status that no longer exists has no notification, so its stored
+		// heading and message would be unreachable text in an option row and in
+		// every export made from here on.
+		ContentStore::pruneOrphans();
 
 		return rest_ensure_response(
 			array(
 				'settings' => $saved,
 				'builtin'  => $this->builtinLabels(),
 				'usage'    => $this->usageMap(),
+				'emails'   => NotificationRegistry::stateMap(),
 				'message'  => __( 'Statuses saved.', 'ys-fluentcart-order-statuses' ),
 			)
 		);
@@ -239,10 +249,14 @@ final class StatusController {
 
 		return rest_ensure_response(
 			array(
-				'exported_at' => gmdate( 'c' ),
-				'plugin'      => YS_FCT_STATUS_SLUG,
-				'version'     => YS_FCT_STATUS_VERSION,
-				'settings'    => $settings,
+				'exported_at'   => gmdate( 'c' ),
+				'plugin'        => YS_FCT_STATUS_SLUG,
+				'version'       => YS_FCT_STATUS_VERSION,
+				'settings'      => $settings,
+				// Beside `settings`, not inside it: this map is keyed by
+				// FluentCart notification name rather than by status, and it is
+				// written by FluentCart's own editor. Schema version 3.
+				'email_content' => ContentStore::all(),
 			)
 		);
 	}
@@ -274,12 +288,24 @@ final class StatusController {
 		$saved = Settings::save( $settings );
 
 		StatusRegistry::flushCache();
+		NotificationRegistry::flushCache();
+
+		// A 0.3 export has no `email_content` key at all, and that is not an
+		// error: the statuses are imported and whatever e-mail text this site
+		// already has is left alone. Only a document that carries the key
+		// replaces it.
+		if ( isset( $payload['email_content'] ) && is_array( $payload['email_content'] ) ) {
+			ContentStore::replaceAll( $payload['email_content'] );
+		}
+
+		ContentStore::pruneOrphans();
 
 		return rest_ensure_response(
 			array(
 				'settings' => $saved,
 				'builtin'  => $this->builtinLabels(),
 				'usage'    => $this->usageMap(),
+				'emails'   => NotificationRegistry::stateMap(),
 				'message'  => sprintf(
 					/* translators: 1: custom order statuses, 2: custom shipping statuses */
 					__( 'Imported %1$d order statuses and %2$d shipping statuses.', 'ys-fluentcart-order-statuses' ),
