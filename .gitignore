@@ -1,0 +1,10 @@
+node_modules/
+vendor/**/tests/
+.DS_Store
+Thumbs.db
+*.zip
+*.log
+.idea/
+.vscode/
+.claude/
+docs/screenshots/
