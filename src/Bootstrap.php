@@ -12,6 +12,11 @@ use YangSheep\FluentCart\OrderStatuses\Admin\ColorStyles;
 use YangSheep\FluentCart\OrderStatuses\Admin\OrdersListMeta;
 use YangSheep\FluentCart\OrderStatuses\Admin\OrderWidget;
 use YangSheep\FluentCart\OrderStatuses\Admin\SavedViews;
+use YangSheep\FluentCart\OrderStatuses\Email\ContentStore;
+use YangSheep\FluentCart\OrderStatuses\Email\Dispatcher;
+use YangSheep\FluentCart\OrderStatuses\Email\NotificationRegistry;
+use YangSheep\FluentCart\OrderStatuses\Email\RequestCapture;
+use YangSheep\FluentCart\OrderStatuses\Email\Templates;
 use YangSheep\FluentCart\OrderStatuses\Front\FrontStyles;
 use YangSheep\FluentCart\OrderStatuses\History\Recorder;
 use YangSheep\FluentCart\OrderStatuses\Payment\RequirementGuard;
@@ -66,6 +71,7 @@ final class Bootstrap {
 
 		( new StatusRegistry() )->register();
 		( new OrderContext() )->register();
+		( new RequestCapture() )->register();
 		( new RequirementGuard() )->register();
 		( new RestoreHandler() )->register();
 
@@ -77,6 +83,15 @@ final class Bootstrap {
 		( new LinkedShipping() )->register();
 		( new StrictGuard() )->register();
 		( new Recorder() )->register();
+
+		// The e-mail side. `Dispatcher` binds one action per enabled custom
+		// slug, which is why it is registered at load time rather than lazily:
+		// a status created during this request cannot move an order during the
+		// same request, so the list read here is the list that matters.
+		( new NotificationRegistry() )->register();
+		( new ContentStore() )->register();
+		( new Templates() )->register();
+		( new Dispatcher() )->register();
 
 		( new StatusController() )->register();
 		( new ReportController() )->register();
