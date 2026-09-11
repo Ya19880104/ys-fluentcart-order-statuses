@@ -427,9 +427,7 @@
 				el( 'td', {}, [
 					textCell( definition, 'label', t( 'labelPlaceholder' ) ),
 					el( 'br' ),
-					textCell( definition, 'description', t( 'description' ) ),
-					el( 'br' ),
-					emailCell( axis, definition )
+					textCell( definition, 'description', t( 'description' ) )
 				] ),
 				el( 'td', {}, [ slugCell( definition ) ] ),
 				el( 'td', {}, [ colorCell( definition ) ] )
@@ -465,6 +463,15 @@
 			cells.push( actionCell( axis, definition, index ) );
 
 			body.appendChild( el( 'tr', { 'data-ys-slug-row': definition.slug || '' }, cells ) );
+
+			// Its own row rather than a line inside the label cell: the cell is two
+			// stacked inputs wide, and "E-mail: customer — edit in Email
+			// Notifications" wrapped to three lines in it.
+			body.appendChild(
+				el( 'tr', { class: 'ys-fct-status-email-row' }, [
+					el( 'td', { colspan: String( 'order' === axis ? 10 : 7 ) }, [ emailCell( axis, definition ) ] )
+				] )
+			);
 		} );
 	}
 

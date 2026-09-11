@@ -340,3 +340,8 @@
 	color: #8c8f94;
 	font-weight: 400;
 }
+
+.ys-fct-status-admin .ys-fct-status-email-row td {
+	border-top: 0;
+	padding-top: 0;
+}
