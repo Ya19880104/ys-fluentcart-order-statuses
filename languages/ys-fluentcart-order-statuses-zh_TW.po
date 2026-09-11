@@ -1,6 +1,6 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: YS FluentCart Order Statuses 0.3.0\n"
+"Project-Id-Version: YS FluentCart Order Statuses 0.4.0\n"
 "Report-Msgid-Bugs-To: https://yangsheep.com.tw\n"
 "Last-Translator: YANGSHEEP DESIGN\n"
 "Language-Team: Traditional Chinese (Taiwan)\n"
@@ -8,7 +8,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "POT-Creation-Date: 2026-09-11T18:09:41+08:00\n"
-"PO-Revision-Date: 2026-09-11T00:00:00+00:00\n"
+"PO-Revision-Date: 2026-09-12T00:00:00+00:00\n"
 "Language: zh_TW\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 "X-Generator: WP-CLI 2.12.0\n"
@@ -37,477 +37,477 @@ msgstr "YANGSHEEP DESIGN"
 
 #: src/Admin/AdminMenu.php:46
 #: src/Admin/AdminMenu.php:47
-#: src/Admin/AdminMenu.php:114
+#: src/Admin/AdminMenu.php:118
 msgid "Order Statuses"
 msgstr "訂單狀態"
 
-#: src/Admin/AdminMenu.php:109
+#: src/Admin/AdminMenu.php:113
 #: src/Support/Permissions.php:94
 msgid "You are not allowed to manage order statuses."
 msgstr "您沒有權限管理訂單狀態。"
 
-#: src/Admin/AdminMenu.php:117
+#: src/Admin/AdminMenu.php:121
 msgid "FluentCart tracks three independent things: the order status, the payment status and the shipping status. You can add your own order and shipping statuses here, and rename the built-in ones."
 msgstr "FluentCart 有三條互相獨立的狀態軸：訂單狀態、付款狀態、出貨狀態。您可以在這裡新增自訂的訂單狀態與出貨狀態，也可以改內建狀態的顯示名稱。"
 
-#: src/Admin/AdminMenu.php:121
-#: src/Admin/AdminMenu.php:214
-#: src/Admin/AdminMenu.php:264
+#: src/Admin/AdminMenu.php:125
+#: src/Admin/AdminMenu.php:218
+#: src/Admin/AdminMenu.php:268
 msgid "Order statuses"
 msgstr "訂單狀態"
 
-#: src/Admin/AdminMenu.php:122
-#: src/Admin/AdminMenu.php:223
-#: src/Admin/AdminMenu.php:269
+#: src/Admin/AdminMenu.php:126
+#: src/Admin/AdminMenu.php:227
+#: src/Admin/AdminMenu.php:273
 msgid "Shipping statuses"
 msgstr "出貨狀態"
 
-#: src/Admin/AdminMenu.php:123
+#: src/Admin/AdminMenu.php:127
 msgid "Built-in labels"
 msgstr "內建狀態名稱"
 
-#: src/Admin/AdminMenu.php:124
+#: src/Admin/AdminMenu.php:128
 msgid "Order Status Report"
 msgstr "訂單狀態報表"
 
-#: src/Admin/AdminMenu.php:125
+#: src/Admin/AdminMenu.php:129
 msgid "Tools"
 msgstr "工具"
 
-#: src/Admin/AdminMenu.php:133
+#: src/Admin/AdminMenu.php:137
 msgid "FluentCart rewrites the order status to “Processing” the moment a payment is recorded — that array is hardcoded in core and has no filter. Statuses set to “Keep after payment” are written back by this plugin immediately afterwards, with a line in the order activity. Workflow steps that are really about fulfilment belong on the Shipping statuses tab, where nothing overwrites them."
 msgstr "只要收到款項，FluentCart 就會把訂單狀態改成「處理中」——這段判斷寫死在核心且沒有 filter。設為「付款後保留」的狀態，本外掛會在事後立刻寫回，並在訂單活動記錄留下一筆。屬於出貨流程的步驟請放在「出貨狀態」分頁，那一軸不會被自動覆寫。"
 
-#: src/Admin/AdminMenu.php:138
+#: src/Admin/AdminMenu.php:142
 msgid "The workflow, in order"
 msgstr "訂單流程順序"
 
-#: src/Admin/AdminMenu.php:140
+#: src/Admin/AdminMenu.php:144
 msgid "Step 1 is the built-in “Processing” status, which FluentCart writes as soon as a payment is recorded — rename it on the Built-in labels tab. The steps after it are the custom statuses below, in the order they are listed here. That order is what the status dropdown on an order follows, and what strict mode enforces."
 msgstr "第 1 步是內建的「Processing」狀態，FluentCart 在收到款項的當下就會寫入它——要改名請到「內建狀態名稱」分頁。後面的步驟就是下方的自訂狀態，順序照這裡的排列。訂單頁的狀態下拉選單會照這個順序顯示，嚴格模式也依這個順序判斷。"
 
-#: src/Admin/AdminMenu.php:144
+#: src/Admin/AdminMenu.php:148
 msgid "Create the standard workflow"
 msgstr "建立標準流程"
 
-#: src/Admin/AdminMenu.php:145
+#: src/Admin/AdminMenu.php:149
 msgid "Adds “In production”, “Shipment scheduled” and “Shipped” (the last one also sets the shipping status), and suggests names for the built-in statuses. Nothing you have already set up is overwritten."
 msgstr "會加入「下生產」「排定出貨」「已出貨」三個步驟（最後一個會同時設定出貨狀態），並為內建狀態建議名稱。已經設定好的東西不會被覆寫。"
 
-#: src/Admin/AdminMenu.php:152
+#: src/Admin/AdminMenu.php:156
 msgid "Step"
 msgstr "步驟"
 
-#: src/Admin/AdminMenu.php:153
-#: src/Admin/AdminMenu.php:192
+#: src/Admin/AdminMenu.php:157
+#: src/Admin/AdminMenu.php:196
 msgid "Label"
 msgstr "顯示名稱"
 
-#: src/Admin/AdminMenu.php:154
-#: src/Admin/AdminMenu.php:193
-#: src/Admin/AdminMenu.php:403
+#: src/Admin/AdminMenu.php:158
+#: src/Admin/AdminMenu.php:197
+#: src/Admin/AdminMenu.php:407
 #: src/Reports/CsvExporter.php:42
 #: src/Reports/CsvExporter.php:79
 #: src/Reports/CsvExporter.php:112
 msgid "Slug"
 msgstr "代碼"
 
-#: src/Admin/AdminMenu.php:155
-#: src/Admin/AdminMenu.php:194
+#: src/Admin/AdminMenu.php:159
+#: src/Admin/AdminMenu.php:198
 msgid "Colour"
 msgstr "顏色"
 
-#: src/Admin/AdminMenu.php:156
-#: src/Admin/AdminMenu.php:406
+#: src/Admin/AdminMenu.php:160
+#: src/Admin/AdminMenu.php:410
 msgid "Available on"
 msgstr "適用訂單"
 
-#: src/Admin/AdminMenu.php:157
-#: src/Admin/AdminMenu.php:407
+#: src/Admin/AdminMenu.php:161
+#: src/Admin/AdminMenu.php:411
 msgid "After payment"
 msgstr "付款後"
 
-#: src/Admin/AdminMenu.php:158
+#: src/Admin/AdminMenu.php:162
 msgid "Also set shipping to"
 msgstr "同時把出貨狀態設為"
 
-#: src/Admin/AdminMenu.php:159
-#: src/Admin/AdminMenu.php:195
+#: src/Admin/AdminMenu.php:163
+#: src/Admin/AdminMenu.php:199
 msgid "Options"
 msgstr "選項"
 
-#: src/Admin/AdminMenu.php:160
-#: src/Admin/AdminMenu.php:196
-#: src/Admin/AdminMenu.php:448
+#: src/Admin/AdminMenu.php:164
+#: src/Admin/AdminMenu.php:200
+#: src/Admin/AdminMenu.php:458
 msgid "Orders"
 msgstr "訂單數"
 
-#: src/Admin/AdminMenu.php:161
-#: src/Admin/AdminMenu.php:197
+#: src/Admin/AdminMenu.php:165
+#: src/Admin/AdminMenu.php:201
 msgid "Actions"
 msgstr "操作"
 
-#: src/Admin/AdminMenu.php:168
+#: src/Admin/AdminMenu.php:172
 msgid "Add order status"
 msgstr "新增訂單狀態"
 
-#: src/Admin/AdminMenu.php:169
-#: src/Admin/AdminMenu.php:205
-#: src/Admin/AdminMenu.php:226
+#: src/Admin/AdminMenu.php:173
+#: src/Admin/AdminMenu.php:209
+#: src/Admin/AdminMenu.php:230
 msgid "Save changes"
 msgstr "儲存變更"
 
-#: src/Admin/AdminMenu.php:191
+#: src/Admin/AdminMenu.php:195
 msgid "Reorder"
 msgstr "調整排序"
 
-#: src/Admin/AdminMenu.php:204
+#: src/Admin/AdminMenu.php:208
 msgid "Add shipping status"
 msgstr "新增出貨狀態"
 
-#: src/Admin/AdminMenu.php:211
+#: src/Admin/AdminMenu.php:215
 msgid "Rename or recolour the statuses FluentCart ships with. The stored slug never changes, so nothing else in FluentCart is affected — leave a field blank to keep the original."
 msgstr "改 FluentCart 內建狀態的名稱與顏色。資料庫裡存的代碼不會變，因此不影響 FluentCart 其他功能；欄位留空即維持原本的名稱。"
 
-#: src/Admin/AdminMenu.php:217
+#: src/Admin/AdminMenu.php:221
 msgid "Payment statuses"
 msgstr "付款狀態"
 
-#: src/Admin/AdminMenu.php:219
+#: src/Admin/AdminMenu.php:223
 msgid "Payment statuses can be renamed but not added to: FluentCart decides download access, refunds, customer lifetime value and every revenue report from this column using hardcoded lists, so a new value would go quietly missing from all of them."
 msgstr "付款狀態只能改名，不能新增：FluentCart 用寫死的清單依這個欄位判斷下載權限、退款、顧客終身價值與所有營收報表，新增的值會在這些地方無聲地消失。"
 
-#: src/Admin/AdminMenu.php:232
+#: src/Admin/AdminMenu.php:236
 msgid "This report lives here rather than under FluentCart → Reports because FluentCart 1.6 has no way to register a report page: its report screens are compiled Vue components and the only report filters it exposes belong to the traffic-source report. Everything below is read straight from the orders table, so the numbers match what you see when you filter the Orders list by the same status."
 msgstr "這份報表放在這裡而不是 FluentCart → Reports，是因為 FluentCart 1.6 沒有註冊報表頁的機制：它的報表畫面是編譯過的 Vue 元件，對外開放的報表 filter 只作用於來源（UTM）報表。以下數字全部直接讀訂單資料表，所以會和你在訂單列表用同一個狀態篩選時看到的一致。"
 
-#: src/Admin/AdminMenu.php:250
+#: src/Admin/AdminMenu.php:254
 msgid "Orders placed from"
 msgstr "訂單成立日期從"
 
-#: src/Admin/AdminMenu.php:252
+#: src/Admin/AdminMenu.php:256
 msgid "to"
 msgstr "到"
 
-#: src/Admin/AdminMenu.php:254
+#: src/Admin/AdminMenu.php:258
 msgid "Refresh"
 msgstr "重新整理"
 
-#: src/Admin/AdminMenu.php:255
+#: src/Admin/AdminMenu.php:259
 msgid "All time"
 msgstr "全部期間"
 
-#: src/Admin/AdminMenu.php:260
+#: src/Admin/AdminMenu.php:264
 msgid "Workflow funnel"
 msgstr "流程漏斗"
 
-#: src/Admin/AdminMenu.php:261
+#: src/Admin/AdminMenu.php:265
 msgid "How many orders are sitting on each step right now, whatever date range is selected above. Click a number to open the Orders list."
 msgstr "目前停在每個步驟的訂單數，與上方日期範圍無關。點數字可以開啟訂單列表。"
 
-#: src/Admin/AdminMenu.php:265
+#: src/Admin/AdminMenu.php:269
 msgid "Orders and money per status, split by whether the money actually arrived. “Paid” means the payment status is paid, partially paid or partially refunded."
 msgstr "各狀態的訂單數與金額，依「錢是否真的進來」分欄。「已付款」指付款狀態為 paid、partially_paid 或 partially_refunded。"
 
-#: src/Admin/AdminMenu.php:267
 #: src/Admin/AdminMenu.php:271
-#: src/Admin/AdminMenu.php:276
+#: src/Admin/AdminMenu.php:275
 #: src/Admin/AdminMenu.php:280
+#: src/Admin/AdminMenu.php:284
 msgid "Download CSV"
 msgstr "下載 CSV"
 
-#: src/Admin/AdminMenu.php:273
+#: src/Admin/AdminMenu.php:277
 msgid "Time in each status"
 msgstr "各狀態停留時間"
 
-#: src/Admin/AdminMenu.php:274
+#: src/Admin/AdminMenu.php:278
 msgid "Measured from this plugin's own status history, and counting only stays that have ended — an order still sitting on a step has not finished its stay, so it is listed below instead."
 msgstr "資料來自本外掛自己的狀態歷程，且只計算已經結束的停留——還停在某個步驟的訂單尚未結束停留，會列在下方的逾時清單。"
 
-#: src/Admin/AdminMenu.php:278
+#: src/Admin/AdminMenu.php:282
 msgid "Stuck orders"
 msgstr "卡住的訂單"
 
-#: src/Admin/AdminMenu.php:298
+#: src/Admin/AdminMenu.php:302
 #: src/Admin/OrderWidget.php:146
 msgid "Order workflow"
 msgstr "訂單流程"
 
-#: src/Admin/AdminMenu.php:302
+#: src/Admin/AdminMenu.php:306
 msgid "Strict workflow — an order may only move to the next or previous step"
 msgstr "嚴格流程——訂單只能切換到下一個或上一個步驟"
 
-#: src/Admin/AdminMenu.php:306
+#: src/Admin/AdminMenu.php:310
 msgid "Skipping a step is refused with a message naming the step that was missed. Moving an order out of the workflow entirely — completing, cancelling or putting it on hold — is always allowed, and so is moving an order into the workflow from outside it."
 msgstr "跳階會被拒絕，並在訊息中說明漏掉哪一步。把訂單移出流程（完成、取消、改成待處理）永遠允許；從流程外進入流程也永遠允許。"
 
-#: src/Admin/AdminMenu.php:311
+#: src/Admin/AdminMenu.php:315
 msgid "Report an order as stuck after"
 msgstr "訂單停在同一步驟超過"
 
-#: src/Admin/AdminMenu.php:313
+#: src/Admin/AdminMenu.php:317
 msgid "day(s) on the same step"
 msgstr "天就列為卡住"
 
-#: src/Admin/AdminMenu.php:317
+#: src/Admin/AdminMenu.php:321
 #: src/Admin/OrderWidget.php:166
 msgid "Status history"
 msgstr "狀態歷程"
 
-#: src/Admin/AdminMenu.php:319
+#: src/Admin/AdminMenu.php:323
 msgid "Every status change is recorded from now on. Orders that changed status before this plugin was installed can be recovered from FluentCart's own activity log — it stores each change as a sentence, so this is best effort and lines it cannot read are skipped and counted."
 msgstr "從現在起每次狀態變更都會被記錄。安裝本外掛之前的變更可以從 FluentCart 自己的活動紀錄回填——它是用一句話記錄每次變更，所以只能盡力解析，讀不出來的行會被跳過並計數。"
 
-#: src/Admin/AdminMenu.php:322
+#: src/Admin/AdminMenu.php:326
 msgid "Import history from the activity log"
 msgstr "從活動紀錄回填歷程"
 
-#: src/Admin/AdminMenu.php:326
+#: src/Admin/AdminMenu.php:330
 msgid "Daily summary e-mail"
 msgstr "每日摘要信"
 
-#: src/Admin/AdminMenu.php:330
+#: src/Admin/AdminMenu.php:334
 msgid "Send a daily summary of the workflow and the stuck orders"
 msgstr "每天寄送流程概況與卡住訂單清單"
 
-#: src/Admin/AdminMenu.php:334
+#: src/Admin/AdminMenu.php:338
 msgid "Send it to"
 msgstr "寄送到"
 
-#: src/Admin/AdminMenu.php:338
+#: src/Admin/AdminMenu.php:342
 msgid "Sent once a day by WP-Cron, with a catch-up on the next admin page load if cron did not fire — which on a quiet shop it often does not. Save your changes before sending a test."
 msgstr "由 WP-Cron 每天寄一次；若 cron 沒有觸發（流量少的商店很常發生），會在下次進後台時補寄。測試寄送前請先儲存設定。"
 
-#: src/Admin/AdminMenu.php:341
+#: src/Admin/AdminMenu.php:345
 msgid "Send one now"
 msgstr "立刻寄一封"
 
-#: src/Admin/AdminMenu.php:344
+#: src/Admin/AdminMenu.php:348
 msgid "Payment behaviour"
 msgstr "付款後行為"
 
-#: src/Admin/AdminMenu.php:348
+#: src/Admin/AdminMenu.php:352
 msgid "Restore custom order statuses that FluentCart overwrites when a payment is recorded"
 msgstr "當 FluentCart 因收到款項覆寫自訂訂單狀態時，自動還原"
 
-#: src/Admin/AdminMenu.php:352
+#: src/Admin/AdminMenu.php:356
 msgid "Applies per status, to the ones set to “Keep after payment”. Switch this off to let FluentCart move every paid order to Processing as it normally would."
 msgstr "只作用於設為「付款後保留」的狀態。關閉後，所有已付款訂單都會照 FluentCart 原本的行為變成「處理中」。"
 
-#: src/Admin/AdminMenu.php:355
+#: src/Admin/AdminMenu.php:359
 msgid "Before you deactivate"
 msgstr "停用前請先確認"
 
-#: src/Admin/AdminMenu.php:357
+#: src/Admin/AdminMenu.php:361
 msgid "Deactivating this plugin does not change a single order row — orders sitting on a custom status keep it, and FluentCart simply shows the raw slug. To clear them out first, move each custom status's orders to a built-in one with the Move button on its row."
 msgstr "停用本外掛不會更動任何一筆訂單資料——停在自訂狀態的訂單會保留原值，FluentCart 只會直接顯示代碼。若要先清空，請用各狀態列上的「搬移訂單」按鈕把訂單改到內建狀態。"
 
-#: src/Admin/AdminMenu.php:361
+#: src/Admin/AdminMenu.php:365
 msgid "Export / import"
 msgstr "匯出／匯入"
 
-#: src/Admin/AdminMenu.php:363
+#: src/Admin/AdminMenu.php:367
 msgid "Download JSON"
 msgstr "下載 JSON"
 
-#: src/Admin/AdminMenu.php:366
+#: src/Admin/AdminMenu.php:370
 msgid "Paste an exported file to replace every status below:"
 msgstr "貼上匯出的檔案內容，以取代下方所有狀態設定："
 
-#: src/Admin/AdminMenu.php:370
+#: src/Admin/AdminMenu.php:374
 msgid "Import"
 msgstr "匯入"
 
-#: src/Admin/AdminMenu.php:380
-#: src/Admin/AdminMenu.php:399
+#: src/Admin/AdminMenu.php:384
+#: src/Admin/AdminMenu.php:403
 msgid "Move orders"
 msgstr "搬移訂單"
 
-#: src/Admin/AdminMenu.php:381
+#: src/Admin/AdminMenu.php:385
 msgid "Cancel"
 msgstr "取消"
 
-#: src/Admin/AdminMenu.php:393
+#: src/Admin/AdminMenu.php:397
 msgid "Saving…"
 msgstr "儲存中…"
 
-#: src/Admin/AdminMenu.php:394
-#: src/Rest/StatusController.php:158
+#: src/Admin/AdminMenu.php:398
+#: src/Rest/StatusController.php:168
 msgid "Statuses saved."
 msgstr "狀態已儲存。"
 
-#: src/Admin/AdminMenu.php:395
+#: src/Admin/AdminMenu.php:399
 msgid "Could not load the statuses."
 msgstr "無法載入狀態設定。"
 
-#: src/Admin/AdminMenu.php:396
+#: src/Admin/AdminMenu.php:400
 msgid "Could not save."
 msgstr "儲存失敗。"
 
-#: src/Admin/AdminMenu.php:397
+#: src/Admin/AdminMenu.php:401
 msgid "New status"
 msgstr "新狀態"
 
-#: src/Admin/AdminMenu.php:398
+#: src/Admin/AdminMenu.php:402
 msgid "Remove"
 msgstr "移除"
 
-#: src/Admin/AdminMenu.php:400
+#: src/Admin/AdminMenu.php:404
 msgid "Move up"
 msgstr "上移"
 
-#: src/Admin/AdminMenu.php:401
+#: src/Admin/AdminMenu.php:405
 msgid "Move down"
 msgstr "下移"
 
-#: src/Admin/AdminMenu.php:402
+#: src/Admin/AdminMenu.php:406
 msgid "Selectable in the admin"
 msgstr "可在後台選擇"
 
-#: src/Admin/AdminMenu.php:404
+#: src/Admin/AdminMenu.php:408
 msgid "Colour hex code"
 msgstr "顏色色碼"
 
-#: src/Admin/AdminMenu.php:405
+#: src/Admin/AdminMenu.php:409
 msgid "Colour picker"
 msgstr "顏色選擇器"
 
-#: src/Admin/AdminMenu.php:408
+#: src/Admin/AdminMenu.php:412
 msgid "Enabled"
 msgstr "啟用"
 
-#: src/Admin/AdminMenu.php:409
+#: src/Admin/AdminMenu.php:413
 msgid "Description"
 msgstr "說明"
 
-#: src/Admin/AdminMenu.php:410
+#: src/Admin/AdminMenu.php:414
 msgid "Any order"
 msgstr "所有訂單"
 
-#: src/Admin/AdminMenu.php:411
+#: src/Admin/AdminMenu.php:415
 msgid "Paid orders only"
 msgstr "僅已付款訂單"
 
-#: src/Admin/AdminMenu.php:412
+#: src/Admin/AdminMenu.php:416
 msgid "Unpaid orders only"
 msgstr "僅未付款訂單"
 
-#: src/Admin/AdminMenu.php:413
+#: src/Admin/AdminMenu.php:417
 msgid "Keep this status"
 msgstr "保留此狀態"
 
-#: src/Admin/AdminMenu.php:414
+#: src/Admin/AdminMenu.php:418
 msgid "Let FluentCart set Processing"
 msgstr "交由 FluentCart 改成處理中"
 
 #. translators: %d: number of orders currently using this status
-#: src/Admin/AdminMenu.php:416
+#: src/Admin/AdminMenu.php:426
 #, php-format
 msgid "This status is still on %d order(s). Move them to another status before removing it."
 msgstr "仍有 %d 筆訂單使用這個狀態，請先把它們搬到其他狀態再移除。"
 
 #. translators: %s: status label
-#: src/Admin/AdminMenu.php:418
+#: src/Admin/AdminMenu.php:428
 #, php-format
 msgid "Remove “%s”? Nothing is written until you press Save changes."
 msgstr "確定要移除「%s」嗎？在您按下「儲存變更」之前不會寫入任何資料。"
 
 #. translators: 1: number of orders, 2: status label
-#: src/Admin/AdminMenu.php:420
+#: src/Admin/AdminMenu.php:430
 #, php-format
 msgid "Move the %1$d order(s) on “%2$s” to:"
 msgstr "把「%2$s」上的 %1$d 筆訂單搬到："
 
-#: src/Admin/AdminMenu.php:421
+#: src/Admin/AdminMenu.php:431
 msgid "Moving orders…"
 msgstr "搬移訂單中…"
 
-#: src/Admin/AdminMenu.php:422
+#: src/Admin/AdminMenu.php:432
 msgid "Replace every status with the contents of this file?"
 msgstr "要用這個檔案的內容取代目前所有狀態設定嗎？"
 
-#: src/Admin/AdminMenu.php:423
+#: src/Admin/AdminMenu.php:433
 msgid "Could not import that file."
 msgstr "無法匯入這個檔案。"
 
-#: src/Admin/AdminMenu.php:424
+#: src/Admin/AdminMenu.php:434
 msgid "No custom statuses yet."
 msgstr "尚未建立自訂狀態。"
 
-#: src/Admin/AdminMenu.php:425
+#: src/Admin/AdminMenu.php:435
 msgid "No orders are currently using a custom status."
 msgstr "目前沒有訂單使用自訂狀態。"
 
-#: src/Admin/AdminMenu.php:426
+#: src/Admin/AdminMenu.php:436
 msgid "Orders currently using a custom status:"
 msgstr "目前使用自訂狀態的訂單："
 
-#: src/Admin/AdminMenu.php:427
+#: src/Admin/AdminMenu.php:437
 msgid "Shown to staff and customers"
 msgstr "後台與前台都會看到的名稱"
 
-#: src/Admin/AdminMenu.php:428
+#: src/Admin/AdminMenu.php:438
 msgid "stored_value"
 msgstr "stored_value"
 
-#: src/Admin/AdminMenu.php:429
+#: src/Admin/AdminMenu.php:439
 msgid "You have unsaved changes."
 msgstr "有尚未儲存的變更。"
 
-#: src/Admin/AdminMenu.php:432
+#: src/Admin/AdminMenu.php:442
 msgid "Leave the shipping status alone"
 msgstr "不更動出貨狀態"
 
-#: src/Admin/AdminMenu.php:433
+#: src/Admin/AdminMenu.php:443
 msgid "Also set the shipping status to"
 msgstr "同時把出貨狀態設為"
 
-#: src/Admin/AdminMenu.php:434
+#: src/Admin/AdminMenu.php:444
 msgid "Paid — set by FluentCart"
 msgstr "已付款——由 FluentCart 寫入"
 
-#: src/Admin/AdminMenu.php:435
+#: src/Admin/AdminMenu.php:445
 msgid "Add the standard workflow steps? Anything you have already set up is left alone."
 msgstr "要加入標準流程的步驟嗎？已經設定好的內容不會被更動。"
 
-#: src/Admin/AdminMenu.php:436
+#: src/Admin/AdminMenu.php:446
 msgid "Creating the workflow…"
 msgstr "建立流程中…"
 
-#: src/Admin/AdminMenu.php:437
+#: src/Admin/AdminMenu.php:447
 msgid "Read FluentCart's activity log and rebuild the imported history? Changes recorded since the plugin was installed are kept as they are."
 msgstr "要讀取 FluentCart 的活動紀錄並重建回填的歷程嗎？外掛安裝後自行記錄的變更不會被更動。"
 
-#: src/Admin/AdminMenu.php:438
+#: src/Admin/AdminMenu.php:448
 msgid "Reading the activity log…"
 msgstr "讀取活動紀錄中…"
 
 #. translators: %d: number of rows in the status history table
-#: src/Admin/AdminMenu.php:440
+#: src/Admin/AdminMenu.php:450
 #, php-format
 msgid "%d status change(s) recorded."
 msgstr "已記錄 %d 筆狀態變更。"
 
-#: src/Admin/AdminMenu.php:441
+#: src/Admin/AdminMenu.php:451
 msgid "Sending…"
 msgstr "寄送中…"
 
-#: src/Admin/AdminMenu.php:442
+#: src/Admin/AdminMenu.php:452
 msgid "Loading the report…"
 msgstr "載入報表中…"
 
-#: src/Admin/AdminMenu.php:443
+#: src/Admin/AdminMenu.php:453
 msgid "Could not load the report."
 msgstr "無法載入報表。"
 
-#: src/Admin/AdminMenu.php:444
+#: src/Admin/AdminMenu.php:454
 #: src/Reports/CsvExporter.php:41
 #: src/Reports/CsvExporter.php:78
 #: src/Reports/CsvExporter.php:111
 msgid "Status"
 msgstr "狀態"
 
-#: src/Admin/AdminMenu.php:445
+#: src/Admin/AdminMenu.php:455
 #: src/Pipeline/Template.php:110
 #: src/Pipeline/Template.php:117
 #: src/Pipeline/Template.php:183
@@ -516,77 +516,77 @@ msgstr "狀態"
 msgid "Paid"
 msgstr "已付款"
 
-#: src/Admin/AdminMenu.php:446
+#: src/Admin/AdminMenu.php:456
 msgid "Unpaid"
 msgstr "未付款"
 
-#: src/Admin/AdminMenu.php:447
+#: src/Admin/AdminMenu.php:457
 msgid "Total"
 msgstr "合計"
 
-#: src/Admin/AdminMenu.php:449
+#: src/Admin/AdminMenu.php:459
 msgid "Amount"
 msgstr "金額"
 
-#: src/Admin/AdminMenu.php:450
+#: src/Admin/AdminMenu.php:460
 #: src/Reports/CsvExporter.php:113
 msgid "Completed stays"
 msgstr "已結束的停留次數"
 
-#: src/Admin/AdminMenu.php:451
+#: src/Admin/AdminMenu.php:461
 msgid "Average"
 msgstr "平均"
 
-#: src/Admin/AdminMenu.php:452
+#: src/Admin/AdminMenu.php:462
 msgid "Longest"
 msgstr "最長"
 
-#: src/Admin/AdminMenu.php:453
+#: src/Admin/AdminMenu.php:463
 #: src/Reports/CsvExporter.php:77
 msgid "Order"
 msgstr "訂單"
 
-#: src/Admin/AdminMenu.php:454
+#: src/Admin/AdminMenu.php:464
 msgid "On this step since"
 msgstr "進入此步驟時間"
 
-#: src/Admin/AdminMenu.php:455
+#: src/Admin/AdminMenu.php:465
 msgid "Days"
 msgstr "天數"
 
-#: src/Admin/AdminMenu.php:456
+#: src/Admin/AdminMenu.php:466
 msgid "No orders in this range."
 msgstr "這個期間沒有訂單。"
 
-#: src/Admin/AdminMenu.php:457
+#: src/Admin/AdminMenu.php:467
 msgid "No completed stays yet — a status needs to have been left at least once before it can be timed."
 msgstr "還沒有已結束的停留——狀態至少要被離開過一次才能計時。"
 
 #. translators: %d: threshold in days
-#: src/Admin/AdminMenu.php:459
+#: src/Admin/AdminMenu.php:469
 #, php-format
 msgid "Nothing has been on the same step for more than %d day(s)."
 msgstr "沒有訂單停在同一步驟超過 %d 天。"
 
-#: src/Admin/AdminMenu.php:460
+#: src/Admin/AdminMenu.php:470
 msgid "days"
 msgstr "天"
 
-#: src/Admin/AdminMenu.php:461
+#: src/Admin/AdminMenu.php:471
 msgid "hours"
 msgstr "小時"
 
-#: src/Admin/AdminMenu.php:462
+#: src/Admin/AdminMenu.php:472
 msgid "min"
 msgstr "分鐘"
 
 #. translators: %s: comma-separated currency codes
-#: src/Admin/AdminMenu.php:464
+#: src/Admin/AdminMenu.php:474
 #, php-format
 msgid "This store has orders in more than one currency (%s). The amounts below are a plain sum of the stored values and are not converted."
 msgstr "這個商店有一種以上的幣別（%s）。下方金額是直接加總儲存值，沒有做匯率換算。"
 
-#: src/Admin/AdminMenu.php:465
+#: src/Admin/AdminMenu.php:475
 msgid "No status history has been recorded yet, so the timings below are empty. Import the history from the activity log on the Tools tab, or wait for the next status change."
 msgstr "目前還沒有任何狀態歷程，所以下方的時間是空的。可以到「工具」分頁從活動紀錄回填，或等下一次狀態變更。"
 
@@ -598,12 +598,12 @@ msgstr "這筆訂單經過的每個訂單狀態與出貨狀態，以及各自停
 msgid "new order"
 msgstr "新訂單"
 
-#: src/Admin/AdminMenu.php:244
+#: src/Admin/AdminMenu.php:248
 #: src/Admin/OrderWidget.php:355
 msgid "Shipping status"
 msgstr "出貨狀態"
 
-#: src/Admin/AdminMenu.php:240
+#: src/Admin/AdminMenu.php:244
 #: src/Admin/OrderWidget.php:356
 msgid "Order status"
 msgstr "訂單狀態"
@@ -621,13 +621,13 @@ msgid "stayed %s"
 msgstr "停留了 %s"
 
 #. translators: 1: required FluentCart version, 2: installed FluentCart version
-#: src/Bootstrap.php:115
+#: src/Bootstrap.php:130
 #, php-format
 msgid "YS FluentCart Order Statuses needs FluentCart %1$s or newer. FluentCart %2$s is installed, so custom statuses are switched off. Orders already sitting on a custom status keep their value."
 msgstr "YS FluentCart Order Statuses 需要 FluentCart %1$s 或更新版本，目前安裝的是 %2$s，因此自訂狀態已停用。已停在自訂狀態的訂單會保留原值。"
 
 #. translators: %s: required FluentCart version
-#: src/Bootstrap.php:121
+#: src/Bootstrap.php:136
 #, php-format
 msgid "YS FluentCart Order Statuses needs FluentCart %s or newer to be active. Custom statuses are switched off until then."
 msgstr "YS FluentCart Order Statuses 需要啟用 FluentCart %s 或更新版本，在那之前自訂狀態不會生效。"
@@ -894,79 +894,79 @@ msgid "%d workflow step was added."
 msgid_plural "%d workflow steps were added."
 msgstr[0] "已新增 %d 個流程步驟。"
 
-#: src/Rest/StatusController.php:128
+#: src/Rest/StatusController.php:131
 msgid "No settings were supplied."
 msgstr "沒有收到任何設定內容。"
 
 #: src/Rest/ChangeController.php:135
-#: src/Rest/StatusController.php:186
+#: src/Rest/StatusController.php:196
 msgid "Unknown status axis."
 msgstr "未知的狀態軸。"
 
-#: src/Rest/StatusController.php:190
+#: src/Rest/StatusController.php:200
 msgid "Pick a different status to move these orders to."
 msgstr "請選擇另一個要搬移到的狀態。"
 
-#: src/Rest/StatusController.php:194
+#: src/Rest/StatusController.php:204
 msgid "That target status does not exist."
 msgstr "目標狀態不存在。"
 
-#: src/Rest/StatusController.php:208
+#: src/Rest/StatusController.php:218
 msgid "Shipping status migrated"
 msgstr "出貨狀態已搬移"
 
-#: src/Rest/StatusController.php:209
+#: src/Rest/StatusController.php:219
 msgid "Order status migrated"
 msgstr "訂單狀態已搬移"
 
 #. translators: 1: old status label, 2: new status label
-#: src/Rest/StatusController.php:212
+#: src/Rest/StatusController.php:222
 #, php-format
 msgid "The custom status %1$s was removed. This order was moved to %2$s."
 msgstr "自訂狀態 %1$s 已被移除，本訂單改為 %2$s。"
 
 #. translators: 1: number of orders, 2: target status label
-#: src/Rest/StatusController.php:226
+#: src/Rest/StatusController.php:236
 #, php-format
 msgid "%1$d order moved to %2$s."
 msgid_plural "%1$d orders moved to %2$s."
 msgstr[0] "已把 %1$d 筆訂單搬到 %2$s。"
 
-#: src/Rest/StatusController.php:264
+#: src/Rest/StatusController.php:278
 msgid "That does not look like an exported status file."
 msgstr "這看起來不是匯出的狀態設定檔。"
 
 #. translators: 1: custom order statuses, 2: custom shipping statuses
-#: src/Rest/StatusController.php:285
+#: src/Rest/StatusController.php:311
 #, php-format
 msgid "Imported %1$d order statuses and %2$d shipping statuses."
 msgstr "已匯入 %1$d 個訂單狀態與 %2$d 個出貨狀態。"
 
 #. translators: 1: slug, 2: maximum length
-#: src/Rest/StatusController.php:403
+#: src/Rest/StatusController.php:429
 #, php-format
 msgid "“%1$s” is too long — a status slug is stored in a VARCHAR(%2$d) column, so it must be %2$d characters or fewer."
 msgstr "「%1$s」太長了——狀態代碼存在 VARCHAR(%2$d) 欄位，最多只能 %2$d 個字元。"
 
 #. translators: %s: slug
-#: src/Rest/StatusController.php:411
+#: src/Rest/StatusController.php:437
 #, php-format
 msgid "“%s” is one of FluentCart's own statuses. Rename it on the Built-in labels tab instead of redefining it."
 msgstr "「%s」是 FluentCart 內建的狀態。請到「內建狀態名稱」分頁改它的顯示名稱，而不是重新定義它。"
 
 #. translators: %s: slug
-#: src/Rest/StatusController.php:418
+#: src/Rest/StatusController.php:444
 #, php-format
 msgid "“%s” is used twice. Each slug must be unique."
 msgstr "「%s」重複了，每個代碼必須唯一。"
 
 #. translators: %s: slug
-#: src/Rest/StatusController.php:425
+#: src/Rest/StatusController.php:451
 #, php-format
 msgid "“%s” is not a valid slug — use lowercase letters, digits, underscores and dashes, starting with a letter."
 msgstr "「%s」不是有效的代碼——請用小寫英文字母、數字、底線與連字號，並以字母開頭。"
 
-#: src/Rest/StatusController.php:431
+#: src/Rest/StatusController.php:457
 msgid "Every status needs a slug."
 msgstr "每個狀態都必須有代碼。"
 
@@ -1015,63 +1015,63 @@ msgstr "無需出貨"
 msgid "Your session expired. Please reload the page and try again."
 msgstr "登入階段已過期，請重新整理頁面後再試一次。"
 
-#: src/Admin/AdminMenu.php:176
+#: src/Admin/AdminMenu.php:180
 msgid "Nothing in FluentCart writes the shipping status automatically — it changes only when someone changes it, and FluentCart’s own “Change Shipping Status” dialog works on a paid order. This is the safest place for a multi-step fulfilment workflow, and the Tools tab will build one for you."
 msgstr "FluentCart 不會自動寫入出貨狀態——只有人手動更改時才會變動，而且 FluentCart 自己的「變更出貨狀態」對話框在已付款的訂單上也能用。這是放多步驟出貨流程最安全的地方，「工具」分頁可以一鍵幫你建立。"
 
-#: src/Admin/AdminMenu.php:181
+#: src/Admin/AdminMenu.php:185
 msgid "The fulfilment workflow, in order"
 msgstr "出貨流程（依順序）"
 
-#: src/Admin/AdminMenu.php:183
+#: src/Admin/AdminMenu.php:187
 msgid "Step 1 is the built-in “Unshipped”, which every physical order starts on, and the last step is the built-in “Shipped”, which is the value FluentCart checks when it marks each item fulfilled. The steps between them are the custom statuses below, in the order they are listed here — and that is the order FluentCart’s own shipping dialog offers them in."
 msgstr "第 1 步是內建的「未出貨」，每筆實體商品訂單都從這裡開始；最後一步是內建的「已出貨」，FluentCart 就是依這個值把每個品項標記為已履行。中間的步驟就是下方的自訂狀態，順序照這裡的排列——FluentCart 自己的出貨對話框也會照這個順序列出它們。"
 
-#: src/Admin/AdminMenu.php:237
+#: src/Admin/AdminMenu.php:241
 msgid "Workflow to report on:"
 msgstr "報表對象流程："
 
-#: src/Admin/AdminMenu.php:246
+#: src/Admin/AdminMenu.php:250
 msgid "Chooses which workflow the funnel, the timings and the stuck list describe. Both status tables below are always shown."
 msgstr "決定漏斗、停留時間與卡住清單描述的是哪一條流程。下方兩張狀態表永遠都會顯示。"
 
-#: src/Admin/AdminMenu.php:284
+#: src/Admin/AdminMenu.php:288
 msgid "Which axis should carry your workflow?"
 msgstr "你的流程該放在哪一個軸？"
 
-#: src/Admin/AdminMenu.php:287
+#: src/Admin/AdminMenu.php:291
 msgid "If your workflow starts after the customer has paid — made, packed, booked, shipped — put it on the shipping status. FluentCart never writes that column by itself, and its own “Change Shipping Status” dialog can drive it on a paid order. The order status is the other way round: FluentCart rewrites it to “Processing” whenever a payment lands, and on a paid order it offers no status control at all, so this plugin has to supply both the guard and the control."
 msgstr "如果你的流程是從顧客付款之後才開始——製作、包裝、排單、出貨——請放在出貨狀態。FluentCart 永遠不會自己寫入那個欄位，而且它自己的「變更出貨狀態」對話框在已付款的訂單上就能操作。訂單狀態剛好相反：每次收到款項 FluentCart 都會把它改寫成「處理中」，而且已付款的訂單上完全沒有可以改狀態的控制項，所以這個外掛必須同時補上保護機制與控制項。"
 
-#: src/Admin/AdminMenu.php:291
+#: src/Admin/AdminMenu.php:295
 msgid "Create the fulfilment workflow (shipping axis)"
 msgstr "建立出貨流程（出貨狀態軸）"
 
-#: src/Admin/AdminMenu.php:292
+#: src/Admin/AdminMenu.php:296
 msgid "Adds the shipping statuses “In production” and “Shipment scheduled” between the built-in Unshipped and Shipped, and suggests names for the built-in statuses around them. Nothing you have already set up is overwritten."
 msgstr "在內建的「未出貨」與「已出貨」之間加入「下生產」與「排定出貨」兩個出貨狀態，並為周圍的內建狀態建議名稱。已經設定好的內容不會被覆寫。"
 
-#: src/Admin/AdminMenu.php:295
+#: src/Admin/AdminMenu.php:299
 msgid "The order-axis version of the same workflow is on the Order statuses tab. Use it when the states you need really are states of the order rather than of the delivery — “awaiting artwork approval”, say — or when you want them on the status your customers already see."
 msgstr "同一條流程的訂單狀態版本在「訂單狀態」分頁。當你需要的狀態確實屬於訂單本身而不是配送——例如「等待稿件確認」——或是你希望顧客在既有的訂單狀態上就能看到時，再使用它。"
 
-#: src/Admin/AdminMenu.php:468
+#: src/Admin/AdminMenu.php:478
 msgid "Add the fulfilment workflow to the shipping status? Anything you have already set up is left alone."
 msgstr "要把出貨流程加入出貨狀態嗎？已經設定好的內容不會被更動。"
 
-#: src/Admin/AdminMenu.php:469
+#: src/Admin/AdminMenu.php:479
 msgid "Unshipped — where every physical order starts"
 msgstr "未出貨——每筆實體商品訂單的起點"
 
-#: src/Admin/AdminMenu.php:470
+#: src/Admin/AdminMenu.php:480
 msgid "Shipped — FluentCart marks the items fulfilled here"
 msgstr "已出貨——FluentCart 在這裡把品項標記為已履行"
 
-#: src/Admin/AdminMenu.php:471
+#: src/Admin/AdminMenu.php:481
 msgid "order status"
 msgstr "訂單狀態"
 
-#: src/Admin/AdminMenu.php:472
+#: src/Admin/AdminMenu.php:482
 msgid "shipping status"
 msgstr "出貨狀態"
 
@@ -1132,7 +1132,7 @@ msgid "no status"
 msgstr "無狀態"
 
 #. translators: %s: shipping status label
-#: src/Admin/SavedViews.php:227
+#: src/Admin/SavedViews.php:237
 #, php-format
 msgid "%s · shipping"
 msgstr "%s · 出貨"
@@ -1183,3 +1183,157 @@ msgstr "訂單狀態已變更為 %s。"
 #: src/Rest/ChangeController.php:228
 msgid "This version of FluentCart does not expose the order status API."
 msgstr "這個版本的 FluentCart 沒有提供訂單狀態 API。"
+
+#: src/Admin/AdminMenu.php:419
+msgid "E-mail"
+msgstr "郵件"
+
+#: src/Admin/AdminMenu.php:420
+msgid "off"
+msgstr "關閉"
+
+#: src/Admin/AdminMenu.php:421
+msgid "customer"
+msgstr "顧客"
+
+#: src/Admin/AdminMenu.php:422
+msgid "admin"
+msgstr "管理員"
+
+#: src/Admin/AdminMenu.php:423
+msgid "edit in Email Notifications"
+msgstr "到「Email 通知」設定"
+
+#: src/Admin/AdminMenu.php:424
+msgid "save this status first"
+msgstr "請先儲存此狀態"
+
+#: src/Email/NotificationRegistry.php:214
+msgid "Custom Order Statuses"
+msgstr "自訂訂單狀態"
+
+#. translators: %s: shipping status label
+#: src/Email/NotificationRegistry.php:228
+#, php-format
+msgid "Notify admin when the shipping status changes to “%s”"
+msgstr "出貨狀態變更為「%s」時通知管理員"
+
+#. translators: %s: order status label
+#: src/Email/NotificationRegistry.php:233
+#, php-format
+msgid "Notify admin when the order status changes to “%s”"
+msgstr "訂單狀態變更為「%s」時通知管理員"
+
+#. translators: %s: shipping status label
+#: src/Email/NotificationRegistry.php:241
+#, php-format
+msgid "Send mail to customer when the shipping status changes to “%s”"
+msgstr "出貨狀態變更為「%s」時寄信給顧客"
+
+#. translators: %s: order status label
+#: src/Email/NotificationRegistry.php:246
+#, php-format
+msgid "Send mail to customer when the order status changes to “%s”"
+msgstr "訂單狀態變更為「%s」時寄信給顧客"
+
+#: src/Email/NotificationRegistry.php:260
+msgid "This is a custom shipping status added by YS FluentCart Order Statuses. The status itself is managed on FluentCart → Order Statuses → Shipping statuses."
+msgstr "這是 YS FluentCart Order Statuses 新增的自訂出貨狀態。狀態本身請在 FluentCart → 訂單狀態 → 出貨狀態設定。"
+
+#: src/Email/NotificationRegistry.php:261
+msgid "This is a custom order status added by YS FluentCart Order Statuses. The status itself is managed on FluentCart → Order Statuses → Order statuses."
+msgstr "這是 YS FluentCart Order Statuses 新增的自訂訂單狀態。狀態本身請在 FluentCart → 訂單狀態 → 訂單狀態設定。"
+
+#. translators: %s: status label
+#: src/Email/NotificationRegistry.php:266
+#, php-format
+msgid "The shop admin address is mailed every time an order moves to “%s”."
+msgstr "每當訂單進入「%s」，就寄一封信到商店管理員信箱。"
+
+#. translators: %s: status label
+#: src/Email/NotificationRegistry.php:271
+#, php-format
+msgid "The customer is mailed every time their order moves to “%s”."
+msgstr "每當訂單進入「%s」，就寄一封信給顧客。"
+
+#: src/Email/NotificationRegistry.php:282
+msgid "This status also sets the shipping status to “Shipped”, so FluentCart’s own “Order has been shipped” mail fires too. Switch one of the two off if the customer should only get one."
+msgstr "此狀態會同時把出貨狀態設為「已出貨」，因此 FluentCart 內建的「訂單已出貨」信件也會一起寄出。若只想讓顧客收到一封，請關掉其中一封。"
+
+#. translators: %s: status label
+#: src/Email/NotificationRegistry.php:297
+#, php-format
+msgid "Order #{{order.invoice_no}} is now %s"
+msgstr "訂單 #{{order.invoice_no}} 已進入 %s"
+
+#. translators: %s: status label
+#: src/Email/NotificationRegistry.php:302
+#, php-format
+msgid "Order #{{order.invoice_no}} — %s"
+msgstr "訂單 #{{order.invoice_no}} — %s"
+
+#. translators: %s: status label
+#: src/Email/NotificationRegistry.php:344
+#, php-format
+msgid "Your order is now %s"
+msgstr "您的訂單已進入 %s"
+
+#. translators: %s: status label
+#: src/Email/NotificationRegistry.php:350
+#, php-format
+msgid "Order #{{order.invoice_no}} for {{order.customer.full_name}} is now %s."
+msgstr "{{order.customer.full_name}} 的訂單 #{{order.invoice_no}} 已進入 %s。"
+
+#. translators: %s: status label
+#: src/Email/NotificationRegistry.php:355
+#, php-format
+msgid "Hello {{order.customer.full_name}}, the status of your order #{{order.invoice_no}} has changed to %s."
+msgstr "{{order.customer.full_name}} 您好，您的訂單 #{{order.invoice_no}} 狀態已變更為 %s。"
+
+#: src/Email/NotificationRegistry.php:379
+msgid "Message content"
+msgstr "信件內容"
+
+#: src/Email/NotificationRegistry.php:380
+msgid "Shown inside FluentCart’s own e-mail template, above the order summary. Shortcodes such as {{order.invoice_no}} work here."
+msgstr "顯示在 FluentCart 內建的信件版型裡、訂單明細上方。這裡可以使用 {{order.invoice_no}} 等短碼。"
+
+#: src/Email/NotificationRegistry.php:384
+msgid "Heading"
+msgstr "標題"
+
+#: src/Email/NotificationRegistry.php:385
+msgid "Your order is now …"
+msgstr "您的訂單已進入……"
+
+#: src/Email/NotificationRegistry.php:386
+msgid "One line, shown in bold at the top of the e-mail."
+msgstr "一行文字，以粗體顯示在信件最上方。"
+
+#: src/Email/NotificationRegistry.php:391
+msgid "Message"
+msgstr "內文"
+
+#: src/Email/NotificationRegistry.php:392
+msgid "Tell the customer what happens next…"
+msgstr "告訴顧客接下來會發生什麼……"
+
+#: src/Email/NotificationRegistry.php:393
+msgid "Each line becomes its own paragraph. Plain text only — HTML is stripped."
+msgstr "每一行會成為一個段落。只能輸入純文字，HTML 會被移除。"
+
+#: templates/email/status-changed.php:100
+msgid "Order Summary"
+msgstr "訂單明細"
+
+#: templates/email/status-changed.php:119
+msgid "Open the order in the FluentCart dashboard to see the full history."
+msgstr "到 FluentCart 後台開啟這筆訂單，即可看到完整歷程。"
+
+#: templates/email/status-changed.php:120
+msgid "You can follow your order at any time from your account."
+msgstr "您隨時可以在會員中心查看訂單進度。"
+
+#: templates/email/status-changed.php:122
+msgid "View order"
+msgstr "查看訂單"

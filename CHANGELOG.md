@@ -5,6 +5,80 @@ All notable changes to YS FluentCart Order Statuses.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] — 2026-09-12
+
+Every workflow step can now **send an e-mail** — inside FluentCart's own
+notification system rather than beside it. And the whole plugin is now tested
+against **FluentCart 1.6.0** as well as 1.6.3, because 1.6.0 is what production
+stores are running. Upgrading from 0.3.0 changes nothing about an existing
+configuration and sends no mail until somebody switches one on.
+
+### Added
+
+- **Per-status e-mail notifications, registered into FluentCart.** Every enabled
+  custom status contributes four rows to FluentCart → Settings → Email
+  Configuration → Notifications, grouped under *Custom Order Statuses*: a
+  customer mail and an admin copy, on whichever axis the status lives. They use
+  FluentCart's own on/off switch, sender, reply-to, template wrapper, footer,
+  preview and shortcode picker — this plugin adds no mail settings of its own.
+  **All four are off by default.**
+- **Two content fields in FluentCart's own editor** — a *Heading* and a
+  multi-line *Message*, declared as an `extra_fields` schema form
+  (`fluent_cart/email_notification_data`) and stored by this plugin
+  (`fluent_cart/email_notification_updated`), because core deliberately persists
+  nothing there. Both accept shortcodes. They exist because free FluentCart
+  strips `email_body` on save, so the body is otherwise not editable at all.
+- **A body template inside the plugin**, rendered by FluentCart's own view
+  renderer through `fluent_cart/email/template_view_path` (which accepts an
+  absolute path, so nothing is added to core's view directory): heading, the
+  message with one paragraph per line, the status badge in its configured
+  colour, the order summary, the delivery address on a physical order, and a
+  *View order* button — the customer's account page, or the admin order screen
+  for an admin copy. It derives its status from the template path rather than
+  from the event payload, which is what makes FluentCart's **preview** endpoint
+  render it correctly with a sample order and no status change.
+- **`YS_FCT_STATUS_DISABLE_EMAILS`** — one constant in `wp-config.php` that
+  stops every mail this plugin would send, for staging copies of production
+  data. Applied on `fluent_cart/should_send_email_notification`, and only ever
+  to this plugin's own notifications.
+- **Export and import carry the e-mail text**, under a top-level
+  `email_content` key beside `settings`. Settings schema version 3.
+- **An e-mail line on every status row** of the Order Statuses screen — whether
+  a mail is on and for whom, linking to FluentCart's notification screen. Read
+  only: FluentCart owns that switch, and a second one here would be a second
+  source of truth.
+- `tests/email-scenarios.php` (E0–E10) and `tests/EmailTest.php`. The scenario
+  suite never lets a mail reach `mail()` — it short-circuits `wp_mail()` on
+  `pre_wp_mail` and reads back what would have been sent.
+
+### Changed
+
+- **FluentCart 1.6.0 is now a tested target, not just a declared minimum.** All
+  five suites are run against a 1.6.0 site and a 1.6.3 site on every release.
+- The settings document reports schema version 3. A version-2 document (a 0.3
+  export) is read without a migration step, exactly as version 1 was.
+
+### Fixed
+
+- A multi-line message typed into FluentCart's notification editor arrived
+  flattened to a single line, because `EmailNotificationRequest::sanitize()`
+  runs `sanitize_text_field` over `settings.extra`. `Email\RequestCapture` takes
+  an unflattened copy on `rest_pre_dispatch`, before the request guard runs, and
+  the content store prefers it.
+
+### Notes
+
+- A custom order status with *Also set shipping status to* → *Shipped* makes
+  FluentCart's own "Order has been shipped" notification fire alongside this
+  plugin's. Both mails are correct; the notification's own description says so
+  on screen. Nothing is suppressed.
+- `fluent_cart/orders_list_filter_query` — which the 0.3 shipping-axis saved
+  views rely on — turned out **not** to be new in 1.6.3. It does not appear in a
+  source search for its literal name because `BaseFilter::get()` and
+  `::paginate()` compose it from `getFilterName()`; both call sites are
+  byte-identical in 1.6.0 and 1.6.3. The shipping-axis views therefore stay
+  registered on 1.6.0, verified end to end through a real list request on both.
+
 ## [0.3.0] — 2026-09-11
 
 The workflow can now be **driven**, not just declared. Measured on FluentCart
@@ -199,6 +273,7 @@ First release. Developed against FluentCart 1.6.3; minimum supported 1.6.0.
   settings unless `YS_FCT_STATUS_REMOVE_DATA` is defined.
 - Custom payment statuses are deliberately out of scope for v1.
 
+[0.4.0]: https://yangsheep.com.tw
 [0.3.0]: https://yangsheep.com.tw
 [0.2.0]: https://yangsheep.com.tw
 [0.1.0]: https://yangsheep.com.tw
