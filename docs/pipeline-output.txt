@@ -60,13 +60,13 @@
   ok   R1 one view per workflow step
   ok   R1 the view slug is namespaced
   ok   R1 the name carries the live count
-  ->   view names: ["In production (12)","Shipment scheduled (0)","Shipped (21)"]
-  ->   first view: {"id":"ys_status_in_production","slug":"ys_status_in_production","name":"In production (12)","description":"Paid, and the goods are being made.","is_public":1,"owner_id":0,"query_params":{"filter_type":"simple","search":"status = in_production"}}
+  ->   view names: ["In production (16)","Shipment scheduled (0)","Shipped (27)"]
+  ->   first view: {"id":"ys_status_in_production","slug":"ys_status_in_production","name":"In production (16)","description":"Paid, and the goods are being made.","is_public":1,"owner_id":0,"query_params":{"filter_type":"simple","search":"status = in_production"}}
   ok   R1 the orders list still answers
   ok   R1 the saved view answers
   ok   R1 and returns only that status
   ok   R1 the count matches the database
-  ->   saved view returned 21 order(s), all on shipped_done
+  ->   saved view returned 27 order(s), all on shipped_done
 
 # R2 — distribution, funnel and dwell match the database
   ok   R2 in_production paid count
@@ -88,7 +88,7 @@
   ok   R2 the funnel numbers the steps
   ok   R2 dwell time is reported for in_production
   ok   R2 dwell only counts stays that ended
-  ->   in_production: {"slug":"in_production","label":"In production","color":"#b45309","is_custom":true,"samples":40,"avg_days":0.63,"max_days":5}
+  ->   in_production: {"slug":"in_production","label":"In production","color":"#b45309","is_custom":true,"samples":52,"avg_days":0.67,"max_days":5}
   ok   R2 the dwell sample count matches a hand-written join
 
 # R3 — the stuck-order list
@@ -113,11 +113,11 @@
   ok   R5 at least one historic change was recovered
   ok   R5 across more than one order
   ok   R5 the table grew
-  ->   backfill: {"parsed":760,"skipped":153,"removed":758,"orders":429}
+  ->   backfill: {"parsed":778,"skipped":221,"removed":762,"orders":445}
   ok   R5 running it twice does not duplicate anything
   ok   R5 the second pass removes its own previous rows first
   ok   R5 hook-written rows were not touched
-  ->   history rows: backfill=760 hooks=153
+  ->   history rows: backfill=778 hooks=223
   ok   R5 the overdue order is overdue again
 
 # R6 — CSV export
@@ -126,19 +126,19 @@
   ok   R6 distribution has a filename
   ok   R6 distribution has a header and at least one row
   ->   distribution header: "Status","Slug","Custom","Paid orders","Paid amount (minor units)","Unpaid orders","Unpaid amount (minor units)","Total orders","Total amount (minor units)"
-  ->   distribution row 1:  "Paid","processing","no","33","198000","12","72000","45","270000"
+  ->   distribution row 1:  "Paid","processing","no","41","246000","16","96000","57","342000"
   ok   R6 dwell export answers
   ok   R6 dwell starts with a UTF-8 BOM
   ok   R6 dwell has a filename
   ok   R6 dwell has a header and at least one row
   ->   dwell header: "Status","Slug","Completed stays","Average days","Longest days"
-  ->   dwell row 1:  "Paid","processing","316","0","0"
+  ->   dwell row 1:  "Paid","processing","328","0","0"
   ok   R6 stalled export answers
   ok   R6 stalled starts with a UTF-8 BOM
   ok   R6 stalled has a filename
   ok   R6 stalled has a header and at least one row
   ->   stalled header: "Order","Status","Slug","Payment status","Total (minor units)","Currency","Entered status (UTC)","Days in status"
-  ->   stalled row 1:  "496","In production","in_production","paid","6000","USD","2026-09-06 10:16:49","5"
+  ->   stalled row 1:  "534","In production","in_production","paid","6000","USD","2026-09-06 10:24:22","5"
   ok   R6 an unknown report type is refused
 
 # R7 — the daily summary e-mail
@@ -155,8 +155,8 @@
   ok   R7 turning it off unschedules the event
 
 # Order ids
-{"P1":490,"P2":491,"P3":492,"P3b":493,"P4":494,"P5":495,"R3":496}
-history rows: 913
+{"P1":528,"P2":529,"P3":530,"P3b":531,"P4":532,"P5":533,"R3":534}
+history rows: 1001
 history table: wp_ys_fct_status_history
 
 PASS — 118 assertions.

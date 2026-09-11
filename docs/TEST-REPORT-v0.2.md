@@ -47,8 +47,8 @@ Assertions read the database row back afterwards, never the in-memory model. The
 browser checks below were done over real HTTP with the SPA's own nonce, in
 Chrome, logged in as the administrator.
 
-Order ids from the final run: P1 `490`, P2 `491`, P3 `492`, P3b `493`, P4 `494`,
-P5 `495`, R3 `496`.
+Order ids from the final run: P1 `528`, P2 `529`, P3 `530`, P3b `531`, P4 `532`,
+P5 `533`, R3 `534`.
 
 ---
 
@@ -89,7 +89,7 @@ three steps and the built-in label suggestions.
   `skipped`), and an operator-renamed step or label is never overwritten (unit
   tests, `tests/PipelineTest.php`).
 
-**Unpaid order refused.** Order `490` (`on-hold`, `pending`) asked for
+**Unpaid order refused.** Order `528` (`on-hold`, `pending`) asked for
 `in_production`:
 
 ```
@@ -98,7 +98,7 @@ HTTP 422  ys_fct_status_requirement
 This order has not been paid yet.
 ```
 
-DB afterwards: `490` is still `on-hold`. (The steps are `paid_only`, so "an
+DB afterwards: `528` is still `on-hold`. (The steps are `paid_only`, so "an
 unpaid order cannot see them" is enforced on the write — the dropdown itself is
 read once per page load before any order is open, as measured in 0.1 §2.2.)
 
@@ -106,13 +106,13 @@ Screenshot: `docs/screenshots/v0.2-01-order-statuses-workflow.png`.
 
 ### P2 — the whole workflow, on a paid physical order
 
-Order `491`. `mark-as-paid` → `processing` / `paid`. Then each step through
+Order `529`. `mark-as-paid` → `processing` / `paid`. Then each step through
 FluentCart's REST route, reading the row back each time:
 
 ```sql
 SELECT id, status, payment_status, shipping_status, fulfillment_type
-  FROM wp_fct_orders WHERE id = 491;
--- 491 | shipped_done | paid | shipped | physical
+  FROM wp_fct_orders WHERE id = 529;
+-- 529 | shipped_done | paid | shipped | physical
 ```
 
 * `in_production` and `ship_scheduled` left `shipping_status` on `unshipped`.
@@ -120,12 +120,12 @@ SELECT id, status, payment_status, shipping_status, fulfillment_type
   `fulfilled_quantity` follows core's logic:
 
 ```sql
-SELECT order_id, quantity, fulfilled_quantity FROM wp_fct_order_items WHERE order_id = 491;
--- 491 | 1 | 1
+SELECT order_id, quantity, fulfilled_quantity FROM wp_fct_order_items WHERE order_id = 529;
+-- 529 | 1 | 1
 ```
 
 * `fluent_cart/shipping_status_changed_to_shipped` fired (test listener recorded
-  `ship:shipped#491`), and so did
+  `ship:shipped#529`), and so did
   `fluent_cart/order_status_changed_to_shipped_done`.
 * Activity: *"Shipping status updated automatically — The order status Shipped is
   linked to a shipping status, so the shipping status was changed from
@@ -134,17 +134,17 @@ SELECT order_id, quantity, fulfilled_quantity FROM wp_fct_order_items WHERE orde
 
 ```sql
 SELECT id, axis, old_status, new_status, source, changed_at
-  FROM wp_ys_fct_status_history WHERE order_id = 491 ORDER BY changed_at, id;
--- 8365 | order    | on-hold        | processing     | hook   | 2026-09-11 10:16:32
--- 8366 | order    | processing     | in_production  | hook   | 2026-09-11 10:16:32
--- 8367 | order    | in_production  | ship_scheduled | hook   | 2026-09-11 10:16:32
--- 8368 | order    | ship_scheduled | shipped_done   | hook   | 2026-09-11 10:16:32
--- 8369 | shipping | unshipped      | shipped        | linked | 2026-09-11 10:16:34
+  FROM wp_ys_fct_status_history WHERE order_id = 529 ORDER BY changed_at, id;
+-- 11479 | order    | on-hold        | processing     | hook   | 2026-09-11 10:24:06
+-- 11480 | order    | processing     | in_production  | hook   | 2026-09-11 10:24:06
+-- 11481 | order    | in_production  | ship_scheduled | hook   | 2026-09-11 10:24:06
+-- 11482 | order    | ship_scheduled | shipped_done   | hook   | 2026-09-11 10:24:06
+-- 11483 | shipping | unshipped      | shipped        | linked | 2026-09-11 10:24:08
 ```
 
 ### P3 — strict workflow
 
-Order `492`, paid, on `in_production`, `pipeline_strict = yes`. Asking for
+Order `530`, paid, on `in_production`, `pipeline_strict = yes`. Asking for
 `shipped_done`:
 
 ```
@@ -155,9 +155,9 @@ Turn off strict order workflow on the Order Statuses screen to allow skipping.
 ```
 
 Confirmed twice: through `rest_do_request()` in the walkthrough, and **over real
-HTTP from the admin SPA's own page** with its nonce (`PUT
-/wp-json/fluent-cart/v2/orders/456/statuses`), which returned the same 422 and
-the same message.
+HTTP from the admin SPA's own page** with its own nonce — a `PUT` to
+`/wp-json/fluent-cart/v2/orders/<id>/statuses` for an order that was on *In
+production* at the time returned the same 422 with the same message.
 
 The second enforcement layer was checked directly: with that order in scope,
 `Status::getEditableOrderStatuses()` no longer contains `shipped_done` but still
@@ -165,16 +165,16 @@ contains `ship_scheduled` — so core's own write-side allow-list refuses the sk
 even on a path that never reaches the REST veto.
 
 Still allowed, and verified: one step forward, one step back, and `completed`
-(leaving the workflow). With strict off again, order `493` skipped
+(leaving the workflow). With strict off again, order `531` skipped
 `in_production → shipped_done` and landed on `shipped_done`.
 
 ### P4 — a digital order
 
-Order `494`, digital, paid (core auto-completed it to `completed`, as it does).
+Order `532`, digital, paid (core auto-completed it to `completed`, as it does).
 Moved to `shipped_done`:
 
 ```sql
--- 494 | shipped_done | paid | (empty) | digital
+-- 532 | shipped_done | paid | (empty) | digital
 ```
 
 The order status changed, the shipping status stayed empty, and the timeline
@@ -192,10 +192,10 @@ all. To reach "payment lands while the order is already on a workflow step",
 `in_production` was temporarily relaxed to `payment_requirement = any` and set
 back afterwards; nothing else about the mechanism was changed.
 
-Order `495`: set to `in_production` while unpaid, then `mark-as-paid`.
+Order `533`: set to `in_production` while unpaid, then `mark-as-paid`.
 
 ```sql
--- 495 | in_production | paid | unshipped | physical
+-- 533 | in_production | paid | unshipped | physical
 ```
 
 Activity: *"Custom order status kept — Payment was recorded. FluentCart set this
@@ -227,7 +227,7 @@ One view, as produced:
 {
   "id": "ys_status_in_production",
   "slug": "ys_status_in_production",
-  "name": "In production (12)",
+  "name": "In production (16)",
   "description": "Paid, and the goods are being made.",
   "is_public": 1,
   "owner_id": 0,
@@ -243,8 +243,9 @@ four (All / Completed / Processing / On Hold), so the three status views appear
 under **More views** — with their counts and descriptions. Verified in the
 browser; screenshots `v0.2-04-orders-saved-views.png` and
 `v0.2-05-saved-view-applied.png`. Clicking *In production* pushed
-`#/orders/?active_view=ys_status_in_production` and returned 5 rows, all *In
-Production*.
+`#/orders/?active_view=ys_status_in_production` and the table redrew with only
+*In Production* orders in it — the count matching the one in the view's own
+name.
 
 `query_params.filter_type` is **`simple`**, not `advanced`, and that is the
 load-bearing detail: `BaseFilter::applyAdvancedFilter()` opens with
@@ -254,7 +255,7 @@ store without FluentCart Pro would match **every** order. The simple expression
 and resolves to `WHERE status = '<slug>'`.
 
 Server side, `GET /fluent-cart/v2/orders?active_view=ys_status_shipped_done`
-returned 21 orders, all `shipped_done`, matching
+returned 27 orders, all `shipped_done`, matching
 `SELECT COUNT(*) FROM wp_fct_orders WHERE status = 'shipped_done'`.
 
 **`fluent_cart/orders_list` and unknown keys.** `ys_status_meta` is added to each
@@ -288,22 +289,22 @@ FROM wp_fct_orders
 WHERE status IN ('processing','in_production','ship_scheduled','shipped_done')
 GROUP BY status;
 
--- in_production  | 13 |  78000 |  0
--- processing     | 33 | 198000 | 12
--- shipped_done   | 21 | 126000 |  0
+-- in_production  | 17 | 102000 |  0
+-- processing     | 41 | 246000 | 16
+-- shipped_done   | 27 | 162000 |  0
 ```
 
 The report renders exactly those figures:
 
 ```
-1. Paid (processing)                 paid=33 unpaid=12 paid_amount=198000
-2. In production (in_production)     paid=13 unpaid=0  paid_amount=78000
-3. Shipment scheduled (ship_scheduled) paid=0 unpaid=0 paid_amount=0
-4. Shipped (shipped_done)            paid=21 unpaid=0  paid_amount=126000
+1. Paid (processing)                   paid=41 unpaid=16 paid_amount=246000
+2. In production (in_production)       paid=17 unpaid=0  paid_amount=102000
+3. Shipment scheduled (ship_scheduled) paid=0  unpaid=0  paid_amount=0
+4. Shipped (shipped_done)              paid=27 unpaid=0  paid_amount=162000
 ```
 
 The funnel follows the pipeline and numbers the steps 1–4. Dwell time for
-`in_production` came back as `samples=40, avg=0.63 days, max=5 days`, and the
+`in_production` came back as `samples=52, avg=0.67 days, max=5 days`, and the
 sample count was checked against the same self-join written by hand:
 
 ```sql
@@ -319,19 +320,19 @@ Screenshot: `v0.2-02-order-status-report.png`.
 
 ### R3 — stuck orders
 
-Order `496`, paid, on `in_production`, is **not** in the list when new. Its
+Order `534`, paid, on `in_production`, is **not** in the list when new. Its
 history row was then backdated five days —
 
 ```sql
 UPDATE wp_ys_fct_status_history SET changed_at = <now - 5 days>
- WHERE order_id = 496 AND new_status = 'in_production';
+ WHERE order_id = 534 AND new_status = 'in_production';
 ```
 
 — and it appears immediately, with the right status and `days = 5`:
 
 ```json
-{"days":3,"orders":[{"order_id":496,"status":"in_production","payment":"paid",
- "total":6000,"currency":"USD","entered_at":"2026-09-06 10:16:49","days":5,
+{"days":3,"orders":[{"order_id":534,"status":"in_production","payment":"paid",
+ "total":6000,"currency":"USD","entered_at":"2026-09-06 10:24:22","days":5,
  "label":"In production"}]}
 ```
 
@@ -343,7 +344,7 @@ A `completed` order is never counted as stuck, whatever its age.
 *Status history*, and FluentCart's own route serves it:
 
 ```
-GET /fluent-cart/v2/widgets?filter=single_order_page&data[order_id]=491  → 200
+GET /fluent-cart/v2/widgets?filter=single_order_page&data[order_id]=529  → 200
 ```
 
 Rendered in the order sidebar (screenshot `v0.2-06-order-status-history-widget.png`):
@@ -365,20 +366,20 @@ walkthrough asserts no `<script` can appear in the output.
 `Backfill::run()` over `wp_fct_activity`:
 
 ```
-{"parsed":760,"skipped":153,"removed":758,"orders":429}
+{"parsed":778,"skipped":221,"removed":762,"orders":445}
 ```
 
-760 historic status changes across 429 orders recovered from lines such as
+778 historic status changes across 445 orders recovered from lines such as
 `Order status has been updated from on-hold to sourcing`. Running it a second
 time leaves the row count unchanged (it removes its own previous rows first), and
 rows written by the hooks are never touched:
 
 ```sql
 SELECT source, COUNT(*) FROM wp_ys_fct_status_history GROUP BY source;
--- backfill | 760
--- hook     | 139
--- linked   |  14
--- (hook + linked = 153 rows written by the events themselves)
+-- backfill | 778
+-- hook     | 205
+-- linked   |  18
+-- (hook + linked = 223 rows written by the events themselves)
 ```
 
 Parsing is checked in the unit tests against the English sentence, the shipping
@@ -393,10 +394,10 @@ with a UTF-8 BOM, has a dated filename, a header and at least one data row:
 
 ```
 distribution  "Status","Slug","Custom","Paid orders","Paid amount (minor units)",…
-              "Paid","processing","no","33","198000","12","72000","45","270000"
+              "Paid","processing","no","41","246000","16","96000","57","342000"
 dwell         "Status","Slug","Completed stays","Average days","Longest days"
 stalled       "Order","Status","Slug","Payment status","Total (minor units)","Currency","Entered status (UTC)","Days in status"
-              "496","In production","in_production","paid","6000","USD","2026-09-06 10:16:49","5"
+              "534","In production","in_production","paid","6000","USD","2026-09-06 10:24:22","5"
 ```
 
 `type=../../etc/passwd` is refused with a 400. Formula injection is covered by
@@ -411,7 +412,7 @@ not depend on the site having a mail transport.
 * Summary **off** → `wp_mail()` not called, and no cron event scheduled.
 * Summary **on** → exactly one message, to the configured address, subject
   `[store name] Order workflow summary — 1 order(s) need attention`, body listing
-  every workflow step and the stuck order `#496`; cron event scheduled.
+  every workflow step and the stuck order `#534`; cron event scheduled.
 * Calling it again the same day sends nothing (the last-sent date is written
   *before* `wp_mail()`, so a mailer that throws cannot turn into a loop).
 * Switching it off again unschedules the event.
