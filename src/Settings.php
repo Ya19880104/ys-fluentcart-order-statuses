@@ -83,6 +83,26 @@ final class Settings {
 	 */
 	const PIPELINE_ENTRY = 'processing';
 
+	/**
+	 * The built-in shipping status a fulfilment workflow starts from.
+	 *
+	 * Every physical order is created `unshipped`, so it is step 0 of a
+	 * shipping-axis workflow in exactly the way `processing` is step 0 of an
+	 * order-axis one — except that nothing in FluentCart ever moves it, which
+	 * is the whole reason §3's restore machinery has no shipping-axis twin.
+	 */
+	const SHIPPING_PIPELINE_ENTRY = 'unshipped';
+
+	/**
+	 * The built-in shipping status a fulfilment workflow ends at.
+	 *
+	 * `delivered` and `unshippable` are outcomes rather than steps — one is
+	 * what happens after the shop is finished, the other means the order was
+	 * never going to ship at all — so they are reported in the distribution
+	 * table and deliberately left out of the funnel.
+	 */
+	const SHIPPING_PIPELINE_EXIT = 'shipped';
+
 	/** Default "this order has been sitting here too long" threshold, in days. */
 	const DEFAULT_STALL_DAYS = 3;
 
@@ -422,12 +442,38 @@ final class Settings {
 	 * @return string[] Slugs, index 0 first.
 	 */
 	public static function pipeline( array $settings = null ) {
+		return self::pipelineFor( 'order', $settings );
+	}
+
+	/**
+	 * The workflow on either axis.
+	 *
+	 * The two axes are shaped differently, and the difference is not cosmetic:
+	 *
+	 * - **order** — `processing` and then the custom steps. There is no closing
+	 *   built-in, because "finished" on the order axis is `completed`, which is
+	 *   a destination rather than a step and can be reached from anywhere.
+	 * - **shipping** — `unshipped`, the custom steps, and then the built-in
+	 *   `shipped`. A fulfilment workflow really does end at a built-in status,
+	 *   and that status is the one FluentCart's own "Change Shipping Status"
+	 *   dialog and `fulfilled_quantity` bookkeeping already understand.
+	 *
+	 * @param string $axis     'order' or 'shipping'.
+	 * @param array  $settings Optional pre-read settings.
+	 * @return string[] Slugs, index 0 first.
+	 */
+	public static function pipelineFor( $axis, array $settings = null ) {
 		$settings = null === $settings ? self::all() : $settings;
+		$axis     = 'shipping' === $axis ? 'shipping' : 'order';
 
-		$steps = array( self::PIPELINE_ENTRY );
+		$steps = array( 'shipping' === $axis ? self::SHIPPING_PIPELINE_ENTRY : self::PIPELINE_ENTRY );
 
-		foreach ( self::customStatuses( 'order', $settings ) as $slug => $definition ) {
+		foreach ( self::customStatuses( $axis, $settings ) as $slug => $definition ) {
 			$steps[] = $slug;
+		}
+
+		if ( 'shipping' === $axis ) {
+			$steps[] = self::SHIPPING_PIPELINE_EXIT;
 		}
 
 		return $steps;
@@ -439,7 +485,17 @@ final class Settings {
 	 * @return int Zero-based pipeline position, or -1 when the slug is not in it.
 	 */
 	public static function pipelinePosition( $slug, array $settings = null ) {
-		$position = array_search( (string) $slug, self::pipeline( $settings ), true );
+		return self::pipelinePositionFor( 'order', $slug, $settings );
+	}
+
+	/**
+	 * @param string $axis     'order' or 'shipping'.
+	 * @param string $slug     Status slug.
+	 * @param array  $settings Optional pre-read settings.
+	 * @return int Zero-based pipeline position, or -1 when the slug is not in it.
+	 */
+	public static function pipelinePositionFor( $axis, $slug, array $settings = null ) {
+		$position = array_search( (string) $slug, self::pipelineFor( $axis, $settings ), true );
 
 		return false === $position ? -1 : (int) $position;
 	}

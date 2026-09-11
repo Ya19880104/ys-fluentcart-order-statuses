@@ -593,7 +593,12 @@ foreach ( array( 'distribution', 'dwell', 'stalled' ) as $type ) {
 
 	ys_pipe_assert( 'R6 ' . $type . ' export answers', 200, $export['status'] );
 	ys_pipe_assert( 'R6 ' . $type . ' starts with a UTF-8 BOM', "\xEF\xBB\xBF", substr( $export['data']['csv'], 0, 3 ) );
-	ys_pipe_assert( 'R6 ' . $type . ' has a filename', true, (bool) preg_match( '/^ys-order-status-' . $type . '-\d{8}-\d{6}\.csv$/', $export['data']['filename'] ) );
+	// 0.3: the two reports that follow the report tab's axis switch carry the
+	// axis in the filename, so exporting both workflows into one folder gives
+	// two files whose names say which is which.
+	$scope = in_array( $type, array( 'dwell', 'stalled' ), true ) ? $type . '-order' : $type;
+
+	ys_pipe_assert( 'R6 ' . $type . ' has a filename', true, (bool) preg_match( '/^ys-order-status-' . $scope . '-\d{8}-\d{6}\.csv$/', $export['data']['filename'] ) );
 
 	$lines = explode( "\r\n", trim( $export['data']['csv'] ) );
 

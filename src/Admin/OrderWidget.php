@@ -1,6 +1,6 @@
 <?php
 /**
- * The "Status history" panel on a FluentCart order page.
+ * The "Order workflow" control and the "Status history" panel on an order page.
  *
  * @package YangSheep\FluentCart\OrderStatuses
  */
@@ -8,7 +8,10 @@
 namespace YangSheep\FluentCart\OrderStatuses\Admin;
 
 use YangSheep\FluentCart\OrderStatuses\History\HistoryRepository;
+use YangSheep\FluentCart\OrderStatuses\Pipeline\Changer;
+use YangSheep\FluentCart\OrderStatuses\Rest\StatusController;
 use YangSheep\FluentCart\OrderStatuses\StatusRegistry;
+use YangSheep\FluentCart\OrderStatuses\Support\AdminScreen;
 use YangSheep\FluentCart\OrderStatuses\Support\Labels;
 use YangSheep\FluentCart\OrderStatuses\Support\Permissions;
 use YangSheep\FluentCart\OrderStatuses\Support\Schema;
@@ -23,24 +26,86 @@ if ( ! defined( 'ABSPATH' ) ) {
  * FluentCart's `DynamicTemplates` component fetches
  * `GET widgets?filter=single_order_page&data[order_id]=…` and renders whatever
  * comes back. A `type: html` widget's `content` is injected with `innerHTML`,
- * so every value below goes through `esc_html()` — a status label is operator
- * input, an actor name is a WordPress display name, and both end up in this
- * string.
+ * so two things follow and both matter:
  *
- * What it shows that the order's activity feed does not: the *duration* of each
- * stay, which is the number a production schedule is actually run on, and both
- * axes interleaved on one timeline.
+ * 1. Every value below goes through `esc_html()` / `esc_attr()`. A status label
+ *    is operator input, an actor name is a WordPress display name, and both end
+ *    up in this string.
+ * 2. **A `<script>` in that string never runs.** `innerHTML` does not execute
+ *    script nodes, so the control below is inert markup and the behaviour lives
+ *    in `assets/admin/order-changer.js`, enqueued on FluentCart's own screens
+ *    and listening through one delegated handler on `document`. That also means
+ *    the control keeps working when the SPA re-renders the widget, which it
+ *    does on every navigation back to the order.
+ *
+ * Two entries are contributed, in this order:
+ *
+ * - **Order workflow** — the control. Where the order stands on both axes, the
+ *   moves it may make, and a one-click "next step". It exists because FluentCart
+ *   1.6.3 offers no order-status control at all on a *paid* order; see
+ *   `Rest\ChangeController` for what was measured.
+ * - **Status history** — 0.2's timeline, unchanged, and still only when there
+ *   is something to show.
  */
 final class OrderWidget {
 
 	/** Rows shown before the panel gives up and points at the report. */
 	const MAX_ROWS = 40;
 
+	const HANDLE = 'ys-fct-status-changer';
+
 	/**
 	 * @return void
 	 */
 	public function register() {
 		add_filter( 'fluent_cart/widgets/single_order_page', array( $this, 'addWidget' ), 20, 2 );
+		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue' ), 100 );
+	}
+
+	/**
+	 * Load the control's script and styles on FluentCart's own admin screens.
+	 *
+	 * Not only on the order page: the admin is a single-page app, so there is
+	 * no page load when the operator opens an order. The script is a few
+	 * kilobytes and does nothing at all until a widget with `[data-ys-changer]`
+	 * appears in the DOM.
+	 *
+	 * @param string $hook Current admin page hook.
+	 * @return void
+	 */
+	public function enqueue( $hook ) {
+		if ( ! AdminScreen::isFluentCart( $hook ) || ! Permissions::canManage() ) {
+			return;
+		}
+
+		wp_enqueue_style(
+			self::HANDLE,
+			YS_FCT_STATUS_URL . 'assets/admin/order-changer.css',
+			array(),
+			YS_FCT_STATUS_VERSION
+		);
+
+		wp_enqueue_script(
+			self::HANDLE,
+			YS_FCT_STATUS_URL . 'assets/admin/order-changer.js',
+			array(),
+			YS_FCT_STATUS_VERSION,
+			true
+		);
+
+		wp_localize_script(
+			self::HANDLE,
+			'ysFctStatusChanger',
+			array(
+				'restUrl'   => esc_url_raw( rest_url( StatusController::NAMESPACE_V1 . '/' ) ),
+				'restNonce' => wp_create_nonce( 'wp_rest' ),
+				'i18n'      => array(
+					'working' => __( 'Changing…', 'ys-fluentcart-order-statuses' ),
+					'failed'  => __( 'The status could not be changed.', 'ys-fluentcart-order-statuses' ),
+					'pick'    => __( 'Choose a status first.', 'ys-fluentcart-order-statuses' ),
+				),
+			)
+		);
 	}
 
 	/**
@@ -51,8 +116,9 @@ final class OrderWidget {
 	public function addWidget( $widgets, $data = array() ) {
 		$widgets = is_array( $widgets ) ? $widgets : array();
 
-		// The route itself is gated on `customers/view` OR `orders/view`; this
-		// panel is order history, so it needs the order half specifically.
+		// The route itself is gated on `customers/view` OR `orders/view`; these
+		// panels are order history and order workflow, so they need the order
+		// half specifically.
 		if ( ! Permissions::canViewOrders() ) {
 			return $widgets;
 		}
@@ -65,7 +131,27 @@ final class OrderWidget {
 			$orderId = (int) $data['order']->id;
 		}
 
-		if ( $orderId <= 0 || ! Schema::tableExists() ) {
+		if ( $orderId <= 0 ) {
+			return $widgets;
+		}
+
+		// Reading history is one bar; writing a status is a higher one, and the
+		// control is not rendered at all for a role that could not use it.
+		if ( Permissions::canManage() ) {
+			$state = Changer::state( $orderId );
+
+			if ( null !== $state ) {
+				$widgets[] = array(
+					'type'     => 'html',
+					'title'    => __( 'Order workflow', 'ys-fluentcart-order-statuses' ),
+					'subtitle' => __( 'Move this order along the workflow. The list offers only the moves this order is allowed to make.', 'ys-fluentcart-order-statuses' ),
+					'use_card' => true,
+					'content'  => self::renderChanger( $state ),
+				);
+			}
+		}
+
+		if ( ! Schema::tableExists() ) {
 			return $widgets;
 		}
 
@@ -84,6 +170,125 @@ final class OrderWidget {
 		);
 
 		return $widgets;
+	}
+
+	/**
+	 * The status control.
+	 *
+	 * @param array $state `Pipeline\Changer::state()`.
+	 * @return string Escaped HTML.
+	 */
+	public static function renderChanger( array $state ) {
+		$orderId = (int) $state['order_id'];
+
+		$out = '<div class="ys-fct-changer" data-ys-changer data-ys-order="' . esc_attr( (string) $orderId ) . '">';
+
+		foreach ( array( 'order', 'shipping' ) as $axis ) {
+			$out .= self::renderAxis( $orderId, $axis, $state['axes'][ $axis ] );
+		}
+
+		$out .= '<p class="ys-fct-changer-message" data-ys-changer-message role="status" aria-live="polite"></p>';
+		$out .= '</div>';
+
+		return $out;
+	}
+
+	/**
+	 * @param int    $orderId Order id.
+	 * @param string $axis    'order' or 'shipping'.
+	 * @param array  $axisState One entry of `Changer::state()['axes']`.
+	 * @return string
+	 */
+	private static function renderAxis( $orderId, $axis, array $axisState ) {
+		$fieldId = 'ys-fct-changer-' . $axis . '-' . (int) $orderId;
+		$color   = '' === $axisState['color'] ? '#64748b' : $axisState['color'];
+
+		$out = '<div class="ys-fct-changer-axis" data-ys-axis="' . esc_attr( $axis ) . '">';
+
+		$out .= '<p class="ys-fct-changer-head">'
+			. '<span class="ys-fct-changer-axis-name">' . esc_html( self::axisName( $axis ) ) . '</span>'
+			. '<span class="ys-fct-changer-badge" style="background:' . esc_attr( $color ) . '">'
+			. esc_html( '' === $axisState['label'] ? self::emptyLabel( $axis ) : $axisState['label'] )
+			. '</span>';
+
+		if ( $axisState['step'] >= 0 ) {
+			$out .= '<span class="ys-fct-changer-step">' . esc_html(
+				sprintf(
+					/* translators: 1: step number, 2: how many steps the workflow has */
+					__( 'step %1$d of %2$d', 'ys-fluentcart-order-statuses' ),
+					(int) $axisState['step'] + 1,
+					(int) $axisState['steps']
+				)
+			) . '</span>';
+		}
+
+		$out .= '</p>';
+
+		if ( null !== $axisState['locked'] ) {
+			$out .= '<p class="ys-fct-changer-locked">' . esc_html( $axisState['locked'] ) . '</p></div>';
+
+			return $out;
+		}
+
+		if ( empty( $axisState['targets'] ) ) {
+			$out .= '<p class="ys-fct-changer-locked">' . esc_html__( 'There is nowhere for this order to move on this axis.', 'ys-fluentcart-order-statuses' ) . '</p></div>';
+
+			return $out;
+		}
+
+		$out .= '<p class="ys-fct-changer-row">'
+			. '<label class="screen-reader-text" for="' . esc_attr( $fieldId ) . '">'
+			. esc_html( self::moveLabel( $axis ) )
+			. '</label>'
+			. '<select id="' . esc_attr( $fieldId ) . '" class="ys-fct-changer-select" data-ys-changer-select="' . esc_attr( $axis ) . '">'
+			. '<option value="">' . esc_html__( 'Move to…', 'ys-fluentcart-order-statuses' ) . '</option>';
+
+		foreach ( $axisState['targets'] as $target ) {
+			$out .= '<option value="' . esc_attr( $target['slug'] ) . '">' . esc_html( $target['label'] ) . '</option>';
+		}
+
+		$out .= '</select>'
+			. '<button type="button" class="button ys-fct-changer-go" data-ys-changer-go="' . esc_attr( $axis ) . '">'
+			. esc_html__( 'Change', 'ys-fluentcart-order-statuses' )
+			. '</button>';
+
+		if ( is_array( $axisState['next'] ) ) {
+			$out .= '<button type="button" class="button button-primary ys-fct-changer-next"'
+				. ' data-ys-changer-next="' . esc_attr( $axis ) . '"'
+				. ' data-ys-changer-status="' . esc_attr( $axisState['next']['slug'] ) . '">'
+				. esc_html(
+					sprintf(
+						/* translators: %s: the next workflow step's label */
+						__( 'Next step: %s →', 'ys-fluentcart-order-statuses' ),
+						$axisState['next']['label']
+					)
+				)
+				. '</button>';
+		}
+
+		$out .= '</p></div>';
+
+		return $out;
+	}
+
+	/**
+	 * @param string $axis Axis key.
+	 * @return string
+	 */
+	private static function moveLabel( $axis ) {
+		return 'shipping' === $axis
+			? __( 'Move the shipping status to', 'ys-fluentcart-order-statuses' )
+			: __( 'Move the order status to', 'ys-fluentcart-order-statuses' );
+	}
+
+	/**
+	 * @param string $axis Axis key.
+	 * @return string
+	 */
+	private static function emptyLabel( $axis ) {
+		return 'shipping' === $axis
+			? __( 'nothing to ship', 'ys-fluentcart-order-statuses' )
+			: __( 'no status', 'ys-fluentcart-order-statuses' );
 	}
 
 	/**

@@ -120,7 +120,22 @@ final class ReportController {
 	public function overview( $request ) {
 		list( $since, $until ) = self::range( $request );
 
-		return rest_ensure_response( ReportService::overview( $since, $until ) );
+		return rest_ensure_response( ReportService::overview( $since, $until, self::axis( $request ) ) );
+	}
+
+	/**
+	 * Which workflow the funnel, the dwell table and the stuck list describe.
+	 *
+	 * The two distribution tables are per-axis by construction and both are
+	 * always returned; this switch is for the three blocks that read a
+	 * *workflow* rather than a column, and which therefore have to be told
+	 * which of the two workflows is meant.
+	 *
+	 * @param \WP_REST_Request $request Request.
+	 * @return string 'order' or 'shipping'.
+	 */
+	private static function axis( $request ) {
+		return 'shipping' === (string) $request->get_param( 'axis' ) ? 'shipping' : 'order';
 	}
 
 	/**
@@ -163,17 +178,19 @@ final class ReportController {
 
 		list( $since, $until ) = self::range( $request );
 
+		$axis = self::axis( $request );
+
 		switch ( $type ) {
 			case 'shipping':
 				$csv = CsvExporter::distribution( ReportService::distribution( 'shipping', $since, $until ) );
 				break;
 
 			case 'dwell':
-				$csv = CsvExporter::dwell( ReportService::dwell( 'order', $since, $until ) );
+				$csv = CsvExporter::dwell( ReportService::dwell( $axis, $since, $until ) );
 				break;
 
 			case 'stalled':
-				$stalled = ReportService::stalled();
+				$stalled = ReportService::stalled( 0, $axis );
 				$csv     = CsvExporter::stalled( $stalled['orders'] );
 				break;
 
@@ -183,9 +200,14 @@ final class ReportController {
 				break;
 		}
 
+		// The axis is in the filename for the two reports that have one: an
+		// operator who exports both ends up with two files in one folder, and
+		// "dwell" twice tells them nothing about which workflow each describes.
+		$scope = in_array( $type, array( 'dwell', 'stalled' ), true ) ? $type . '-' . $axis : $type;
+
 		return rest_ensure_response(
 			array(
-				'filename' => 'ys-order-status-' . $type . '-' . gmdate( 'Ymd-His' ) . '.csv',
+				'filename' => 'ys-order-status-' . $scope . '-' . gmdate( 'Ymd-His' ) . '.csv',
 				'csv'      => $csv,
 			)
 		);
@@ -245,10 +267,15 @@ final class ReportController {
 	}
 
 	/**
+	 * @param \WP_REST_Request $request Request.
 	 * @return \WP_REST_Response
 	 */
-	public function applyTemplate() {
-		$merged = Template::mergeInto( Settings::all() );
+	public function applyTemplate( $request ) {
+		$axis = 'shipping' === (string) $request->get_param( 'axis' ) ? 'shipping' : 'order';
+
+		$merged = 'shipping' === $axis
+			? Template::mergeShippingInto( Settings::all() )
+			: Template::mergeInto( Settings::all() );
 
 		Settings::save( $merged['settings'] );
 		StatusRegistry::flushCache();
@@ -256,6 +283,7 @@ final class ReportController {
 		return rest_ensure_response(
 			array(
 				'settings' => Settings::all(),
+				'axis'     => $axis,
 				'added'    => $merged['added'],
 				'skipped'  => $merged['skipped'],
 				'message'  => empty( $merged['added'] )

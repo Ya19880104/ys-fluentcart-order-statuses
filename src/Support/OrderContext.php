@@ -35,6 +35,23 @@ final class OrderContext {
 	/** @var int Order id of the request in flight, or 0. */
 	private static $orderId = 0;
 
+	/**
+	 * The saved view the list request in flight is asking for, or ''.
+	 *
+	 * Needed for the same reason the order id is, and unavailable for a similar
+	 * reason. `BaseFilter::parseAcceptedView()` returns **null** whenever the
+	 * incoming `active_view` turns out to be a saved view rather than one of
+	 * core's fixed tabs — it stashes the matched view in a protected property
+	 * and clears `activeView` — so by the time
+	 * `fluent_cart/orders_list_filter_query` fires, the array it is handed
+	 * (`BaseFilter::toArray()`) says the active view is null. The request
+	 * parameter is still the truth, and `rest_pre_dispatch` is where it can be
+	 * read.
+	 *
+	 * @var string
+	 */
+	private static $activeView = '';
+
 	/** Matches any FluentCart order-scoped REST route. */
 	const ROUTE_PATTERN = '#^/[a-z0-9\-]+/v\d+/orders/(\d+)(?:/|$)#i';
 
@@ -53,7 +70,8 @@ final class OrderContext {
 	 * @return mixed Untouched.
 	 */
 	public static function capture( $result, $server, $request ) {
-		self::$orderId = 0;
+		self::$orderId    = 0;
+		self::$activeView = '';
 
 		if ( ! is_object( $request ) || ! method_exists( $request, 'get_route' ) ) {
 			return $result;
@@ -61,6 +79,12 @@ final class OrderContext {
 
 		if ( preg_match( self::ROUTE_PATTERN, (string) $request->get_route(), $matches ) ) {
 			self::$orderId = (int) $matches[1];
+		}
+
+		$view = $request->get_param( 'active_view' );
+
+		if ( is_string( $view ) ) {
+			self::$activeView = sanitize_key( $view );
 		}
 
 		return $result;
@@ -73,7 +97,8 @@ final class OrderContext {
 	 * @return mixed Untouched.
 	 */
 	public static function release( $response, $server, $request ) {
-		self::$orderId = 0;
+		self::$orderId    = 0;
+		self::$activeView = '';
 
 		return $response;
 	}
@@ -86,6 +111,13 @@ final class OrderContext {
 	}
 
 	/**
+	 * @return string The `active_view` of the request in flight, or ''.
+	 */
+	public static function activeView() {
+		return self::$activeView;
+	}
+
+	/**
 	 * Test seam / programmatic override.
 	 *
 	 * @param int $orderId Order id.
@@ -93,6 +125,16 @@ final class OrderContext {
 	 */
 	public static function set( $orderId ) {
 		self::$orderId = (int) $orderId;
+	}
+
+	/**
+	 * Test seam / programmatic override.
+	 *
+	 * @param string $view Saved-view slug.
+	 * @return void
+	 */
+	public static function setActiveView( $view ) {
+		self::$activeView = (string) $view;
 	}
 
 	/**

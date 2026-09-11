@@ -202,6 +202,34 @@
 	gap: 8px;
 }
 
+.ys-fct-status-admin .ys-fct-status-axis {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 12px;
+}
+
+.ys-fct-status-admin .ys-fct-status-axis-label {
+	font-weight: 600;
+}
+
+/* Names the workflow a heading is about, because the funnel, the timings and
+   the stuck list all change when the switch above them does — and the two
+   workflows can legitimately use the same step names. */
+.ys-fct-status-admin .ys-fct-status-axis-chip {
+	display: inline-block;
+	padding: 1px 8px;
+	border-radius: 999px;
+	background: rgba( 128, 128, 128, .18 );
+	font-size: 12px;
+	font-weight: 400;
+	vertical-align: middle;
+}
+
+.ys-fct-status-admin .ys-fct-status-axis-chip:empty {
+	display: none;
+}
+
 .ys-fct-status-admin .ys-fct-status-report-note:empty {
 	display: none;
 }

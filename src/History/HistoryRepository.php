@@ -223,12 +223,13 @@ final class HistoryRepository {
 	 * — `updated_at` stands in, which is the most recent thing core knows about
 	 * that row and is never later than the real entry time.
 	 *
-	 * @param string[] $slugs     Order-status slugs to watch.
+	 * @param string[] $slugs     Status slugs to watch.
 	 * @param int      $days      Threshold in days.
 	 * @param int      $limit     Maximum rows.
+	 * @param string   $axis      'order' or 'shipping'.
 	 * @return array<int,array<string,mixed>>
 	 */
-	public static function stalled( array $slugs, $days, $limit = 200 ) {
+	public static function stalled( array $slugs, $days, $limit = 200, $axis = 'order' ) {
 		global $wpdb;
 
 		$slugs = array_values( array_filter( array_map( 'strval', $slugs ), 'strlen' ) );
@@ -237,6 +238,8 @@ final class HistoryRepository {
 			return array();
 		}
 
+		$axis   = in_array( $axis, Schema::AXES, true ) ? $axis : 'order';
+		$column = 'shipping' === $axis ? 'shipping_status' : 'status';
 		$days   = max( 1, min( 365, (int) $days ) );
 		$limit  = max( 1, min( self::MAX_ROWS, (int) $limit ) );
 		$cutoff = gmdate( 'Y-m-d H:i:s', time() - ( $days * DAY_IN_SECONDS ) );
@@ -246,8 +249,10 @@ final class HistoryRepository {
 
 		$placeholders = implode( ', ', array_fill( 0, count( $slugs ), '%s' ) );
 
+		// `$axis` and `$column` are both resolved from a two-value whitelist
+		// immediately above, never interpolated from the request.
 		$entered = Schema::tableExists()
-			? '(SELECT MAX(h.changed_at) FROM `' . $history . '` h WHERE h.order_id = o.id AND h.axis = \'order\' AND h.new_status = o.status)'
+			? '(SELECT MAX(h.changed_at) FROM `' . $history . '` h WHERE h.order_id = o.id AND h.axis = \'' . $axis . '\' AND h.new_status = o.`' . $column . '`)'
 			: 'NULL';
 
 		// The derived table is not decoration: `entered_at` is a correlated
@@ -255,10 +260,10 @@ final class HistoryRepository {
 		// the statement into an aggregate one under ONLY_FULL_GROUP_BY, which
 		// then rejects every plain column beside it.
 		$sql = 'SELECT * FROM ('
-			. ' SELECT o.id, o.status, o.payment_status, o.total_amount, o.currency, o.created_at,'
+			. ' SELECT o.id, o.`' . $column . '` AS status, o.payment_status, o.total_amount, o.currency, o.created_at,'
 			. ' COALESCE(' . $entered . ', o.updated_at) AS entered_at'
 			. ' FROM `' . $orders . '` o'
-			. ' WHERE o.status IN (' . $placeholders . ')'
+			. ' WHERE o.`' . $column . '` IN (' . $placeholders . ')'
 			. ' ) ys_stalled'
 			. ' WHERE entered_at <= %s'
 			. ' ORDER BY entered_at ASC'

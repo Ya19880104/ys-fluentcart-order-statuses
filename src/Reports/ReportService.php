@@ -141,16 +141,20 @@ final class ReportService {
 	 * about the present, and an order placed last month that is still in
 	 * production is exactly the one the operator needs to see.
 	 *
+	 * @param string $axis 'order' or 'shipping'.
 	 * @return array<int,array<string,mixed>>
 	 */
-	public static function funnel() {
+	public static function funnel( $axis = 'order' ) {
+		$axis         = 'shipping' === $axis ? 'shipping' : 'order';
 		$settings     = StatusRegistry::settings();
-		$pipeline     = Settings::pipeline( $settings );
+		$pipeline     = Settings::pipelineFor( $axis, $settings );
 		$distribution = array();
 
-		foreach ( self::distribution( 'order' ) as $row ) {
+		foreach ( self::distribution( $axis ) as $row ) {
 			$distribution[ $row['slug'] ] = $row;
 		}
+
+		$entry = 'shipping' === $axis ? Settings::SHIPPING_PIPELINE_ENTRY : Settings::PIPELINE_ENTRY;
 
 		$out = array();
 
@@ -161,7 +165,7 @@ final class ReportService {
 
 			$row          = $distribution[ $slug ];
 			$row['step']  = $index + 1;
-			$row['entry'] = Settings::PIPELINE_ENTRY === $slug;
+			$row['entry'] = $entry === $slug;
 
 			$out[] = $row;
 		}
@@ -221,19 +225,24 @@ final class ReportService {
 	/**
 	 * Orders that have been on a pipeline step for longer than the threshold.
 	 *
-	 * @param int $days Threshold; 0 uses the configured one.
-	 * @return array{days:int,orders:array<int,array<string,mixed>>}
+	 * @param int    $days Threshold; 0 uses the configured one.
+	 * @param string $axis 'order' or 'shipping'.
+	 * @return array{days:int,axis:string,orders:array<int,array<string,mixed>>}
 	 */
-	public static function stalled( $days = 0 ) {
+	public static function stalled( $days = 0, $axis = 'order' ) {
+		$axis     = 'shipping' === $axis ? 'shipping' : 'order';
 		$settings = StatusRegistry::settings();
 		$days     = $days > 0 ? (int) $days : Settings::stallDays( $settings );
 
-		$labels = Labels::resolved( 'order', $settings );
+		$labels = Labels::resolved( $axis, $settings );
 
-		// Only the custom steps: an order sitting in `completed` for a month is
-		// not stuck, it is finished.
-		$slugs  = array_keys( Settings::customStatuses( 'order', $settings ) );
-		$orders = HistoryRepository::stalled( $slugs, $days, self::STALL_LIMIT );
+		// Only the custom steps: an order sitting in `completed` — or in
+		// `shipped` — for a month is not stuck, it is finished. The built-in
+		// entry status is left out for the same reason it is left out of the
+		// dwell table: `unshipped` on an unpaid order is not a queue, it is an
+		// order that has not started.
+		$slugs  = array_keys( Settings::customStatuses( $axis, $settings ) );
+		$orders = HistoryRepository::stalled( $slugs, $days, self::STALL_LIMIT, $axis );
 
 		foreach ( $orders as $index => $order ) {
 			$orders[ $index ]['label'] = isset( $labels[ $order['status'] ] )
@@ -243,6 +252,7 @@ final class ReportService {
 
 		return array(
 			'days'   => $days,
+			'axis'   => $axis,
 			'orders' => $orders,
 		);
 	}
@@ -250,21 +260,31 @@ final class ReportService {
 	/**
 	 * Everything the report tab renders, in one round trip.
 	 *
+	 * Both distribution tables come back every time — they are one GROUP BY
+	 * each and the operator wants to see both columns of the same store. The
+	 * axis only decides which *workflow* the funnel, the dwell table and the
+	 * stuck list describe, because those three read a sequence of steps rather
+	 * than a column and there are two such sequences.
+	 *
 	 * @param string $sinceGmt Optional lower bound.
 	 * @param string $untilGmt Optional upper bound.
+	 * @param string $axis     'order' or 'shipping'.
 	 * @return array<string,mixed>
 	 */
-	public static function overview( $sinceGmt = '', $untilGmt = '' ) {
+	public static function overview( $sinceGmt = '', $untilGmt = '', $axis = 'order' ) {
+		$axis = 'shipping' === $axis ? 'shipping' : 'order';
+
 		return array(
 			'range'             => array(
 				'since' => $sinceGmt,
 				'until' => $untilGmt,
 			),
+			'axis'              => $axis,
 			'order_statuses'    => self::distribution( 'order', $sinceGmt, $untilGmt ),
 			'shipping_statuses' => self::distribution( 'shipping', $sinceGmt, $untilGmt ),
-			'funnel'            => self::funnel(),
-			'dwell'             => self::dwell( 'order', $sinceGmt, $untilGmt ),
-			'stalled'           => self::stalled(),
+			'funnel'            => self::funnel( $axis ),
+			'dwell'             => self::dwell( $axis, $sinceGmt, $untilGmt ),
+			'stalled'           => self::stalled( 0, $axis ),
 			'currencies'        => self::currencies(),
 			'history_rows'      => HistoryRepository::count(),
 			'orders_url'        => admin_url( 'admin.php?page=fluent-cart#/orders' ),
@@ -331,13 +351,7 @@ final class ReportService {
 	 * @return array<int,array<string,mixed>>
 	 */
 	private static function sortForAxis( array $rows, $axis, array $settings ) {
-		$order = array();
-
-		if ( 'order' === $axis ) {
-			$order = Settings::pipeline( $settings );
-		} else {
-			$order = array_keys( Settings::customStatuses( 'shipping', $settings ) );
-		}
+		$order = Settings::pipelineFor( $axis, $settings );
 
 		$out = array();
 

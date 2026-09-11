@@ -8,6 +8,7 @@
 namespace YangSheep\FluentCart\OrderStatuses\Admin;
 
 use YangSheep\FluentCart\OrderStatuses\StatusRegistry;
+use YangSheep\FluentCart\OrderStatuses\Support\AdminScreen;
 use YangSheep\FluentCart\OrderStatuses\Support\LabelTagger;
 use YangSheep\FluentCart\OrderStatuses\Support\StatusCss;
 
@@ -77,17 +78,6 @@ final class ColorStyles {
 	 * @return bool
 	 */
 	private function isFluentCartScreen( $hook ) {
-		//phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		$page = isset( $_GET['page'] ) ? sanitize_text_field( wp_unslash( $_GET['page'] ) ) : '';
-
-		if ( 0 === strpos( $page, 'ys-fct-' ) ) {
-			return false;
-		}
-
-		if ( 'fluent-cart' === $page || 0 === strpos( $page, 'fluent-cart' ) ) {
-			return true;
-		}
-
-		return is_string( $hook ) && false !== strpos( $hook, 'fluent-cart' ) && false === strpos( $hook, 'ys-fct-' );
+		return AdminScreen::isFluentCart( $hook );
 	}
 }

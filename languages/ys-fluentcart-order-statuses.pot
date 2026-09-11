@@ -2,14 +2,14 @@
 # This file is distributed under the same license as the YS FluentCart Order Statuses plugin.
 msgid ""
 msgstr ""
-"Project-Id-Version: YS FluentCart Order Statuses 0.2.0\n"
+"Project-Id-Version: YS FluentCart Order Statuses 0.3.0\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/ys-fluentcart-order-statuses\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-09-11T18:09:41+08:00\n"
+"POT-Creation-Date: 2026-09-11T19:18:28+08:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: ys-fluentcart-order-statuses\n"
@@ -37,608 +37,731 @@ msgstr ""
 
 #: src/Admin/AdminMenu.php:46
 #: src/Admin/AdminMenu.php:47
-#: src/Admin/AdminMenu.php:112
+#: src/Admin/AdminMenu.php:114
 msgid "Order Statuses"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:107
+#: src/Admin/AdminMenu.php:109
 #: src/Support/Permissions.php:94
 msgid "You are not allowed to manage order statuses."
 msgstr ""
 
-#: src/Admin/AdminMenu.php:115
+#: src/Admin/AdminMenu.php:117
 msgid "FluentCart tracks three independent things: the order status, the payment status and the shipping status. You can add your own order and shipping statuses here, and rename the built-in ones."
 msgstr ""
 
-#: src/Admin/AdminMenu.php:119
-#: src/Admin/AdminMenu.php:204
-#: src/Admin/AdminMenu.php:241
+#: src/Admin/AdminMenu.php:121
+#: src/Admin/AdminMenu.php:214
+#: src/Admin/AdminMenu.php:264
 msgid "Order statuses"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:120
-#: src/Admin/AdminMenu.php:213
-#: src/Admin/AdminMenu.php:246
+#: src/Admin/AdminMenu.php:122
+#: src/Admin/AdminMenu.php:223
+#: src/Admin/AdminMenu.php:269
 msgid "Shipping statuses"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:121
+#: src/Admin/AdminMenu.php:123
 msgid "Built-in labels"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:122
+#: src/Admin/AdminMenu.php:124
 msgid "Order Status Report"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:123
+#: src/Admin/AdminMenu.php:125
 msgid "Tools"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:131
+#: src/Admin/AdminMenu.php:133
 msgid "FluentCart rewrites the order status to “Processing” the moment a payment is recorded — that array is hardcoded in core and has no filter. Statuses set to “Keep after payment” are written back by this plugin immediately afterwards, with a line in the order activity. Workflow steps that are really about fulfilment belong on the Shipping statuses tab, where nothing overwrites them."
 msgstr ""
 
-#: src/Admin/AdminMenu.php:136
+#: src/Admin/AdminMenu.php:138
 msgid "The workflow, in order"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:138
+#: src/Admin/AdminMenu.php:140
 msgid "Step 1 is the built-in “Processing” status, which FluentCart writes as soon as a payment is recorded — rename it on the Built-in labels tab. The steps after it are the custom statuses below, in the order they are listed here. That order is what the status dropdown on an order follows, and what strict mode enforces."
 msgstr ""
 
-#: src/Admin/AdminMenu.php:142
+#: src/Admin/AdminMenu.php:144
 msgid "Create the standard workflow"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:143
+#: src/Admin/AdminMenu.php:145
 msgid "Adds “In production”, “Shipment scheduled” and “Shipped” (the last one also sets the shipping status), and suggests names for the built-in statuses. Nothing you have already set up is overwritten."
 msgstr ""
 
-#: src/Admin/AdminMenu.php:150
+#: src/Admin/AdminMenu.php:152
 msgid "Step"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:151
-#: src/Admin/AdminMenu.php:182
+#: src/Admin/AdminMenu.php:153
+#: src/Admin/AdminMenu.php:192
 msgid "Label"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:152
-#: src/Admin/AdminMenu.php:183
-#: src/Admin/AdminMenu.php:366
+#: src/Admin/AdminMenu.php:154
+#: src/Admin/AdminMenu.php:193
+#: src/Admin/AdminMenu.php:403
 #: src/Reports/CsvExporter.php:42
 #: src/Reports/CsvExporter.php:79
 #: src/Reports/CsvExporter.php:112
 msgid "Slug"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:153
-#: src/Admin/AdminMenu.php:184
+#: src/Admin/AdminMenu.php:155
+#: src/Admin/AdminMenu.php:194
 msgid "Colour"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:154
-#: src/Admin/AdminMenu.php:369
+#: src/Admin/AdminMenu.php:156
+#: src/Admin/AdminMenu.php:406
 msgid "Available on"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:155
-#: src/Admin/AdminMenu.php:370
+#: src/Admin/AdminMenu.php:157
+#: src/Admin/AdminMenu.php:407
 msgid "After payment"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:156
+#: src/Admin/AdminMenu.php:158
 msgid "Also set shipping to"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:157
-#: src/Admin/AdminMenu.php:185
+#: src/Admin/AdminMenu.php:159
+#: src/Admin/AdminMenu.php:195
 msgid "Options"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:158
-#: src/Admin/AdminMenu.php:186
-#: src/Admin/AdminMenu.php:411
+#: src/Admin/AdminMenu.php:160
+#: src/Admin/AdminMenu.php:196
+#: src/Admin/AdminMenu.php:448
 msgid "Orders"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:159
-#: src/Admin/AdminMenu.php:187
+#: src/Admin/AdminMenu.php:161
+#: src/Admin/AdminMenu.php:197
 msgid "Actions"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:166
+#: src/Admin/AdminMenu.php:168
 msgid "Add order status"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:167
-#: src/Admin/AdminMenu.php:195
-#: src/Admin/AdminMenu.php:216
+#: src/Admin/AdminMenu.php:169
+#: src/Admin/AdminMenu.php:205
+#: src/Admin/AdminMenu.php:226
 msgid "Save changes"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:174
-msgid "Nothing in FluentCart writes the shipping status automatically — it changes only when someone changes it. This is the safest place for a multi-step fulfilment workflow."
+#: src/Admin/AdminMenu.php:176
+msgid "Nothing in FluentCart writes the shipping status automatically — it changes only when someone changes it, and FluentCart’s own “Change Shipping Status” dialog works on a paid order. This is the safest place for a multi-step fulfilment workflow, and the Tools tab will build one for you."
 msgstr ""
 
 #: src/Admin/AdminMenu.php:181
+msgid "The fulfilment workflow, in order"
+msgstr ""
+
+#: src/Admin/AdminMenu.php:183
+msgid "Step 1 is the built-in “Unshipped”, which every physical order starts on, and the last step is the built-in “Shipped”, which is the value FluentCart checks when it marks each item fulfilled. The steps between them are the custom statuses below, in the order they are listed here — and that is the order FluentCart’s own shipping dialog offers them in."
+msgstr ""
+
+#: src/Admin/AdminMenu.php:191
 msgid "Reorder"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:194
+#: src/Admin/AdminMenu.php:204
 msgid "Add shipping status"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:201
+#: src/Admin/AdminMenu.php:211
 msgid "Rename or recolour the statuses FluentCart ships with. The stored slug never changes, so nothing else in FluentCart is affected — leave a field blank to keep the original."
 msgstr ""
 
-#: src/Admin/AdminMenu.php:207
+#: src/Admin/AdminMenu.php:217
 msgid "Payment statuses"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:209
+#: src/Admin/AdminMenu.php:219
 msgid "Payment statuses can be renamed but not added to: FluentCart decides download access, refunds, customer lifetime value and every revenue report from this column using hardcoded lists, so a new value would go quietly missing from all of them."
 msgstr ""
 
-#: src/Admin/AdminMenu.php:222
+#: src/Admin/AdminMenu.php:232
 msgid "This report lives here rather than under FluentCart → Reports because FluentCart 1.6 has no way to register a report page: its report screens are compiled Vue components and the only report filters it exposes belong to the traffic-source report. Everything below is read straight from the orders table, so the numbers match what you see when you filter the Orders list by the same status."
 msgstr ""
 
-#: src/Admin/AdminMenu.php:227
-msgid "Orders placed from"
-msgstr ""
-
-#: src/Admin/AdminMenu.php:229
-msgid "to"
-msgstr ""
-
-#: src/Admin/AdminMenu.php:231
-msgid "Refresh"
-msgstr ""
-
-#: src/Admin/AdminMenu.php:232
-msgid "All time"
-msgstr ""
-
 #: src/Admin/AdminMenu.php:237
-msgid "Workflow funnel"
+msgid "Workflow to report on:"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:238
-msgid "How many orders are sitting on each step right now, whatever date range is selected above. Click a number to open the Orders list."
-msgstr ""
-
-#: src/Admin/AdminMenu.php:242
-msgid "Orders and money per status, split by whether the money actually arrived. “Paid” means the payment status is paid, partially paid or partially refunded."
+#: src/Admin/AdminMenu.php:240
+#: src/Admin/OrderWidget.php:356
+msgid "Order status"
 msgstr ""
 
 #: src/Admin/AdminMenu.php:244
-#: src/Admin/AdminMenu.php:248
-#: src/Admin/AdminMenu.php:253
-#: src/Admin/AdminMenu.php:257
-msgid "Download CSV"
+#: src/Admin/OrderWidget.php:355
+msgid "Shipping status"
+msgstr ""
+
+#: src/Admin/AdminMenu.php:246
+msgid "Chooses which workflow the funnel, the timings and the stuck list describe. Both status tables below are always shown."
 msgstr ""
 
 #: src/Admin/AdminMenu.php:250
-msgid "Time in each status"
+msgid "Orders placed from"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:251
-msgid "Measured from this plugin's own status history, and counting only stays that have ended — an order still sitting on a step has not finished its stay, so it is listed below instead."
+#: src/Admin/AdminMenu.php:252
+msgid "to"
+msgstr ""
+
+#: src/Admin/AdminMenu.php:254
+msgid "Refresh"
 msgstr ""
 
 #: src/Admin/AdminMenu.php:255
-msgid "Stuck orders"
+msgid "All time"
+msgstr ""
+
+#: src/Admin/AdminMenu.php:260
+msgid "Workflow funnel"
 msgstr ""
 
 #: src/Admin/AdminMenu.php:261
-msgid "Order workflow"
+msgid "How many orders are sitting on each step right now, whatever date range is selected above. Click a number to open the Orders list."
 msgstr ""
 
 #: src/Admin/AdminMenu.php:265
-msgid "Strict workflow — an order may only move to the next or previous step"
+msgid "Orders and money per status, split by whether the money actually arrived. “Paid” means the payment status is paid, partially paid or partially refunded."
 msgstr ""
 
-#: src/Admin/AdminMenu.php:269
-msgid "Skipping a step is refused with a message naming the step that was missed. Moving an order out of the workflow entirely — completing, cancelling or putting it on hold — is always allowed, and so is moving an order into the workflow from outside it."
+#: src/Admin/AdminMenu.php:267
+#: src/Admin/AdminMenu.php:271
+#: src/Admin/AdminMenu.php:276
+#: src/Admin/AdminMenu.php:280
+msgid "Download CSV"
+msgstr ""
+
+#: src/Admin/AdminMenu.php:273
+msgid "Time in each status"
 msgstr ""
 
 #: src/Admin/AdminMenu.php:274
-msgid "Report an order as stuck after"
+msgid "Measured from this plugin's own status history, and counting only stays that have ended — an order still sitting on a step has not finished its stay, so it is listed below instead."
 msgstr ""
 
-#: src/Admin/AdminMenu.php:276
-msgid "day(s) on the same step"
+#: src/Admin/AdminMenu.php:278
+msgid "Stuck orders"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:280
-#: src/Admin/OrderWidget.php:80
-msgid "Status history"
+#: src/Admin/AdminMenu.php:284
+msgid "Which axis should carry your workflow?"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:282
-msgid "Every status change is recorded from now on. Orders that changed status before this plugin was installed can be recovered from FluentCart's own activity log — it stores each change as a sentence, so this is best effort and lines it cannot read are skipped and counted."
+#: src/Admin/AdminMenu.php:287
+msgid "If your workflow starts after the customer has paid — made, packed, booked, shipped — put it on the shipping status. FluentCart never writes that column by itself, and its own “Change Shipping Status” dialog can drive it on a paid order. The order status is the other way round: FluentCart rewrites it to “Processing” whenever a payment lands, and on a paid order it offers no status control at all, so this plugin has to supply both the guard and the control."
 msgstr ""
 
-#: src/Admin/AdminMenu.php:285
-msgid "Import history from the activity log"
+#: src/Admin/AdminMenu.php:291
+msgid "Create the fulfilment workflow (shipping axis)"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:289
-msgid "Daily summary e-mail"
+#: src/Admin/AdminMenu.php:292
+msgid "Adds the shipping statuses “In production” and “Shipment scheduled” between the built-in Unshipped and Shipped, and suggests names for the built-in statuses around them. Nothing you have already set up is overwritten."
 msgstr ""
 
-#: src/Admin/AdminMenu.php:293
-msgid "Send a daily summary of the workflow and the stuck orders"
+#: src/Admin/AdminMenu.php:295
+msgid "The order-axis version of the same workflow is on the Order statuses tab. Use it when the states you need really are states of the order rather than of the delivery — “awaiting artwork approval”, say — or when you want them on the status your customers already see."
 msgstr ""
 
-#: src/Admin/AdminMenu.php:297
-msgid "Send it to"
+#: src/Admin/AdminMenu.php:298
+#: src/Admin/OrderWidget.php:146
+msgid "Order workflow"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:301
-msgid "Sent once a day by WP-Cron, with a catch-up on the next admin page load if cron did not fire — which on a quiet shop it often does not. Save your changes before sending a test."
+#: src/Admin/AdminMenu.php:302
+msgid "Strict workflow — an order may only move to the next or previous step"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:304
-msgid "Send one now"
-msgstr ""
-
-#: src/Admin/AdminMenu.php:307
-msgid "Payment behaviour"
+#: src/Admin/AdminMenu.php:306
+msgid "Skipping a step is refused with a message naming the step that was missed. Moving an order out of the workflow entirely — completing, cancelling or putting it on hold — is always allowed, and so is moving an order into the workflow from outside it."
 msgstr ""
 
 #: src/Admin/AdminMenu.php:311
-msgid "Restore custom order statuses that FluentCart overwrites when a payment is recorded"
+msgid "Report an order as stuck after"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:315
-msgid "Applies per status, to the ones set to “Keep after payment”. Switch this off to let FluentCart move every paid order to Processing as it normally would."
+#: src/Admin/AdminMenu.php:313
+msgid "day(s) on the same step"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:318
-msgid "Before you deactivate"
+#: src/Admin/AdminMenu.php:317
+#: src/Admin/OrderWidget.php:166
+msgid "Status history"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:320
-msgid "Deactivating this plugin does not change a single order row — orders sitting on a custom status keep it, and FluentCart simply shows the raw slug. To clear them out first, move each custom status's orders to a built-in one with the Move button on its row."
+#: src/Admin/AdminMenu.php:319
+msgid "Every status change is recorded from now on. Orders that changed status before this plugin was installed can be recovered from FluentCart's own activity log — it stores each change as a sentence, so this is best effort and lines it cannot read are skipped and counted."
 msgstr ""
 
-#: src/Admin/AdminMenu.php:324
-msgid "Export / import"
+#: src/Admin/AdminMenu.php:322
+msgid "Import history from the activity log"
 msgstr ""
 
 #: src/Admin/AdminMenu.php:326
-msgid "Download JSON"
+msgid "Daily summary e-mail"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:329
-msgid "Paste an exported file to replace every status below:"
+#: src/Admin/AdminMenu.php:330
+msgid "Send a daily summary of the workflow and the stuck orders"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:333
-msgid "Import"
+#: src/Admin/AdminMenu.php:334
+msgid "Send it to"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:343
-#: src/Admin/AdminMenu.php:362
-msgid "Move orders"
+#: src/Admin/AdminMenu.php:338
+msgid "Sent once a day by WP-Cron, with a catch-up on the next admin page load if cron did not fire — which on a quiet shop it often does not. Save your changes before sending a test."
+msgstr ""
+
+#: src/Admin/AdminMenu.php:341
+msgid "Send one now"
 msgstr ""
 
 #: src/Admin/AdminMenu.php:344
-msgid "Cancel"
+msgid "Payment behaviour"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:356
-msgid "Saving…"
+#: src/Admin/AdminMenu.php:348
+msgid "Restore custom order statuses that FluentCart overwrites when a payment is recorded"
+msgstr ""
+
+#: src/Admin/AdminMenu.php:352
+msgid "Applies per status, to the ones set to “Keep after payment”. Switch this off to let FluentCart move every paid order to Processing as it normally would."
+msgstr ""
+
+#: src/Admin/AdminMenu.php:355
+msgid "Before you deactivate"
 msgstr ""
 
 #: src/Admin/AdminMenu.php:357
+msgid "Deactivating this plugin does not change a single order row — orders sitting on a custom status keep it, and FluentCart simply shows the raw slug. To clear them out first, move each custom status's orders to a built-in one with the Move button on its row."
+msgstr ""
+
+#: src/Admin/AdminMenu.php:361
+msgid "Export / import"
+msgstr ""
+
+#: src/Admin/AdminMenu.php:363
+msgid "Download JSON"
+msgstr ""
+
+#: src/Admin/AdminMenu.php:366
+msgid "Paste an exported file to replace every status below:"
+msgstr ""
+
+#: src/Admin/AdminMenu.php:370
+msgid "Import"
+msgstr ""
+
+#: src/Admin/AdminMenu.php:380
+#: src/Admin/AdminMenu.php:399
+msgid "Move orders"
+msgstr ""
+
+#: src/Admin/AdminMenu.php:381
+msgid "Cancel"
+msgstr ""
+
+#: src/Admin/AdminMenu.php:393
+msgid "Saving…"
+msgstr ""
+
+#: src/Admin/AdminMenu.php:394
 #: src/Rest/StatusController.php:158
 msgid "Statuses saved."
 msgstr ""
 
-#: src/Admin/AdminMenu.php:358
+#: src/Admin/AdminMenu.php:395
 msgid "Could not load the statuses."
 msgstr ""
 
-#: src/Admin/AdminMenu.php:359
+#: src/Admin/AdminMenu.php:396
 msgid "Could not save."
 msgstr ""
 
-#: src/Admin/AdminMenu.php:360
+#: src/Admin/AdminMenu.php:397
 msgid "New status"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:361
+#: src/Admin/AdminMenu.php:398
 msgid "Remove"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:363
+#: src/Admin/AdminMenu.php:400
 msgid "Move up"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:364
+#: src/Admin/AdminMenu.php:401
 msgid "Move down"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:365
+#: src/Admin/AdminMenu.php:402
 msgid "Selectable in the admin"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:367
+#: src/Admin/AdminMenu.php:404
 msgid "Colour hex code"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:368
+#: src/Admin/AdminMenu.php:405
 msgid "Colour picker"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:371
+#: src/Admin/AdminMenu.php:408
 msgid "Enabled"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:372
+#: src/Admin/AdminMenu.php:409
 msgid "Description"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:373
+#: src/Admin/AdminMenu.php:410
 msgid "Any order"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:374
+#: src/Admin/AdminMenu.php:411
 msgid "Paid orders only"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:375
+#: src/Admin/AdminMenu.php:412
 msgid "Unpaid orders only"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:376
+#: src/Admin/AdminMenu.php:413
 msgid "Keep this status"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:377
+#: src/Admin/AdminMenu.php:414
 msgid "Let FluentCart set Processing"
 msgstr ""
 
 #. translators: %d: number of orders currently using this status
-#: src/Admin/AdminMenu.php:379
+#: src/Admin/AdminMenu.php:416
 #, php-format
 msgid "This status is still on %d order(s). Move them to another status before removing it."
 msgstr ""
 
 #. translators: %s: status label
-#: src/Admin/AdminMenu.php:381
+#: src/Admin/AdminMenu.php:418
 #, php-format
 msgid "Remove “%s”? Nothing is written until you press Save changes."
 msgstr ""
 
 #. translators: 1: number of orders, 2: status label
-#: src/Admin/AdminMenu.php:383
+#: src/Admin/AdminMenu.php:420
 #, php-format
 msgid "Move the %1$d order(s) on “%2$s” to:"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:384
+#: src/Admin/AdminMenu.php:421
 msgid "Moving orders…"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:385
+#: src/Admin/AdminMenu.php:422
 msgid "Replace every status with the contents of this file?"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:386
+#: src/Admin/AdminMenu.php:423
 msgid "Could not import that file."
 msgstr ""
 
-#: src/Admin/AdminMenu.php:387
+#: src/Admin/AdminMenu.php:424
 msgid "No custom statuses yet."
 msgstr ""
 
-#: src/Admin/AdminMenu.php:388
+#: src/Admin/AdminMenu.php:425
 msgid "No orders are currently using a custom status."
 msgstr ""
 
-#: src/Admin/AdminMenu.php:389
+#: src/Admin/AdminMenu.php:426
 msgid "Orders currently using a custom status:"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:390
+#: src/Admin/AdminMenu.php:427
 msgid "Shown to staff and customers"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:391
+#: src/Admin/AdminMenu.php:428
 msgid "stored_value"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:392
+#: src/Admin/AdminMenu.php:429
 msgid "You have unsaved changes."
 msgstr ""
 
-#: src/Admin/AdminMenu.php:395
+#: src/Admin/AdminMenu.php:432
 msgid "Leave the shipping status alone"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:396
+#: src/Admin/AdminMenu.php:433
 msgid "Also set the shipping status to"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:397
+#: src/Admin/AdminMenu.php:434
 msgid "Paid — set by FluentCart"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:398
+#: src/Admin/AdminMenu.php:435
 msgid "Add the standard workflow steps? Anything you have already set up is left alone."
 msgstr ""
 
-#: src/Admin/AdminMenu.php:399
+#: src/Admin/AdminMenu.php:436
 msgid "Creating the workflow…"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:400
+#: src/Admin/AdminMenu.php:437
 msgid "Read FluentCart's activity log and rebuild the imported history? Changes recorded since the plugin was installed are kept as they are."
 msgstr ""
 
-#: src/Admin/AdminMenu.php:401
+#: src/Admin/AdminMenu.php:438
 msgid "Reading the activity log…"
 msgstr ""
 
 #. translators: %d: number of rows in the status history table
-#: src/Admin/AdminMenu.php:403
+#: src/Admin/AdminMenu.php:440
 #, php-format
 msgid "%d status change(s) recorded."
 msgstr ""
 
-#: src/Admin/AdminMenu.php:404
+#: src/Admin/AdminMenu.php:441
 msgid "Sending…"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:405
+#: src/Admin/AdminMenu.php:442
 msgid "Loading the report…"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:406
+#: src/Admin/AdminMenu.php:443
 msgid "Could not load the report."
 msgstr ""
 
-#: src/Admin/AdminMenu.php:407
+#: src/Admin/AdminMenu.php:444
 #: src/Reports/CsvExporter.php:41
 #: src/Reports/CsvExporter.php:78
 #: src/Reports/CsvExporter.php:111
 msgid "Status"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:408
-#: src/Pipeline/Template.php:95
-#: src/Pipeline/Template.php:102
+#: src/Admin/AdminMenu.php:445
+#: src/Pipeline/Template.php:110
+#: src/Pipeline/Template.php:117
+#: src/Pipeline/Template.php:183
+#: src/Pipeline/Template.php:187
 #: src/Support/Labels.php:47
 msgid "Paid"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:409
+#: src/Admin/AdminMenu.php:446
 msgid "Unpaid"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:410
+#: src/Admin/AdminMenu.php:447
 msgid "Total"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:412
+#: src/Admin/AdminMenu.php:449
 msgid "Amount"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:413
+#: src/Admin/AdminMenu.php:450
 #: src/Reports/CsvExporter.php:113
 msgid "Completed stays"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:414
+#: src/Admin/AdminMenu.php:451
 msgid "Average"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:415
+#: src/Admin/AdminMenu.php:452
 msgid "Longest"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:416
+#: src/Admin/AdminMenu.php:453
 #: src/Reports/CsvExporter.php:77
 msgid "Order"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:417
+#: src/Admin/AdminMenu.php:454
 msgid "On this step since"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:418
+#: src/Admin/AdminMenu.php:455
 msgid "Days"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:419
+#: src/Admin/AdminMenu.php:456
 msgid "No orders in this range."
 msgstr ""
 
-#: src/Admin/AdminMenu.php:420
+#: src/Admin/AdminMenu.php:457
 msgid "No completed stays yet — a status needs to have been left at least once before it can be timed."
 msgstr ""
 
 #. translators: %d: threshold in days
-#: src/Admin/AdminMenu.php:422
+#: src/Admin/AdminMenu.php:459
 #, php-format
 msgid "Nothing has been on the same step for more than %d day(s)."
 msgstr ""
 
-#: src/Admin/AdminMenu.php:423
+#: src/Admin/AdminMenu.php:460
 msgid "days"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:424
+#: src/Admin/AdminMenu.php:461
 msgid "hours"
 msgstr ""
 
-#: src/Admin/AdminMenu.php:425
+#: src/Admin/AdminMenu.php:462
 msgid "min"
 msgstr ""
 
 #. translators: %s: comma-separated currency codes
-#: src/Admin/AdminMenu.php:427
+#: src/Admin/AdminMenu.php:464
 #, php-format
 msgid "This store has orders in more than one currency (%s). The amounts below are a plain sum of the stored values and are not converted."
 msgstr ""
 
-#: src/Admin/AdminMenu.php:428
+#: src/Admin/AdminMenu.php:465
 msgid "No status history has been recorded yet, so the timings below are empty. Import the history from the activity log on the Tools tab, or wait for the next status change."
 msgstr ""
 
-#: src/Admin/OrderWidget.php:81
+#: src/Admin/AdminMenu.php:468
+msgid "Add the fulfilment workflow to the shipping status? Anything you have already set up is left alone."
+msgstr ""
+
+#: src/Admin/AdminMenu.php:469
+msgid "Unshipped — where every physical order starts"
+msgstr ""
+
+#: src/Admin/AdminMenu.php:470
+msgid "Shipped — FluentCart marks the items fulfilled here"
+msgstr ""
+
+#: src/Admin/AdminMenu.php:471
+msgid "order status"
+msgstr ""
+
+#: src/Admin/AdminMenu.php:472
+msgid "shipping status"
+msgstr ""
+
+#: src/Admin/OrderWidget.php:103
+msgid "Changing…"
+msgstr ""
+
+#: src/Admin/OrderWidget.php:104
+msgid "The status could not be changed."
+msgstr ""
+
+#: src/Admin/OrderWidget.php:105
+msgid "Choose a status first."
+msgstr ""
+
+#: src/Admin/OrderWidget.php:147
+msgid "Move this order along the workflow. The list offers only the moves this order is allowed to make."
+msgstr ""
+
+#: src/Admin/OrderWidget.php:167
 msgid "Every order and shipping status this order has been through, and how long it stayed."
 msgstr ""
 
-#: src/Admin/OrderWidget.php:121
+#. translators: 1: step number, 2: how many steps the workflow has
+#: src/Admin/OrderWidget.php:218
+#, php-format
+msgid "step %1$d of %2$d"
+msgstr ""
+
+#: src/Admin/OrderWidget.php:234
+msgid "There is nowhere for this order to move on this axis."
+msgstr ""
+
+#: src/Admin/OrderWidget.php:244
+msgid "Move to…"
+msgstr ""
+
+#: src/Admin/OrderWidget.php:252
+msgid "Change"
+msgstr ""
+
+#. translators: %s: the next workflow step's label
+#: src/Admin/OrderWidget.php:262
+#, php-format
+msgid "Next step: %s →"
+msgstr ""
+
+#: src/Admin/OrderWidget.php:280
+msgid "Move the shipping status to"
+msgstr ""
+
+#: src/Admin/OrderWidget.php:281
+msgid "Move the order status to"
+msgstr ""
+
+#: src/Admin/OrderWidget.php:290
+msgid "nothing to ship"
+msgstr ""
+
+#: src/Admin/OrderWidget.php:291
+msgid "no status"
+msgstr ""
+
+#: src/Admin/OrderWidget.php:326
 msgid "new order"
 msgstr ""
 
-#: src/Admin/OrderWidget.php:150
-msgid "Shipping status"
-msgstr ""
-
-#: src/Admin/OrderWidget.php:151
-msgid "Order status"
-msgstr ""
-
 #. translators: %s: a duration such as "2 days"
-#: src/Admin/OrderWidget.php:204
+#: src/Admin/OrderWidget.php:409
 #, php-format
 msgid "here for %s"
 msgstr ""
 
 #. translators: %s: a duration such as "2 days"
-#: src/Admin/OrderWidget.php:209
+#: src/Admin/OrderWidget.php:414
 #, php-format
 msgid "stayed %s"
 msgstr ""
 
+#. translators: %s: shipping status label
+#: src/Admin/SavedViews.php:227
+#, php-format
+msgid "%s · shipping"
+msgstr ""
+
 #. translators: 1: required FluentCart version, 2: installed FluentCart version
-#: src/Bootstrap.php:113
+#: src/Bootstrap.php:115
 #, php-format
 msgid "YS FluentCart Order Statuses needs FluentCart %1$s or newer. FluentCart %2$s is installed, so custom statuses are switched off. Orders already sitting on a custom status keep their value."
 msgstr ""
 
 #. translators: %s: required FluentCart version
-#: src/Bootstrap.php:119
+#: src/Bootstrap.php:121
 #, php-format
 msgid "YS FluentCart Order Statuses needs FluentCart %s or newer to be active. Custom statuses are switched off until then."
 msgstr ""
 
 #. translators: %s: status label
-#: src/Payment/RequirementGuard.php:169
+#: src/Payment/RequirementGuard.php:174
 #, php-format
 msgid "“%s” can only be used on orders that have been paid. This order has not been paid yet."
 msgstr ""
 
 #. translators: %s: status label
-#: src/Payment/RequirementGuard.php:176
+#: src/Payment/RequirementGuard.php:181
 #, php-format
 msgid "“%s” can only be used on orders that have not been paid yet. This order has already been paid."
 msgstr ""
@@ -651,6 +774,25 @@ msgstr ""
 #: src/Payment/RestoreHandler.php:149
 #, php-format
 msgid "Payment was recorded. FluentCart set this order to Processing; YS Order Statuses restored the custom status %1$s (%2$s) because it is configured to be kept after payment."
+msgstr ""
+
+#: src/Pipeline/Changer.php:208
+#: src/Rest/ChangeController.php:278
+msgid "That order no longer exists."
+msgstr ""
+
+#. translators: %s: status slug
+#: src/Pipeline/Changer.php:254
+#, php-format
+msgid "“%s” is not a status this order can be moved to."
+msgstr ""
+
+#: src/Pipeline/Changer.php:275
+msgid "This order has nothing to ship, so it has no shipping status."
+msgstr ""
+
+#: src/Pipeline/Changer.php:283
+msgid "This order has been canceled, and FluentCart does not allow the order status to be changed afterwards."
 msgstr ""
 
 #: src/Pipeline/LinkedShipping.php:116
@@ -697,59 +839,71 @@ msgstr ""
 msgid "The order workflow runs one step at a time. This order is on “%1$s”, so it cannot move straight to “%2$s” — the next step is “%3$s”. Turn off strict order workflow on the Order Statuses screen to allow skipping."
 msgstr ""
 
-#: src/Pipeline/Template.php:43
+#: src/Pipeline/Template.php:58
+#: src/Pipeline/Template.php:150
 msgid "In production"
 msgstr ""
 
-#: src/Pipeline/Template.php:45
+#: src/Pipeline/Template.php:60
+#: src/Pipeline/Template.php:152
 msgid "Paid, and the goods are being made."
 msgstr ""
 
-#: src/Pipeline/Template.php:55
+#: src/Pipeline/Template.php:70
+#: src/Pipeline/Template.php:159
 msgid "Shipment scheduled"
 msgstr ""
 
-#: src/Pipeline/Template.php:57
+#: src/Pipeline/Template.php:72
+#: src/Pipeline/Template.php:161
 msgid "Made, and booked onto a shipment."
 msgstr ""
 
-#: src/Pipeline/Template.php:67
-#: src/Pipeline/Template.php:107
+#: src/Pipeline/Template.php:82
+#: src/Pipeline/Template.php:122
+#: src/Pipeline/Template.php:192
 #: src/Support/Labels.php:57
 msgid "Shipped"
 msgstr ""
 
-#: src/Pipeline/Template.php:69
+#: src/Pipeline/Template.php:84
 msgid "Gone. Sets the shipping status to Shipped as well."
 msgstr ""
 
-#: src/Pipeline/Template.php:96
+#: src/Pipeline/Template.php:111
+#: src/Pipeline/Template.php:184
 #: src/Support/Labels.php:40
 msgid "Completed"
 msgstr ""
 
-#: src/Pipeline/Template.php:97
-#: src/Pipeline/Template.php:101
+#: src/Pipeline/Template.php:112
+#: src/Pipeline/Template.php:116
+#: src/Pipeline/Template.php:188
 msgid "Awaiting payment"
 msgstr ""
 
-#: src/Pipeline/Template.php:98
+#: src/Pipeline/Template.php:113
 #: src/Support/Labels.php:42
 msgid "Canceled"
 msgstr ""
 
-#: src/Pipeline/Template.php:103
+#: src/Pipeline/Template.php:118
 #: src/Support/Labels.php:50
 msgid "Refunded"
 msgstr ""
 
-#: src/Pipeline/Template.php:106
+#: src/Pipeline/Template.php:121
 msgid "Not shipped"
 msgstr ""
 
-#: src/Pipeline/Template.php:108
+#: src/Pipeline/Template.php:123
+#: src/Pipeline/Template.php:193
 #: src/Support/Labels.php:58
 msgid "Delivered"
+msgstr ""
+
+#: src/Pipeline/Template.php:191
+msgid "Awaiting production"
 msgstr ""
 
 #: src/Reports/CsvExporter.php:43
@@ -838,48 +992,77 @@ msgstr ""
 msgid "Open the Order Status Report"
 msgstr ""
 
-#: src/Reports/ReportService.php:318
+#: src/Reports/ReportService.php:338
 msgid "Nothing to ship (digital)"
 msgstr ""
 
-#: src/Reports/ReportService.php:319
+#: src/Reports/ReportService.php:339
 msgid "(no status)"
 msgstr ""
 
-#: src/Rest/ReportController.php:136
+#: src/Rest/ChangeController.php:135
+#: src/Rest/StatusController.php:186
+msgid "Unknown status axis."
+msgstr ""
+
+#: src/Rest/ChangeController.php:143
+msgid "Pick a status to move this order to."
+msgstr ""
+
+#: src/Rest/ChangeController.php:161
+msgid "This order is already on that status."
+msgstr ""
+
+#. translators: %s: shipping status label
+#: src/Rest/ChangeController.php:202
+#, php-format
+msgid "Shipping status changed to %s."
+msgstr ""
+
+#. translators: %s: order status label
+#: src/Rest/ChangeController.php:207
+#, php-format
+msgid "Order status changed to %s."
+msgstr ""
+
+#: src/Rest/ChangeController.php:228
+msgid "This version of FluentCart does not expose the order status API."
+msgstr ""
+
+#: src/Rest/ReportController.php:151
 msgid "Which order?"
 msgstr ""
 
-#: src/Rest/ReportController.php:159
+#: src/Rest/ReportController.php:174
 msgid "Unknown report."
 msgstr ""
 
 #. translators: 1: rows written, 2: orders touched, 3: lines skipped
-#: src/Rest/ReportController.php:206
+#: src/Rest/ReportController.php:228
 #, php-format
 msgid "Read FluentCart's activity log: %1$d status changes across %2$d orders were added to the history. %3$d line(s) were skipped because they were already recorded or could not be read."
 msgstr ""
 
-#: src/Rest/ReportController.php:226
+#: src/Rest/ReportController.php:248
 msgid "Switch the daily summary on and give it an address first."
 msgstr ""
 
 #. translators: %s: e-mail address
-#: src/Rest/ReportController.php:239
+#: src/Rest/ReportController.php:261
 #, php-format
 msgid "Summary sent to %s."
 msgstr ""
 
-#: src/Rest/ReportController.php:242
+#: src/Rest/ReportController.php:264
 msgid "WordPress refused to send the message. Check the site's mail configuration."
 msgstr ""
 
-#: src/Rest/ReportController.php:262
+#: src/Rest/ReportController.php:290
 msgid "Every step of the template was already there — nothing was changed."
 msgstr ""
 
 #. translators: %d: number of statuses added
-#: src/Rest/ReportController.php:265
+#: src/Rest/ReportController.php:293
 #, php-format
 msgid "%d workflow step was added."
 msgid_plural "%d workflow steps were added."
@@ -888,10 +1071,6 @@ msgstr[1] ""
 
 #: src/Rest/StatusController.php:128
 msgid "No settings were supplied."
-msgstr ""
-
-#: src/Rest/StatusController.php:186
-msgid "Unknown status axis."
 msgstr ""
 
 #: src/Rest/StatusController.php:190

@@ -1,0 +1,98 @@
+/**
+ * The status control inside FluentCart's own order page.
+ *
+ * It lives in a Vue card this plugin does not own, in a theme that may be light
+ * or dark, so the rules below set layout and nothing else: colours come from
+ * the badge's own inline swatch and from `currentColor`, which inherits
+ * whatever FluentCart has already decided the card's text should be. Anything
+ * more opinionated would look wrong in one of the two themes.
+ */
+
+.ys-fct-changer {
+	font-size: 13px;
+}
+
+.ys-fct-changer-axis + .ys-fct-changer-axis {
+	margin-top: 14px;
+	padding-top: 14px;
+	border-top: 1px solid currentColor;
+	/* A full-strength rule would be a black bar in light mode and a white one
+	   in dark; this is the same trick the history timeline uses. */
+	border-top-color: rgba( 128, 128, 128, .28 );
+}
+
+.ys-fct-changer-head {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	align-items: center;
+	margin: 0 0 8px;
+}
+
+.ys-fct-changer-axis-name {
+	opacity: .7;
+}
+
+.ys-fct-changer-badge {
+	display: inline-block;
+	padding: 2px 10px;
+	border-radius: 999px;
+	color: #fff;
+	font-weight: 600;
+	/* The swatch is an arbitrary operator-chosen colour, so the text on it is
+	   forced white and given a shadow rather than being left to contrast
+	   against a hue nobody checked. */
+	text-shadow: 0 1px 1px rgba( 0, 0, 0, .35 );
+}
+
+.ys-fct-changer-step {
+	opacity: .6;
+	font-variant-numeric: tabular-nums;
+}
+
+.ys-fct-changer-row {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	align-items: center;
+	margin: 0;
+}
+
+.ys-fct-changer-select {
+	max-width: 100%;
+	min-width: 12em;
+}
+
+.ys-fct-changer-locked {
+	margin: 0;
+	opacity: .7;
+}
+
+.ys-fct-changer.is-busy {
+	opacity: .6;
+	pointer-events: none;
+}
+
+.ys-fct-changer-message {
+	margin: 10px 0 0;
+}
+
+.ys-fct-changer-message:empty {
+	display: none;
+}
+
+.ys-fct-changer-message.is-error {
+	padding: 8px 10px;
+	border-left: 4px solid #b32d2e;
+	background: rgba( 179, 45, 46, .12 );
+}
+
+.ys-fct-changer-message.is-success {
+	padding: 8px 10px;
+	border-left: 4px solid #007017;
+	background: rgba( 0, 112, 23, .12 );
+}
+
+.ys-fct-changer-message.is-info {
+	opacity: .75;
+}

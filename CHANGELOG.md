@@ -5,6 +5,74 @@ All notable changes to YS FluentCart Order Statuses.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] — 2026-09-11
+
+The workflow can now be **driven**, not just declared. Measured on FluentCart
+1.6.3: a *paid* order has no order-status control anywhere in the admin — the
+header carries Refund, a disabled Edit and a "More Action" menu (Change Shipping
+Status, Cancel Order, Sync Order Statuses, Receipt) — so an operator whose whole
+workflow starts after payment could not move an order along it from FluentCart's
+own UI. 0.3 supplies the control, and adds a second, safer home for the same
+workflow on the shipping axis. Upgrading from 0.2.0 changes nothing about an
+existing configuration.
+
+### Added
+
+- **An "Order workflow" panel on the order page**, above the status history:
+  the order's status on both axes with its step number, a dropdown of **only
+  the moves this order is allowed to make** (in workflow order), a *Change*
+  button and a one-click *Next step →* button. The list and the write are one
+  rule — `Pipeline\Changer` builds the dropdown from
+  `Status::getEditableOrderStatuses()` with the order in scope and asks the same
+  guards the REST veto asks — so an option that would be refused is never
+  offered, and a refusal that happens anyway is printed inline in the veto's own
+  words. The write goes through `OrderResource::updateStatuses()` with
+  `manage_stock: false`, so every event, activity line, `fulfilled_quantity`
+  update and linked-shipping follow-up behaves exactly as for a manual change.
+  No inline script: FluentCart injects widgets with `innerHTML`, so the behaviour
+  lives in `assets/admin/order-changer.js` behind one delegated listener.
+- **A fulfilment workflow template on the shipping axis** (*Tools → Create the
+  fulfilment workflow*): `unshipped` (relabelled "Awaiting production") →
+  `in_production` → `ship_scheduled` → the built-in `shipped`, which is
+  deliberately not redefined because it is the slug core checks when it marks
+  line items fulfilled. Nothing in FluentCart ever overwrites `shipping_status`,
+  and FluentCart's own "Change Shipping Status" dialog drives it on a paid order,
+  so this is the recommended axis for any post-payment workflow. Both templates
+  can coexist; applying either twice is a no-op.
+- **FluentCart's shipping dialog lists the steps in workflow order.** Both
+  `fluent_cart/shipping_statuses` and `fluent_cart/editable_shipping_statuses`
+  are now ordered — the SPA builds that dialog from the *display* map, which is
+  not the obvious one.
+- **The report has an axis switch** (*Order status / Shipping status*) for the
+  funnel, the dwell table and the stuck list; both distribution tables are
+  always shown. The axis is named beside each heading and carried in the CSV
+  filename for the two exports that follow the switch.
+- **Saved views for custom shipping statuses** on the Orders list ("In
+  production · shipping (4)"). A shipping view cannot use a search expression —
+  `OrderFilter::getSearchableFields()` has no `shipping_status` entry — so the
+  clause is added on `fluent_cart/orders_list_filter_query`, with the view slug
+  captured on `rest_pre_dispatch` and checked against the configured statuses
+  before it is used.
+- The Shipping statuses tab draws the fulfilment workflow as a numbered strip,
+  as the Order statuses tab already did for the order workflow.
+- New REST routes: `GET orders/{id}/state`, `POST orders/{id}/change`;
+  `template` and `reports/overview` / `reports/export` take an `axis`.
+- `RequirementGuard::rejectionReason()` is public and static so the control and
+  the veto share it.
+
+### Verified, no change needed
+
+- *More Action → Sync Order Statuses* on a kept custom status runs the same
+  overwrite as a payment (`processing`), and `RestoreHandler` puts the custom
+  status straight back — checked in both directions (C7).
+
+### Tests
+
+- 233 unit assertions (`php tests/run.php`), and a new 109-assertion
+  walkthrough `tests/changer-scenarios.php` (C1–C7 for the control, S1–S6 for
+  the shipping-axis workflow) on top of the 67 + 118 from 0.1 and 0.2 — all
+  driven through real REST requests and read back from the database.
+
 ## [0.2.0] — 2026-09-11
 
 Custom order statuses become a **workflow** rather than a set, and the plugin
@@ -131,5 +199,6 @@ First release. Developed against FluentCart 1.6.3; minimum supported 1.6.0.
   settings unless `YS_FCT_STATUS_REMOVE_DATA` is defined.
 - Custom payment statuses are deliberately out of scope for v1.
 
+[0.3.0]: https://yangsheep.com.tw
 [0.2.0]: https://yangsheep.com.tw
 [0.1.0]: https://yangsheep.com.tw

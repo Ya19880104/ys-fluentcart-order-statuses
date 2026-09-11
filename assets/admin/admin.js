@@ -121,6 +121,7 @@
 		// keystroke cannot steal focus from the field being typed into.
 		if ( model ) {
 			renderSteps();
+			renderShippingSteps();
 		}
 	}
 
@@ -631,6 +632,43 @@
 		} );
 	}
 
+	/**
+	 * The fulfilment workflow, drawn the same way as the order one.
+	 *
+	 * It has a closing step the order workflow does not: `shipped` is where
+	 * FluentCart marks each physical item fulfilled, so it is a real step and
+	 * not just a destination. Showing it makes the shape of the workflow —
+	 * built-in, yours, yours, built-in — obvious at a glance.
+	 */
+	function renderShippingSteps() {
+		var list = root.querySelector( '[data-ys-shipping-steps]' );
+
+		if ( ! list ) {
+			return;
+		}
+
+		list.textContent = '';
+
+		list.appendChild( builtinStepItem( cfg.shipEntry || 'unshipped', 'shipping', t( 'stepShipEntry' ) ) );
+
+		model.shipping.forEach( function ( definition ) {
+			if ( false === definition.enabled ) {
+				return;
+			}
+
+			list.appendChild( stepItem( definition.label || definition.slug, definition.color, '' ) );
+		} );
+
+		list.appendChild( builtinStepItem( cfg.shipExit || 'shipped', 'shipping', t( 'stepShipExit' ) ) );
+	}
+
+	function builtinStepItem( slug, axis, note ) {
+		var override = ( model.overrides[ axis ] && model.overrides[ axis ][ slug ] ) || {};
+		var label = override.label || ( builtin[ axis ] && builtin[ axis ][ slug ] ) || slug;
+
+		return stepItem( label, override.color || '', note );
+	}
+
 	function stepItem( label, color, note ) {
 		var children = [ el( 'strong', { text: label } ) ];
 
@@ -686,6 +724,7 @@
 		renderOverrides( 'shipping' );
 		renderUsageSummary();
 		renderSteps();
+		renderShippingSteps();
 		renderTools();
 	}
 
@@ -800,6 +839,7 @@
 			markDirty();
 			renderAxis( axis );
 			renderSteps();
+			renderShippingSteps();
 		} );
 	} );
 
@@ -876,6 +916,33 @@
 		} );
 	}
 
+	var shippingTemplateButton = root.querySelector( '[data-ys-template-shipping]' );
+
+	if ( shippingTemplateButton ) {
+		shippingTemplateButton.addEventListener( 'click', function () {
+			if ( ! window.confirm( t( 'shippingConfirm' ) ) ) {
+				return;
+			}
+
+			notice( t( 'templateWorking' ), 'info' );
+
+			request( 'template', { method: 'POST', body: { axis: 'shipping' } } )
+				.then( function ( payload ) {
+					// Same reasoning as the order-axis button: the template
+					// writes straight to the option, so the screen is reloaded
+					// from the server rather than patched.
+					return request( 'settings' ).then( function ( fresh ) {
+						adopt( fresh );
+						showTab( 'shipping' );
+						notice( payload.message, 'success' );
+					} );
+				} )
+				.catch( function ( error ) {
+					notice( error.message || t( 'saveFailed' ), 'error' );
+				} );
+		} );
+	}
+
 	var backfillButton = root.querySelector( '[data-ys-backfill]' );
 
 	if ( backfillButton ) {
@@ -936,9 +1003,20 @@
 		};
 	}
 
+	/**
+	 * Which of the two workflows the funnel, the timings and the stuck list
+	 * describe. The two distribution tables are per-axis by construction and
+	 * are always rendered, so this switch does not touch them.
+	 */
+	function reportAxis() {
+		var picked = root.querySelector( '[data-ys-report-axis]:checked' );
+
+		return picked && 'shipping' === picked.value ? 'shipping' : 'order';
+	}
+
 	function reportQuery() {
 		var range = reportRange();
-		var parts = [];
+		var parts = [ 'axis=' + encodeURIComponent( reportAxis() ) ];
 
 		if ( range.since ) {
 			parts.push( 'since=' + encodeURIComponent( range.since ) );
@@ -948,7 +1026,7 @@
 			parts.push( 'until=' + encodeURIComponent( range.until ) );
 		}
 
-		return parts.length ? '?' + parts.join( '&' ) : '';
+		return '?' + parts.join( '&' );
 	}
 
 	function loadReport() {
@@ -990,11 +1068,27 @@
 		}
 
 		setHistoryCount( data.history_rows );
+		renderAxisChips( data.axis );
 		renderFunnel( data.funnel, data.orders_url );
 		renderDistribution( 'order', data.order_statuses );
 		renderDistribution( 'shipping', data.shipping_statuses );
 		renderDwell( data.dwell );
 		renderStalled( data.stalled, data.orders_url );
+	}
+
+	/**
+	 * Name the axis next to the three headings it applies to.
+	 *
+	 * Without it the funnel and the stuck list change under the operator when
+	 * they flip the switch, with nothing on screen saying which workflow they
+	 * are now reading — and the two workflows can legitimately share step names.
+	 */
+	function renderAxisChips( axis ) {
+		var name = 'shipping' === axis ? t( 'axisShipping' ) : t( 'axisOrder' );
+
+		root.querySelectorAll( '[data-ys-axis-chip]' ).forEach( function ( chip ) {
+			chip.textContent = name;
+		} );
 	}
 
 	function renderFunnel( steps, ordersUrl ) {
@@ -1217,6 +1311,10 @@
 		refreshButton.addEventListener( 'click', loadReport );
 	}
 
+	root.querySelectorAll( '[data-ys-report-axis]' ).forEach( function ( radio ) {
+		radio.addEventListener( 'change', loadReport );
+	} );
+
 	var clearButton = root.querySelector( '[data-ys-report-clear]' );
 
 	if ( clearButton ) {
@@ -1232,9 +1330,10 @@
 	root.querySelectorAll( '[data-ys-export-report]' ).forEach( function ( button ) {
 		button.addEventListener( 'click', function () {
 			var type = button.getAttribute( 'data-ys-export-report' );
-			var separator = reportQuery() ? '&' : '?';
 
-			request( 'reports/export' + reportQuery() + separator + 'type=' + encodeURIComponent( type ) )
+			// `reportQuery()` always carries the axis, so it is never empty and
+			// the separator is always an ampersand.
+			request( 'reports/export' + reportQuery() + '&type=' + encodeURIComponent( type ) )
 				.then( function ( payload ) {
 					download( payload.filename, payload.csv, 'text/csv;charset=utf-8' );
 				} )

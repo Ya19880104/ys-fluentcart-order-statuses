@@ -107,9 +107,18 @@ final class StatusRegistry {
 	 * @return array
 	 */
 	public static function inPipelineOrder( array $statuses ) {
+		return self::inPipelineOrderFor( 'order', $statuses );
+	}
+
+	/**
+	 * @param string $axis     'order' or 'shipping'.
+	 * @param array  $statuses Slug => label.
+	 * @return array
+	 */
+	public static function inPipelineOrderFor( $axis, array $statuses ) {
 		$ordered = array();
 
-		foreach ( Settings::pipeline( self::settings() ) as $slug ) {
+		foreach ( Settings::pipelineFor( $axis, self::settings() ) as $slug ) {
 			if ( isset( $statuses[ $slug ] ) ) {
 				$ordered[ $slug ] = $statuses[ $slug ];
 				unset( $statuses[ $slug ] );
@@ -120,19 +129,40 @@ final class StatusRegistry {
 	}
 
 	/**
+	 * Display list of shipping statuses — and, measured on 1.6.3, the list
+	 * FluentCart's own "Change Shipping Status" dialog is built from.
+	 *
+	 * This is **not** the obvious one. The admin SPA localises
+	 * `order_statuses`, `editable_order_statuses`, `payment_statuses`,
+	 * `editable_payment_statuses` … and `shipping_statuses`. There is no
+	 * `editable_shipping_statuses` in `window.fluentCartAdminApp` at all: that
+	 * filter is the server-side write allow-list and nothing else. So the
+	 * dialog reads *this* map, and ordering only the editable one left the
+	 * custom steps listed after `unshippable` — verified in the browser before
+	 * this line existed.
+	 *
 	 * @param mixed $statuses Core's map.
 	 * @return array
 	 */
 	public function shippingStatuses( $statuses ) {
-		return $this->merge( $statuses, 'shipping', 'shipping', false );
+		return self::inPipelineOrderFor( 'shipping', $this->merge( $statuses, 'shipping', 'shipping', false ) );
 	}
 
 	/**
+	 * Manually settable shipping statuses — and the write-side allow-list.
+	 *
+	 * Returned in fulfilment order, so FluentCart's own "Change Shipping
+	 * Status" dialog reads *Not shipped yet → In production → Shipment
+	 * scheduled → Shipped*, with `delivered` and `unshippable` underneath.
+	 * That dialog is the one control FluentCart 1.6.3 offers on a **paid**
+	 * order, which is why the recommended place for a post-payment workflow is
+	 * this axis rather than the order one.
+	 *
 	 * @param mixed $statuses Core's map.
 	 * @return array
 	 */
 	public function editableShippingStatuses( $statuses ) {
-		return $this->merge( $statuses, 'shipping', 'shipping', true );
+		return self::inPipelineOrderFor( 'shipping', $this->merge( $statuses, 'shipping', 'shipping', true ) );
 	}
 
 	/**

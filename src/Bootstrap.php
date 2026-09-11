@@ -19,6 +19,7 @@ use YangSheep\FluentCart\OrderStatuses\Payment\RestoreHandler;
 use YangSheep\FluentCart\OrderStatuses\Pipeline\LinkedShipping;
 use YangSheep\FluentCart\OrderStatuses\Pipeline\StrictGuard;
 use YangSheep\FluentCart\OrderStatuses\Reports\DailySummary;
+use YangSheep\FluentCart\OrderStatuses\Rest\ChangeController;
 use YangSheep\FluentCart\OrderStatuses\Rest\ReportController;
 use YangSheep\FluentCart\OrderStatuses\Rest\StatusController;
 use YangSheep\FluentCart\OrderStatuses\Support\OrderContext;
@@ -79,6 +80,7 @@ final class Bootstrap {
 
 		( new StatusController() )->register();
 		( new ReportController() )->register();
+		( new ChangeController() )->register();
 		( new AdminMenu() )->register();
 		( new ColorStyles() )->register();
 		( new SavedViews() )->register();

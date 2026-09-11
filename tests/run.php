@@ -22,6 +22,7 @@ $suites = array(
 	__DIR__ . '/RegistryTest.php',
 	__DIR__ . '/PipelineTest.php',
 	__DIR__ . '/PresentationTest.php',
+	__DIR__ . '/ShippingWorkflowTest.php',
 	// Last: it defines FLUENTCART_VERSION, which nothing else may see.
 	__DIR__ . '/BootstrapGuardTest.php',
 );

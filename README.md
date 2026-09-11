@@ -11,10 +11,65 @@ template, an optional "one step at a time" rule, a shipping status that follows
 the order status, and a report that answers the question a production schedule
 actually asks — *what is queued, and what has been sitting there too long?*
 
-* **Version:** 0.2.0
+Since 0.3 the workflow can be **driven**. FluentCart 1.6.3 offers no
+order-status control at all on a paid order, so the order page gets one, and the
+shipping axis — which FluentCart *does* let you change on a paid order, and
+which nothing ever overwrites — gets a one-click template of its own. §0 is the
+two-minute version of which to use.
+
+* **Version:** 0.3.0
 * **Requires:** WordPress 6.0+, PHP 7.4+, FluentCart 1.6.0+ (developed and tested against 1.6.3)
 * **Text domain:** `ys-fluentcart-order-statuses` (ships with zh_TW)
 * **Nothing in FluentCart or WordPress core is patched.** Public filters, one option, one admin page and the plugin's own REST namespace.
+
+---
+
+## 0. Two ways to build the same workflow — and which one to pick
+
+Almost every shop that installs this plugin wants the same four states:
+
+> **paid → in production → shipment scheduled → shipped**
+
+There are two places to put them, both one button on the admin screen, and the
+choice matters more than anything else on this page.
+
+| | **Fulfilment workflow (shipping axis)** — *recommended* | **Order workflow (order axis)** |
+|---|---|---|
+| Where the button is | *Order Statuses → Tools* | *Order Statuses → Order statuses* |
+| Column written | `shipping_status` | `status` |
+| Does FluentCart ever overwrite it? | **No.** Measured on 1.6.3: nothing writes that column by itself, ever. | **Yes** — to `processing`, every time a payment is recorded. §3 is the whole workaround. |
+| Can staff change it in FluentCart's own UI on a **paid** order? | **Yes** — *More Action → Change Shipping Status*, with the workflow steps listed in order. | **No.** FluentCart 1.6.3 shows no order-status control on a paid order at all. This plugin supplies one (§2b). |
+| Does the customer see it? | Only where the theme prints a shipping status. | Yes — it is the order status on the customer dashboard. |
+| Does it mark line items fulfilled? | Yes, at `shipped` — core's own `fulfilled_quantity` bookkeeping. | Only through `linked_shipping_status` (§2a). |
+
+**If the workflow starts after the customer has paid, it is a fulfilment
+workflow, and it belongs on the shipping axis.** That is what a production
+schedule is. Press *Create the fulfilment workflow (shipping axis)* on the Tools
+tab and you get:
+
+| Step | Status | Slug | Kind |
+|---|---|---|---|
+| 1 | Awaiting production | `unshipped` | built-in, relabelled |
+| 2 | In production | `in_production` | custom |
+| 3 | Shipment scheduled | `ship_scheduled` | custom |
+| 4 | Shipped | `shipped` | built-in, untouched |
+
+`shipped` is deliberately *not* redefined: it is the exact slug
+`OrderResource::updateStatuses()` checks when it sets each physical line item's
+`fulfilled_quantity`, so a custom "shipped" beside it would look identical to
+staff and leave every order half-fulfilled in core's own books. The two custom
+steps are inserted **before** it everywhere FluentCart lists shipping statuses.
+
+**The order axis is still the right answer** when the states really are states
+of the *order* rather than of the delivery — "awaiting artwork approval",
+"awaiting customer confirmation" — or when you want them on the status your
+customers already see. Everything in §2a–§4 is about that axis, and 0.3 adds the
+control it was missing.
+
+Both templates can be applied to the same store. The slugs `in_production` and
+`ship_scheduled` appear on both axes on purpose: they are independent columns
+with independent definitions, and the same word for the same step is the only
+sane outcome. Whichever template runs first keeps the built-in labels it sets.
 
 ---
 
@@ -39,7 +94,7 @@ rename (never add to) the **payment** axis.
 > contrast, is rewritten by the payment code every time money arrives — which is
 > the whole reason §3 below exists. "Sourcing in the US → at the US warehouse →
 > in transit → customs → delivered" is a shipping workflow, not an order-status
-> workflow, and it is far safer there.
+> workflow, and it is far safer there. §0 has the one-click version.
 
 Because the columns are `VARCHAR(20)`, a custom slug is capped at **20
 characters**. The plugin enforces that, along with a lowercase
@@ -98,6 +153,16 @@ FluentCart's own status dropdown reads *Paid → In production → Shipment sche
 → Shipped* with the remaining built-ins underneath. Array order is the only lever
 that map offers — the dropdown component has no ordering hook of its own.
 
+The shipping axis needs **two** maps ordered, and which two is not obvious.
+`window.fluentCartAdminApp` carries `order_statuses`,
+`editable_order_statuses`, `payment_statuses`, `editable_payment_statuses` and
+`shipping_statuses` — and no `editable_shipping_statuses` at all. That filter is
+the server-side write allow-list and nothing else. FluentCart's *Change Shipping
+Status* dialog is therefore built from the **display** map, which is why
+`fluent_cart/shipping_statuses` is ordered too. Ordering only the editable one
+left the custom steps listed after `unshippable` in the dialog — seen in the
+browser before the second line existed.
+
 ### Linked shipping status
 
 The last step of an order workflow is usually also a fulfilment fact, and making
@@ -146,6 +211,80 @@ Three things it deliberately does **not** do:
 Enforced in the same two layers as §4: a `422` from `rest_pre_dispatch`, and the
 offending slugs dropped from `fluent_cart/editable_order_statuses` for the order
 in flight so core's own write-side allow-list agrees.
+
+---
+
+## 2b. The status control on the order page
+
+**The gap, measured in the browser on 1.6.3.** Open a *paid* order in
+FluentCart's admin. The header has *Refund*, a disabled *Edit* and a *More
+Action* menu whose entries are **Change Shipping Status, Cancel Order, Sync
+Order Statuses, Receipt**. There is no order-status control anywhere on the
+page. It does not matter how many custom statuses are registered, or how neatly
+`editable_order_statuses` is ordered: an operator whose whole workflow begins
+after payment cannot move an order along it from FluentCart's own UI.
+
+So the *Status history* panel this plugin already owns grew a sibling above it —
+**Order workflow** — which shows, for both axes at once:
+
+* the status the order is on now, in its configured colour, and which step of
+  the workflow that is;
+* a dropdown of **only the moves this order is allowed to make**, in workflow
+  order, and a **Change** button;
+* a **Next step →** button when the order is on a workflow step and there is one
+  after it.
+
+Three things about how it works are worth knowing:
+
+**The list and the write are one rule, not two.** `Pipeline\Changer` builds the
+dropdown by calling `Status::getEditableOrderStatuses()` with the order in scope
+— the same list `OrderResource::updateStatuses()` validates against, already
+narrowed by `payment_requirement` and `pipeline_strict` — and then asks those two
+guards for their sentence about every remaining slug. An option that would be
+refused is never offered. When one is refused anyway — because the page was left
+open while somebody else changed a setting — the `422` appears **inline, beside
+the control**, in exactly the words the REST veto would have used:
+
+> The order workflow runs one step at a time. This order is on "Shipment
+> scheduled", so it cannot move straight to "Paid" — the next step is "In
+> production". Turn off strict order workflow on the Order Statuses screen to
+> allow skipping.
+
+**The write goes through FluentCart.** `POST ys-fct-status/v1/orders/{id}/change`
+hands the change to `OrderResource::updateStatuses()` with core's own
+`change_order_status` / `change_shipping_status` action and `manage_stock:
+false` — the same call the admin dropdown makes, and the same one
+`Pipeline\LinkedShipping` has made since 0.2. Everything downstream therefore
+still happens: core's validation, its canceled-order refusal, `fulfilled_quantity`
+on the shipping axis, the `OrderStatusUpdated` event and with it every
+`*_status_changed_to_<slug>` action, FluentCart's own activity line, this
+plugin's history row and its linked-shipping follow-up. `manage_stock: false` is
+load-bearing — it is what tells `Payment\RestoreHandler` this is a person and
+not a payment, and sending `true` would make the restore undo the operator's own
+move.
+
+**There is no inline script.** FluentCart injects an `html` widget's content
+with `innerHTML`, which does not execute script nodes, so the markup is inert
+and the behaviour lives in `assets/admin/order-changer.js` — enqueued on
+FluentCart's own screens, listening through one delegated handler on `document`,
+and costing nothing until a click lands inside the control. A successful change
+reloads the order view, because it moves more of the page than this one panel:
+the header badge, the activity feed, the fulfilment marker on the order items
+and — when the new status carries a linked shipping status — the other axis of
+the control itself. A refusal never reloads.
+
+Two axes, two sets of rules, and the difference is the point:
+
+| | Order axis | Shipping axis |
+|---|---|---|
+| `payment_requirement` | enforced | not applicable — money is not a shipping question |
+| `pipeline_strict` | enforced | not applicable — it is defined over the order-status workflow |
+| Canceled order | closed, with core's reason shown | **open**, exactly as it is in core |
+| Digital / non-shippable order | open | closed, because the column is an empty string and inventing a value would be a lie |
+
+The control is only rendered for a role that could use it
+(`orders/manage`); the history panel below it keeps the lower `orders/view` bar
+it has always had.
 
 ---
 
@@ -200,6 +339,31 @@ Four things make that safe, and each is covered by a test:
 Per status you choose `keep this status` (default) or `let FluentCart set
 Processing`. There is also a **global switch** on the Tools tab that turns the
 whole mechanism off.
+
+### "Sync Order Statuses" reaches the same code, and the guard holds
+
+FluentCart's order page has a *More Action → **Sync Order Statuses*** entry that
+recomputes an order's payment and order status from its transactions. On an
+order sitting on a kept custom status it runs the block above again — the order
+is paid, the custom slug is not in `['completed','processing']`, so core writes
+`processing`. **It is the same overwrite, from a button rather than from a
+payment**, and it was worth checking rather than assuming, because the button
+is the one an operator is most likely to press when something looks wrong.
+
+The discriminator covers it. `StatusHelper::syncOrderStatuses()` dispatches
+`OrderStatusUpdated( …, $manageStock = true, … )`, the same as every other
+payment path, so `RestoreHandler` writes the custom slug straight back and
+leaves its usual line in the activity timeline. Verified in the browser on 1.6.3
+and in `tests/changer-scenarios.php` (C7), from both directions: with the
+restore switched **off**, the same button really does leave the order on
+`processing`. No change was needed.
+
+One cosmetic consequence, and it is core's line rather than ours: the activity
+timeline gains an *"Order status has been updated from `ship_scheduled` to
+`processing`"* entry from FluentCart, immediately followed by this plugin's
+*"Custom order status kept"* explaining that it was put back. The order row
+never actually held `processing`, and the status history table records nothing —
+a round trip that ends where it started is not a status change.
 
 ### What it does not change
 
@@ -306,6 +470,25 @@ the Orders list by the same status:
   threshold (default 3 days, configurable on the Tools tab). For a production
   schedule this is the block that matters.
 
+### Which workflow the report is about
+
+At the top of the tab is a switch: **Order status / Shipping status**. It picks
+which of the two workflows the funnel, the timings and the stuck list describe —
+because those three read a *sequence of steps*, and since 0.3 there are two such
+sequences. Each of the three headings carries the axis beside it, so a screenshot
+of the funnel can never be mistaken for the other one.
+
+The two distribution tables are not affected and are always both shown: they read
+a column rather than a workflow, and a shop wants to see both columns of its own
+store. The CSV for the timings and the stuck list follows the switch, and carries
+the axis in the filename so exporting both workflows into one folder gives two
+files whose names say which is which.
+
+The stuck list uses the same rule on both axes: only the **custom** steps are
+watched. An order that has been `completed` for a month is not stuck, it is
+finished — and neither is one that has been `shipped` for a month, or one sitting
+on `unshipped` because nobody has paid for it yet.
+
 Each block exports to CSV (UTF-8 BOM so Excel reads Chinese correctly, and every
 cell defused against formula injection). There is an optional **daily summary
 e-mail** with the funnel and the stuck list, sent by WP-Cron with a catch-up on
@@ -321,12 +504,37 @@ and counted.
 
 Two more places the workflow shows up in FluentCart's own screens:
 
-* **The Orders list** gets one *saved view* per custom status ("In production
-  (5)"), through `fluent_cart/admin_table_saved_views`. With four built-in tabs
-  already present they appear under **More views**.
-* **The order page** gets a **Status history** panel, through
-  `fluent_cart/widgets/single_order_page`: both axes on one timeline with how long
-  each stay lasted.
+* **The Orders list** gets one *saved view* per custom status on **both** axes —
+  "In production (5)" for the order status, "In production · shipping (4)" for
+  the shipping one — through `fluent_cart/admin_table_saved_views`. With four
+  built-in tabs already present they appear under **More views**. The axis marker
+  is not decoration: the two axes can hold the same slug, and two views with the
+  same name and different counts would be unreadable.
+* **The order page** gets an **Order workflow** control (§2b) and a **Status
+  history** panel, through `fluent_cart/widgets/single_order_page`: both axes on
+  one timeline with how long each stay lasted.
+
+### Why a shipping saved view is built differently
+
+An order-axis view carries the search expression `status = <slug>`, which
+`OrderFilter::applySimpleOperatorFilter()` resolves on its own. A shipping one
+cannot: measured on 1.6.3, `OrderFilter::getSearchableFields()` knows `id`,
+`status`, `invoice`, `payment`, `payment_by` and `customer` (plus `license` with
+Pro), the method is `static` with no filter, and **`shipping_status` is not in
+it**. An expression naming any other column falls through to the free-text
+branch, which looks for the whole string `shipping_status = shipped` inside
+invoice numbers, customer names and product titles — and therefore matches
+nothing at all.
+
+So a shipping view carries no search expression, and the clause is added on
+`fluent_cart/orders_list_filter_query`, the one filter FluentCart applies to the
+finished list query. The slug comes from the request's `active_view`, captured on
+`rest_pre_dispatch` — necessary because `BaseFilter::parseAcceptedView()` returns
+`null` whenever the incoming view turns out to be a saved view rather than one of
+core's fixed tabs, so the array handed to that filter says the active view is
+nothing. The captured slug is looked up against the configured statuses before it
+is used; a view slug is not a free text channel into a `WHERE` clause, and the
+fact that it is parameterised is not a reason to accept one.
 
 ### Why the report is not under FluentCart → Reports
 
@@ -361,7 +569,9 @@ bugs in this plugin, and no add-on can route around them without patching core.
 | `Status::getOrderFailedStatuses()` → `['failed','canceled']` | A custom status can never mean "failed" for core's purposes. |
 | `Status::getOrderPaymentSuccessStatuses()` / `getReportStatuses()` | These read `payment_status`, so **revenue reporting is unaffected by custom order statuses** — measured: FluentCart's own dashboard returned an identical "Order Value (Paid)" with the same order on `sourcing` and on `processing`. |
 | `SubscriptionReportService` uses `whereIn('status', getOrderSuccessStatuses())` | The handful of reports that filter by *order status* (not payment status) exclude custom statuses. |
-| `OrderResource::updateStatuses()` refuses any change once `status === 'canceled'` | Core behaviour; custom statuses are equally blocked. This is intentional and not worked around. |
+| `OrderResource::updateStatuses()` refuses any change once `status === 'canceled'` | Core behaviour; custom statuses are equally blocked. This is intentional and not worked around — the order-page control says so and offers nothing, rather than offering moves that would all come back as a 400. The *shipping* status of a canceled order can still be changed, which is also core's behaviour. |
+| FluentCart 1.6.3 renders **no order-status control on a paid order** | Nothing in the order page's header or *More Action* menu changes `status` once money has arrived. §2b adds one; §0 explains why the shipping axis avoids the problem entirely. |
+| `OrderFilter::getSearchableFields()` has no `shipping_status` entry, and no filter | A saved view cannot filter the Orders list by shipping status with a search expression. Worked around on `fluent_cart/orders_list_filter_query` — see §5a. |
 | The Orders list *tabs* (All / Completed / Processing / On Hold) are a fixed set — `OrderFilter::tabsMap()` has no filter | Custom statuses appear as **saved views** beside them instead (§5a). With four built-in tabs already there, the SPA shows only the first four entries and puts the rest under **More views**. |
 | `BaseFilter::applyAdvancedFilter()` returns immediately unless FluentCart **Pro** is active | A saved view built on an advanced filter would silently match every order on a free store. The views this plugin adds use the simple search expression `status = <slug>` instead, which is not gated. The Orders *advanced filter* UI is extended either way — it just cannot be driven from a saved view without Pro. |
 | The admin SPA renders only the columns in its compiled bundle | `ys_status_meta` on `fluent_cart/orders_list` reaches the browser and is not displayed. It is there for API consumers. |
@@ -414,6 +624,8 @@ This plugin adds two of its own:
 with five tabs: *Order statuses*, *Shipping statuses*, *Built-in labels*, *Order
 Status Report* and *Tools*. Each row shows how many orders currently sit on that
 status, and a status still in use cannot be removed until its orders are moved.
+Both workflow tabs draw the workflow as a numbered strip above the table, so the
+effect of reordering a row is visible before anything is saved.
 
 REST namespace `ys-fct-status/v1`, every route capability-gated
 (`PermissionManager::hasPermission(['orders/manage'])`, falling back to
@@ -428,10 +640,12 @@ nonce-less GET is readable by any page the logged-in shopkeeper happens to open:
 | `/migrate` | POST | move every order off one slug onto another, with an activity note per order |
 | `/export` | GET | the settings document plus export metadata |
 | `/import` | POST | replace everything from an exported file |
-| `/template` | POST | merge the standard workflow into the current settings |
-| `/reports/overview` | GET | distribution, funnel, dwell and stuck list (`since` / `until` optional) |
+| `/template` | POST | merge a workflow template into the current settings (`axis` = `order` / `shipping`) |
+| `/orders/{id}/state` | GET | where one order stands on both axes, the moves it may make, and its next step |
+| `/orders/{id}/change` | POST | move one order (`axis` = `order` / `shipping`, `status` = slug), through `OrderResource::updateStatuses()` |
+| `/reports/overview` | GET | distribution, funnel, dwell and stuck list (`axis`, `since` / `until` optional) |
 | `/reports/history` | GET | one order's status timeline (`order_id`) |
-| `/reports/export` | GET | one report as CSV (`type` = `distribution` / `shipping` / `dwell` / `stalled`) |
+| `/reports/export` | GET | one report as CSV (`type` = `distribution` / `shipping` / `dwell` / `stalled`, `axis` optional) |
 | `/reports/backfill` | POST | rebuild the imported history from FluentCart's activity log |
 | `/reports/summary-test` | POST | send the daily summary now |
 
@@ -457,12 +671,15 @@ own REST routes through `rest_do_request()`:
 wp eval-file tests/seed-fixtures.php        # once
 wp eval-file tests/status-scenarios.php     # T1–T15  (0.1)
 wp eval-file tests/pipeline-scenarios.php   # P1–P5, R1–R7  (0.2)
+wp eval-file tests/changer-scenarios.php    # C1–C7, S1–S6  (0.3)
 wp eval-file tests/revenue-probe.php
 wp eval-file tests/measure-editable-filter.php
 ```
 
-`pipeline-scenarios.php` rewrites `ys_fct_status_settings` with the standard
-workflow and creates `STATUS-` orders; it touches nothing else.
+Each scenario file rewrites `ys_fct_status_settings` and creates `STATUS-`
+orders; they touch nothing else. Run them in the order above if you want the
+site left holding the 0.3 configuration.
 
-Results and database evidence: [`docs/TEST-REPORT.md`](docs/TEST-REPORT.md) (0.1)
-and [`docs/TEST-REPORT-v0.2.md`](docs/TEST-REPORT-v0.2.md) (0.2).
+Results and database evidence: [`docs/TEST-REPORT.md`](docs/TEST-REPORT.md) (0.1),
+[`docs/TEST-REPORT-v0.2.md`](docs/TEST-REPORT-v0.2.md) (0.2) and
+[`docs/TEST-REPORT-v0.3.md`](docs/TEST-REPORT-v0.3.md) (0.3).

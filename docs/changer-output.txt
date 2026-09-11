@@ -1,0 +1,141 @@
+
+# C1 — the control changes a PAID order's status, which FluentCart cannot
+  ok   C1 paying puts the order on step 1
+  ok   C1 the control offers the first workflow step
+  ok   C1 and never offers the status the order is already on
+  ok   C1 the change route accepted it
+  ok   C1 the database says in_production
+  ok   C1 the response carries the fresh state
+  ok   C1 and the label the operator will see
+  ok   C1 FluentCart wrote its own activity line
+  ok   C1 the history table recorded the move
+
+# C2 — a refused move comes back as a 422 the control can print
+  ok   C2 an unpaid order is not offered a paid-only step
+  ok   C2 posting it anyway is refused
+  ok   C2 with the payment requirement's own words
+  ok   C2 and the order did not move
+  ok   C2 a move to the status it is already on is refused too
+
+# C3 — strict workflow narrows the control and the write together
+  ok   C3 the control drops the step that would be skipped
+  ok   C3 and keeps the adjacent one
+  ok   C3 posting the skip is refused
+  ok   C3 with the message naming the missed step
+  ok   C3 the order did not move
+  ok   C3 with strict off the step is offered again
+
+# C4 — the one-click next step
+  ok   C4 the next step after in_production is ship_scheduled
+  ok   C4 it is accepted
+  ok   C4 and written
+  ok   C4 the next one is now the last step
+  ok   C4 the last step is accepted
+  ok   C4 there is no next step after the last one
+  ok   C4 the linked shipping status still followed
+  ok   C4 an order outside the workflow has no next step
+
+# C5 — a canceled order: the order axis closes, the shipping one does not
+  ok   C5 the order is canceled
+  ok   C5 the control offers no order-status move at all
+  ok   C5 posting one is refused
+  ok   C5 with core's own rule spelled out
+  ok   C5 the shipping axis is still open, as it is in core
+  ok   C5 and the write landed
+
+# C6 — a digital order has no shipping axis to change
+  ok   C6 the shipping axis is reported as unavailable
+  ok   C6 and locked with a reason
+  ok   C6 the control offers no shipping move
+  ok   C6 posting one is refused
+  ok   C6 the shipping column is still empty
+
+# C7 — FluentCart's "Sync Order Statuses" on a kept custom status
+  ok   C7 the order is on a kept custom status
+  ok   C7 the sync action succeeds
+  ok   C7 the custom status survived it
+  ok   C7 the order core hands back says so too
+  ok   C7 the restore left a line in the activity
+  ok   C7 with the restore off, the sync DOES overwrite the custom status
+
+# S1 — the fulfilment workflow template (shipping axis)
+  ok   S1 two custom shipping statuses exist
+  ok   S1 unshipped is relabelled
+  ok   S1 the paid payment status is relabelled
+  ok   S1 the fulfilment pipeline runs unshipped → customs → shipped
+  ok   S1 FluentCart's own shipping dialog offers them in that order, before shipped
+  ok   S1 applying it twice adds nothing
+  ok   S1 it adds no order statuses at all
+  ok   S1 both workflows can coexist
+  ok   S1 and the shipping label set first is kept
+  ok   S1 the order workflow still links its last step to shipped
+  ok   S1 the shared slug has its own definition on each axis
+
+# S2 — driven end to end through FluentCart's own shipping route
+  ok   S2 the order is paid
+  ok   S2 in_production accepted by core
+  ok   S2 in_production written to shipping_status
+  ok   S2 in_production left the order status alone
+  ok   S2 in_production fulfils nothing yet
+  ok   S2 ship_scheduled accepted by core
+  ok   S2 ship_scheduled written to shipping_status
+  ok   S2 ship_scheduled left the order status alone
+  ok   S2 ship_scheduled fulfils nothing yet
+  ok   S2 shipped accepted
+  ok   S2 the shipping status is shipped
+  ok   S2 core marked the items fulfilled
+  ok   S2 shipping_status_changed_to_in_production fired for a custom slug
+  ok   S2 and shipping_status_changed_to_shipped for the built-in one
+  ok   S2 the history table recorded every shipping-axis step
+
+# S3 — the same workflow from the order page's control
+  ok   S3 the shipping axis starts at step 1
+  ok   S3 the next step is the first custom one
+  ok   S3 the change route accepted it
+  ok   S3 the database agrees
+  ok   S3 the response reports the new step
+  ok   S3 and the next one after it
+  ok   S3 strict order workflow does not constrain the shipping axis
+
+# S4 — the report, on the shipping axis
+  ok   S4 the funnel follows the fulfilment pipeline
+  ok   S4 in_production matches SELECT COUNT(*) … WHERE shipping_status = in_production
+  ok   S4 ship_scheduled matches SELECT COUNT(*) … WHERE shipping_status = ship_scheduled
+  ok   S4 shipped matches SELECT COUNT(*) … WHERE shipping_status = shipped
+  ok   S4 the paid split matches the same query with the payment clause
+  ok   S4 the dwell table knows the custom shipping steps
+  ok   S4 and has timed the completed stays on them
+  ok   S4 the stuck list is reported for the shipping axis
+  ok   S4 the backdated order is in it
+  ok   S4 an order-axis stuck list does not contain it
+  ok   S4 the overview reports which axis it answered
+  ok   S4 and still returns both distribution tables
+
+# S5 — saved views on shipping_status
+  ok   S5 there is a view per custom shipping status
+  ok   S5 the order-axis views are still there
+  ok   S5 the two axes do not collide on one slug
+  ok   S5 a shipping view carries no search expression
+  ok   S5 the view name carries the live count
+  ok   S5 and says which axis it filters, so the two cannot be confused
+  ok   S5 the list request succeeds
+  ok   S5 it returns exactly the orders on that shipping status
+  ok   S5 and nothing that is not on it
+  ok   S5 an unknown view slug selects nothing on its own
+
+# S6 — the control on FluentCart's own order page
+  ok   S6 the order page gets both panels
+  ok   S6 the control is addressed to this order
+  ok   S6 it carries a select per axis
+  ok   S6 and a next-step button
+  ok   S6 there is no inline script in it (innerHTML would not run one)
+  ok   S6 the sanitiser strips the tag before it is ever stored
+  ok   S6 no markup from a label reaches the widget
+  ok   S6 the quotes that survive sanitising are escaped
+  ok   S6 and the raw quotes are not in the markup
+
+# Order ids: {"C1":707,"C2":708,"C3":709,"C4":710,"C5":711,"C6":712,"C7":713,"C7b":714,"S2":715,"S3":716}
+history rows: 1433
+history table: wp_ys_fct_status_history
+
+PASS — 109 assertions.

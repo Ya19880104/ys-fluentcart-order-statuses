@@ -92,6 +92,8 @@ final class AdminMenu {
 						),
 						'ordersUrl'  => esc_url_raw( admin_url( 'admin.php?page=fluent-cart#/orders' ) ),
 						'entrySlug'  => Settings::PIPELINE_ENTRY,
+						'shipEntry'  => Settings::SHIPPING_PIPELINE_ENTRY,
+						'shipExit'   => Settings::SHIPPING_PIPELINE_EXIT,
 						'i18n'       => $this->strings(),
 					)
 				);
@@ -171,8 +173,16 @@ final class AdminMenu {
 			<section class="ys-fct-status-panel" data-ys-panel="shipping" hidden>
 				<div class="notice notice-success inline ys-fct-status-hint">
 					<p>
-						<?php esc_html_e( 'Nothing in FluentCart writes the shipping status automatically — it changes only when someone changes it. This is the safest place for a multi-step fulfilment workflow.', 'ys-fluentcart-order-statuses' ); ?>
+						<?php esc_html_e( 'Nothing in FluentCart writes the shipping status automatically — it changes only when someone changes it, and FluentCart’s own “Change Shipping Status” dialog works on a paid order. This is the safest place for a multi-step fulfilment workflow, and the Tools tab will build one for you.', 'ys-fluentcart-order-statuses' ); ?>
 					</p>
+				</div>
+
+				<div class="ys-fct-status-pipeline" data-ys-shipping-preview>
+					<h3><?php esc_html_e( 'The fulfilment workflow, in order', 'ys-fluentcart-order-statuses' ); ?></h3>
+					<p class="description">
+						<?php esc_html_e( 'Step 1 is the built-in “Unshipped”, which every physical order starts on, and the last step is the built-in “Shipped”, which is the value FluentCart checks when it marks each item fulfilled. The steps between them are the custom statuses below, in the order they are listed here — and that is the order FluentCart’s own shipping dialog offers them in.', 'ys-fluentcart-order-statuses' ); ?>
+					</p>
+					<ol class="ys-fct-status-steps" data-ys-shipping-steps></ol>
 				</div>
 
 				<table class="widefat striped ys-fct-status-table" data-ys-table="shipping">
@@ -223,6 +233,19 @@ final class AdminMenu {
 					</p>
 				</div>
 
+				<p class="ys-fct-status-axis">
+					<span class="ys-fct-status-axis-label"><?php esc_html_e( 'Workflow to report on:', 'ys-fluentcart-order-statuses' ); ?></span>
+					<label for="ys-fct-report-axis-order">
+						<input type="radio" id="ys-fct-report-axis-order" name="ys_fct_report_axis" value="order" data-ys-report-axis checked="checked" />
+						<?php esc_html_e( 'Order status', 'ys-fluentcart-order-statuses' ); ?>
+					</label>
+					<label for="ys-fct-report-axis-shipping">
+						<input type="radio" id="ys-fct-report-axis-shipping" name="ys_fct_report_axis" value="shipping" data-ys-report-axis />
+						<?php esc_html_e( 'Shipping status', 'ys-fluentcart-order-statuses' ); ?>
+					</label>
+					<span class="description"><?php esc_html_e( 'Chooses which workflow the funnel, the timings and the stuck list describe. Both status tables below are always shown.', 'ys-fluentcart-order-statuses' ); ?></span>
+				</p>
+
 				<p class="ys-fct-status-range">
 					<label for="ys-fct-report-since"><?php esc_html_e( 'Orders placed from', 'ys-fluentcart-order-statuses' ); ?></label>
 					<input type="date" id="ys-fct-report-since" name="ys_fct_report_since" data-ys-range="since" />
@@ -234,7 +257,7 @@ final class AdminMenu {
 
 				<div data-ys-report-note class="ys-fct-status-report-note"></div>
 
-				<h3><?php esc_html_e( 'Workflow funnel', 'ys-fluentcart-order-statuses' ); ?></h3>
+				<h3><?php esc_html_e( 'Workflow funnel', 'ys-fluentcart-order-statuses' ); ?> <span class="ys-fct-status-axis-chip" data-ys-axis-chip></span></h3>
 				<p class="description"><?php esc_html_e( 'How many orders are sitting on each step right now, whatever date range is selected above. Click a number to open the Orders list.', 'ys-fluentcart-order-statuses' ); ?></p>
 				<div data-ys-funnel class="ys-fct-status-funnel"></div>
 
@@ -247,17 +270,31 @@ final class AdminMenu {
 				<div data-ys-distribution="shipping"></div>
 				<p><button type="button" class="button" data-ys-export-report="shipping"><?php esc_html_e( 'Download CSV', 'ys-fluentcart-order-statuses' ); ?></button></p>
 
-				<h3><?php esc_html_e( 'Time in each status', 'ys-fluentcart-order-statuses' ); ?></h3>
+				<h3><?php esc_html_e( 'Time in each status', 'ys-fluentcart-order-statuses' ); ?> <span class="ys-fct-status-axis-chip" data-ys-axis-chip></span></h3>
 				<p class="description"><?php esc_html_e( 'Measured from this plugin\'s own status history, and counting only stays that have ended — an order still sitting on a step has not finished its stay, so it is listed below instead.', 'ys-fluentcart-order-statuses' ); ?></p>
 				<div data-ys-dwell></div>
 				<p><button type="button" class="button" data-ys-export-report="dwell"><?php esc_html_e( 'Download CSV', 'ys-fluentcart-order-statuses' ); ?></button></p>
 
-				<h3><?php esc_html_e( 'Stuck orders', 'ys-fluentcart-order-statuses' ); ?></h3>
+				<h3><?php esc_html_e( 'Stuck orders', 'ys-fluentcart-order-statuses' ); ?> <span class="ys-fct-status-axis-chip" data-ys-axis-chip></span></h3>
 				<div data-ys-stalled></div>
 				<p><button type="button" class="button" data-ys-export-report="stalled"><?php esc_html_e( 'Download CSV', 'ys-fluentcart-order-statuses' ); ?></button></p>
 			</section>
 
 			<section class="ys-fct-status-panel" data-ys-panel="tools" hidden>
+				<h3><?php esc_html_e( 'Which axis should carry your workflow?', 'ys-fluentcart-order-statuses' ); ?></h3>
+				<div class="notice notice-success inline ys-fct-status-hint">
+					<p>
+						<?php esc_html_e( 'If your workflow starts after the customer has paid — made, packed, booked, shipped — put it on the shipping status. FluentCart never writes that column by itself, and its own “Change Shipping Status” dialog can drive it on a paid order. The order status is the other way round: FluentCart rewrites it to “Processing” whenever a payment lands, and on a paid order it offers no status control at all, so this plugin has to supply both the guard and the control.', 'ys-fluentcart-order-statuses' ); ?>
+					</p>
+				</div>
+				<p>
+					<button type="button" class="button button-primary" data-ys-template-shipping><?php esc_html_e( 'Create the fulfilment workflow (shipping axis)', 'ys-fluentcart-order-statuses' ); ?></button>
+					<span class="description"><?php esc_html_e( 'Adds the shipping statuses “In production” and “Shipment scheduled” between the built-in Unshipped and Shipped, and suggests names for the built-in statuses around them. Nothing you have already set up is overwritten.', 'ys-fluentcart-order-statuses' ); ?></span>
+				</p>
+				<p class="description">
+					<?php esc_html_e( 'The order-axis version of the same workflow is on the Order statuses tab. Use it when the states you need really are states of the order rather than of the delivery — “awaiting artwork approval”, say — or when you want them on the status your customers already see.', 'ys-fluentcart-order-statuses' ); ?>
+				</p>
+
 				<h3><?php esc_html_e( 'Order workflow', 'ys-fluentcart-order-statuses' ); ?></h3>
 				<p>
 					<label for="ys-fct-status-strict">
@@ -426,6 +463,13 @@ final class AdminMenu {
 			/* translators: %s: comma-separated currency codes */
 			'mixedCurrency'     => __( 'This store has orders in more than one currency (%s). The amounts below are a plain sum of the stored values and are not converted.', 'ys-fluentcart-order-statuses' ),
 			'noHistoryYet'      => __( 'No status history has been recorded yet, so the timings below are empty. Import the history from the activity log on the Tools tab, or wait for the next status change.', 'ys-fluentcart-order-statuses' ),
+
+			// v0.3 — the shipping-axis workflow and the report's axis switch.
+			'shippingConfirm'   => __( 'Add the fulfilment workflow to the shipping status? Anything you have already set up is left alone.', 'ys-fluentcart-order-statuses' ),
+			'stepShipEntry'     => __( 'Unshipped — where every physical order starts', 'ys-fluentcart-order-statuses' ),
+			'stepShipExit'      => __( 'Shipped — FluentCart marks the items fulfilled here', 'ys-fluentcart-order-statuses' ),
+			'axisOrder'         => __( 'order status', 'ys-fluentcart-order-statuses' ),
+			'axisShipping'      => __( 'shipping status', 'ys-fluentcart-order-statuses' ),
 		);
 	}
 }

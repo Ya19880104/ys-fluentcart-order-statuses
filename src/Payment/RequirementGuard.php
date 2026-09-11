@@ -69,7 +69,7 @@ final class RequirementGuard {
 			return $result;
 		}
 
-		$problem = $this->rejectionReason( $newStatus, $orderId );
+		$problem = self::rejectionReason( $newStatus, $orderId );
 
 		if ( null === $problem ) {
 			return $result;
@@ -134,11 +134,16 @@ final class RequirementGuard {
 	/**
 	 * Why this order may not take this status, or null when it may.
 	 *
+	 * Public and static because `Pipeline\Changer` asks the same question when
+	 * it builds the order page's status dropdown: the list the operator is
+	 * offered and the veto that would refuse the write have to be two readings
+	 * of one rule, not two rules that happen to agree today.
+	 *
 	 * @param string $slug    Requested status.
 	 * @param int    $orderId Order id.
 	 * @return string|null Human-readable reason.
 	 */
-	private function rejectionReason( $slug, $orderId ) {
+	public static function rejectionReason( $slug, $orderId ) {
 		$custom = Settings::customStatuses( 'order', StatusRegistry::settings() );
 
 		if ( ! isset( $custom[ $slug ] ) ) {
