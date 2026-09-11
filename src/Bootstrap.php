@@ -70,8 +70,9 @@ final class Bootstrap {
 
 		// Order matters between these three, and it is expressed as hook
 		// priorities on `fluent_cart/order_status_changed`: RestoreHandler (5)
-		// settles what the status actually is, LinkedShipping (20) reacts to
-		// the settled value, Recorder (30) writes down what happened.
+		// settles what the status actually is, Recorder (10) writes down what
+		// happened, LinkedShipping (20) then reacts to the settled value — and
+		// its own shipping write is recorded after the change that caused it.
 		( new LinkedShipping() )->register();
 		( new StrictGuard() )->register();
 		( new Recorder() )->register();

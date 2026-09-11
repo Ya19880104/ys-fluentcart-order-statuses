@@ -1047,6 +1047,32 @@
 		return ( cents / 100 ).toFixed( 2 );
 	}
 
+	/**
+	 * Days, unless days would round to nothing.
+	 *
+	 * A workflow step is measured in days because that is the unit a production
+	 * schedule runs on, but printing "0 days" next to three hundred completed
+	 * stays tells the operator nothing — it looks like the column is broken
+	 * rather than like the step is quick.
+	 */
+	function duration( days ) {
+		if ( days >= 1 ) {
+			return days.toFixed( days >= 10 ? 0 : 1 ) + ' ' + t( 'days' );
+		}
+
+		var hours = days * 24;
+
+		if ( hours >= 1 ) {
+			return hours.toFixed( 1 ) + ' ' + t( 'hours' );
+		}
+
+		var minutes = Math.round( hours * 60 );
+
+		// Zero would be a lie of precision: the stay happened, it was just
+		// shorter than the smallest unit this column prints.
+		return ( minutes > 0 ? minutes : '<1' ) + ' ' + t( 'minutes' );
+	}
+
 	function renderDistribution( axis, rows ) {
 		var target = root.querySelector( '[data-ys-distribution="' + axis + '"]' );
 
@@ -1120,8 +1146,8 @@
 					document.createTextNode( ' ' + row.label )
 				] ),
 				el( 'td', { class: 'ys-fct-status-num', text: String( row.samples ) } ),
-				el( 'td', { class: 'ys-fct-status-num', text: row.avg_days + ' ' + t( 'days' ) } ),
-				el( 'td', { class: 'ys-fct-status-num', text: row.max_days + ' ' + t( 'days' ) } )
+				el( 'td', { class: 'ys-fct-status-num', text: row.samples ? duration( row.avg_days ) : '—' } ),
+				el( 'td', { class: 'ys-fct-status-num', text: row.samples ? duration( row.max_days ) : '—' } )
 			] );
 		} );
 

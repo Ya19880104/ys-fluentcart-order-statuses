@@ -22,17 +22,21 @@ if ( ! defined( 'ABSPATH' ) ) {
  * plugin's own linked-shipping write. Listening there rather than wrapping the
  * writes means nothing has to be routed through this plugin to be recorded.
  *
- * Priority 30 puts this after `Payment\RestoreHandler` (priority 5), which
- * matters: when core overwrites a custom status on payment and the restore puts
- * it straight back, the order never really left the status it was in. Recording
- * the raw pair would leave a zero-second stay in `processing` in the middle of
- * every paid order's timeline and pull the average dwell towards nothing, so
- * that specific round trip is skipped instead.
+ * The priority is bracketed on both sides. It must be **after**
+ * `Payment\RestoreHandler` (5), so the value recorded is the settled one: when
+ * core overwrites a custom status on payment and the restore puts it straight
+ * back, the order never really left the status it was in, and recording the raw
+ * pair would leave a zero-second stay in `processing` in the middle of every
+ * paid order's timeline. It must also be **before**
+ * `Pipeline\LinkedShipping` (20), because that listener's shipping write
+ * completes inside its own callback — recording later would file the shipping
+ * row ahead of the order-status change that caused it, and the order page's
+ * timeline would read backwards.
  */
 final class Recorder {
 
-	/** After the restore handler, so the recorded value is the settled one. */
-	const PRIORITY = 30;
+	/** After the restore handler (5), before the linked-shipping write (20). */
+	const PRIORITY = 10;
 
 	/**
 	 * Set by `Pipeline\LinkedShipping` around its own write so the row it causes

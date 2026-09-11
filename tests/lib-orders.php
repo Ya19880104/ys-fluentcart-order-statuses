@@ -179,9 +179,24 @@ if ( ! function_exists( 'ys_status_rest' ) ) {
 	function ys_status_rest( $method, $route, array $body = array() ) {
 		wp_set_current_user( 1 );
 
+		// A query string has to be handed over as query params: the REST server
+		// matches `get_route()` against the registered patterns, and a route
+		// with `?…` glued on the end matches nothing at all.
+		$query = array();
+
+		if ( false !== strpos( $route, '?' ) ) {
+			list( $route, $queryString ) = explode( '?', $route, 2 );
+
+			parse_str( $queryString, $query );
+		}
+
 		$request = new WP_REST_Request( $method, $route );
 		$request->set_header( 'Content-Type', 'application/json' );
 		$request->set_header( 'X-WP-Nonce', wp_create_nonce( 'wp_rest' ) );
+
+		if ( ! empty( $query ) ) {
+			$request->set_query_params( $query );
+		}
 
 		if ( ! empty( $body ) ) {
 			$request->set_body( wp_json_encode( $body ) );

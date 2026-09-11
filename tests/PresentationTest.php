@@ -77,6 +77,29 @@ $ambiguous = LabelTagger::map(
 
 YsStatusTest::same( false, isset( $ambiguous['Warehouse'] ), 'two statuses sharing a spelling are both left alone' );
 
+// The pipeline template's last order status is called "Shipped", and so is the
+// built-in shipping status. Measured on 1.6.3: before this was handled, the
+// order badge was relabelled to "Shipped" and the very next observer pass read
+// that word, failed to resolve it, and stripped the tag — so the badge lost its
+// colour a fraction of a second after gaining it.
+$collision = LabelTagger::map(
+	Settings::sanitize(
+		array(
+			'order'     => array( array( 'slug' => 'shipped_done', 'label' => 'Shipped' ) ),
+			'overrides' => array( 'shipping' => array( 'shipped' => array( 'label' => 'Shipped' ) ) ),
+		)
+	)
+);
+
+YsStatusTest::same( 'shipped_done', $collision['Shipped Done']['s'], 'the order status is found by its own slug spelling' );
+YsStatusTest::same( 'shipped', $collision['Shipped']['s'], 'the shared word belongs to the status whose SLUG spells it' );
+YsStatusTest::same( 'shipped', $collision['shipped']['s'], 'and so does the raw slug' );
+
+$collisionScript = LabelTagger::script( $collision, 'span.badge' );
+
+YsStatusTest::ok( false !== strpos( $collisionScript, 'if(cur&&L[cur]===k){return;}' ), 'a badge already carrying our label is left alone on later passes' );
+YsStatusTest::ok( false !== strpos( $collisionScript, '"shipped_done":"Shipped"' ), 'the slug => label table is shipped alongside the spelling map' );
+
 YsStatusTest::group( 'LabelTagger::script' );
 
 $script = LabelTagger::script( $map, 'span.badge' );

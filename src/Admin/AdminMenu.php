@@ -421,6 +421,8 @@ final class AdminMenu {
 			/* translators: %d: threshold in days */
 			'noStalled'         => __( 'Nothing has been on the same step for more than %d day(s).', 'ys-fluentcart-order-statuses' ),
 			'days'              => __( 'days', 'ys-fluentcart-order-statuses' ),
+			'hours'             => __( 'hours', 'ys-fluentcart-order-statuses' ),
+			'minutes'           => __( 'min', 'ys-fluentcart-order-statuses' ),
 			/* translators: %s: comma-separated currency codes */
 			'mixedCurrency'     => __( 'This store has orders in more than one currency (%s). The amounts below are a plain sum of the stored values and are not converted.', 'ys-fluentcart-order-statuses' ),
 			'noHistoryYet'      => __( 'No status history has been recorded yet, so the timings below are empty. Import the history from the activity log on the Tools tab, or wait for the next status change.', 'ys-fluentcart-order-statuses' ),

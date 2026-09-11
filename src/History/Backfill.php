@@ -68,8 +68,9 @@ final class Backfill {
 		);
 
 		// A change the hooks already recorded must not be duplicated by a line
-		// describing the same change, so every (order, axis, from, to, minute)
-		// already in the table is remembered and skipped.
+		// describing the same change, so every transition already in the table
+		// is remembered with its timestamps and skipped when a nearby activity
+		// line describes it again.
 		$known = self::existingKeys();
 
 		$parsed  = 0;
@@ -87,9 +88,10 @@ final class Backfill {
 			$axis      = self::axisFor( (string) $row['title'], (string) $row['content'] );
 			$orderId   = (int) $row['module_id'];
 			$changedAt = (string) $row['created_at'];
-			$key       = self::key( $orderId, $axis, $pair[0], $pair[1], $changedAt );
+			$key       = self::key( $orderId, $axis, $pair[0], $pair[1] );
+			$stamp     = (int) strtotime( $changedAt . ' UTC' );
 
-			if ( isset( $known[ $key ] ) ) {
+			if ( self::alreadyKnown( $known, $key, $stamp ) ) {
 				$skipped++;
 				continue;
 			}
@@ -109,7 +111,7 @@ final class Backfill {
 				continue;
 			}
 
-			$known[ $key ]     = true;
+			$known[ $key ][]    = $stamp;
 			$orders[ $orderId ] = true;
 			$parsed++;
 		}
@@ -188,14 +190,23 @@ final class Backfill {
 	}
 
 	/**
-	 * Every transition already in the table, to the minute.
+	 * How far apart a recorded change and an activity line describing it may be
+	 * and still be the same event.
 	 *
-	 * To the minute rather than the second on purpose: an activity row is
-	 * written inside the same request as the event that produced it, but not in
-	 * the same second, so exact timestamps would miss the overlap the
-	 * de-duplication exists to catch.
+	 * Both are written inside one request, but not necessarily in the same
+	 * second — and, as measured on the local site, not always in the same
+	 * minute either: a change recorded at 17:57:59 had its activity line
+	 * timestamped 17:58:00, which a minute-granularity key read as two separate
+	 * changes and duplicated. Ten minutes is far wider than any single request
+	 * and far narrower than a plausible gap between two genuine moves along the
+	 * same transition.
+	 */
+	const SAME_EVENT_WINDOW = 600;
+
+	/**
+	 * Every transition already in the table, with the times it happened.
 	 *
-	 * @return array<string,bool>
+	 * @return array<string,int[]> `order|axis|from|to` => timestamps.
 	 */
 	private static function existingKeys() {
 		global $wpdb;
@@ -209,21 +220,42 @@ final class Backfill {
 		$keys = array();
 
 		foreach ( (array) $rows as $row ) {
-			$keys[ self::key( (int) $row['order_id'], $row['axis'], $row['old_status'], $row['new_status'], $row['changed_at'] ) ] = true;
+			$key = self::key( (int) $row['order_id'], $row['axis'], $row['old_status'], $row['new_status'] );
+
+			$keys[ $key ][] = (int) strtotime( $row['changed_at'] . ' UTC' );
 		}
 
 		return $keys;
 	}
 
 	/**
-	 * @param int    $orderId   Order id.
-	 * @param string $axis      Axis.
-	 * @param string $from      Old slug.
-	 * @param string $to        New slug.
-	 * @param string $changedAt `Y-m-d H:i:s`.
+	 * @param array  $known Transitions already recorded.
+	 * @param string $key   Transition key.
+	 * @param int    $stamp Candidate timestamp.
+	 * @return bool
+	 */
+	private static function alreadyKnown( array $known, $key, $stamp ) {
+		if ( ! isset( $known[ $key ] ) ) {
+			return false;
+		}
+
+		foreach ( $known[ $key ] as $seen ) {
+			if ( abs( $seen - $stamp ) <= self::SAME_EVENT_WINDOW ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * @param int    $orderId Order id.
+	 * @param string $axis    Axis.
+	 * @param string $from    Old slug.
+	 * @param string $to      New slug.
 	 * @return string
 	 */
-	private static function key( $orderId, $axis, $from, $to, $changedAt ) {
-		return $orderId . '|' . $axis . '|' . $from . '|' . $to . '|' . substr( (string) $changedAt, 0, 16 );
+	private static function key( $orderId, $axis, $from, $to ) {
+		return $orderId . '|' . $axis . '|' . $from . '|' . $to;
 	}
 }

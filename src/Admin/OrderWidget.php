@@ -188,8 +188,15 @@ final class OrderWidget {
 
 		$end = '' === $to ? time() : (int) strtotime( $to . ' UTC' );
 
-		$seconds = max( 0, $end - $start );
-		$human   = human_time_diff( 0, $seconds );
+		if ( $end <= 0 ) {
+			$end = time();
+		}
+
+		// Two real timestamps, never a duration in the second argument:
+		// `human_time_diff( $from, $to )` treats an empty `$to` as "now", so a
+		// stay of exactly zero seconds — which every scripted status change
+		// produces — came out as "57 years". It floors at one minute instead.
+		$human = human_time_diff( min( $start, $end ), max( $start, $end ) );
 
 		return '' === $to
 			? sprintf(

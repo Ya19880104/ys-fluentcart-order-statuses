@@ -97,7 +97,7 @@ final class ReportService {
 
 			$found[ $slug ] = array(
 				'slug'          => $slug,
-				'label'         => isset( $labels[ $slug ] ) ? $labels[ $slug ] : $slug,
+				'label'         => self::labelFor( $slug, $labels, $axis ),
 				'color'         => isset( $colors[ $slug ] ) ? $colors[ $slug ] : '',
 				'is_custom'     => isset( $custom[ $slug ] ),
 				'paid_count'    => (int) $row['paid_count'],
@@ -190,7 +190,7 @@ final class ReportService {
 		foreach ( $stats as $slug => $stat ) {
 			$found[ $slug ] = array(
 				'slug'      => $slug,
-				'label'     => isset( $labels[ $slug ] ) ? $labels[ $slug ] : $slug,
+				'label'     => self::labelFor( $slug, $labels, $axis ),
 				'color'     => isset( $colors[ $slug ] ) ? $colors[ $slug ] : '',
 				'is_custom' => isset( $custom[ $slug ] ),
 				'samples'   => $stat['samples'],
@@ -293,6 +293,33 @@ final class ReportService {
 		);
 
 		return array_map( 'strval', (array) $codes );
+	}
+
+	/**
+	 * A printable name for a slug that came out of the database.
+	 *
+	 * The empty string is a real value on the shipping axis and a common one:
+	 * a digital order has no shipping status at all. Left as-is it renders as a
+	 * blank row with a few hundred orders behind it, which reads like a bug in
+	 * the report rather than the fact it is.
+	 *
+	 * @param string $slug   Slug from the orders table.
+	 * @param array  $labels Known labels.
+	 * @param string $axis   Axis.
+	 * @return string
+	 */
+	private static function labelFor( $slug, array $labels, $axis ) {
+		if ( isset( $labels[ $slug ] ) ) {
+			return $labels[ $slug ];
+		}
+
+		if ( '' === $slug ) {
+			return 'shipping' === $axis
+				? __( 'Nothing to ship (digital)', 'ys-fluentcart-order-statuses' )
+				: __( '(no status)', 'ys-fluentcart-order-statuses' );
+		}
+
+		return $slug;
 	}
 
 	/**

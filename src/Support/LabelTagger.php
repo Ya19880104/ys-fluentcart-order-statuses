@@ -81,12 +81,25 @@ final class LabelTagger {
 		$map      = array();
 		$conflict = array();
 
+		// Two passes, and the order is the whole point.
+		//
+		// A badge FluentCart has just rendered always says a *slug*-derived
+		// spelling — the raw column value, humanised. A label-derived spelling
+		// only ever appears on a badge this script has already relabelled. So a
+		// slug claim is evidence about untouched markup and a label claim is
+		// evidence about our own output, and when the two disagree the slug has
+		// to win.
+		//
+		// The case that forced this: a pipeline whose last order status is
+		// called "Shipped" alongside the shipping status also called "Shipped".
+		// Treating both claims equally made the text ambiguous, both were
+		// dropped, and the order badge lost its colour on the observer pass
+		// straight after it was relabelled.
 		foreach ( $statuses as $slug => $label ) {
-			foreach ( self::spellings( $slug, $label ) as $text ) {
+			foreach ( self::spellings( $slug ) as $text ) {
 				if ( isset( $map[ $text ] ) && $map[ $text ]['s'] !== $slug ) {
-					// Two statuses that render identically: colouring or
-					// relabelling either one would be a coin flip, so neither
-					// gets touched.
+					// Two statuses whose slugs render identically. Nothing in
+					// the markup can tell them apart, so neither is touched.
 					$conflict[ $text ] = true;
 					continue;
 				}
@@ -102,23 +115,49 @@ final class LabelTagger {
 			unset( $map[ $text ] );
 		}
 
+		foreach ( $statuses as $slug => $label ) {
+			$text = trim( $label );
+
+			if ( '' === $text || isset( $map[ $text ] ) || isset( $conflict[ $text ] ) ) {
+				continue;
+			}
+
+			$map[ $text ] = array(
+				's' => $slug,
+				'l' => $label,
+			);
+		}
+
 		return $map;
 	}
 
 	/**
-	 * Every string FluentCart (or this plugin, on a second pass) might render
-	 * for one status.
+	 * Slug => label, for the "this badge is already done" check in the script.
 	 *
-	 * @param string $slug  Slug.
-	 * @param string $label Configured label.
+	 * @param array<string,array<string,string>> $map Spelling map.
+	 * @return array<string,string>
+	 */
+	public static function labels( array $map ) {
+		$labels = array();
+
+		foreach ( $map as $entry ) {
+			$labels[ $entry['s'] ] = $entry['l'];
+		}
+
+		return $labels;
+	}
+
+	/**
+	 * Every string FluentCart might render for one slug, before anyone has
+	 * touched the badge.
+	 *
+	 * @param string $slug Slug.
 	 * @return string[]
 	 */
-	private static function spellings( $slug, $label ) {
+	private static function spellings( $slug ) {
 		$spaced = str_replace( array( '-', '_' ), ' ', $slug );
 
 		$out = array(
-			// Already relabelled — makes a second pass a no-op instead of a loop.
-			$label,
 			$slug,
 			$spaced,
 			// "us warehouse" -> "Us Warehouse", which is what 1.6.3 prints.
@@ -147,6 +186,7 @@ final class LabelTagger {
 
 		return '(function(){'
 			. 'var M=' . wp_json_encode( $map ) . ';'
+			. 'var L=' . wp_json_encode( self::labels( $map ) ) . ';'
 			. 'var REL=' . ( $relabel ? 'true' : 'false' ) . ';'
 			. 'var SEL=' . wp_json_encode( $selector ) . ';'
 			. 'if(!M||!Object.keys(M).length){return;}'
@@ -160,6 +200,12 @@ final class LabelTagger {
 			. 'function tag(n){'
 			. 'if(!n||n.children.length){return;}'
 			. 'var k=(n.textContent||"").trim();'
+			// Already ours, and still saying what we put there. Without this the
+			// pass after a relabel re-reads the badge, finds the LABEL rather
+			// than the slug spelling, and — when another status renders the same
+			// word — hands it the wrong slug or strips the tag altogether.
+			. 'var cur=n.getAttribute("data-ys-status");'
+			. 'if(cur&&L[cur]===k){return;}'
 			. 'var hit=Object.prototype.hasOwnProperty.call(M,k)?M[k]:null;'
 			. 'if(!hit){if(n.hasAttribute("data-ys-status")){n.removeAttribute("data-ys-status");}return;}'
 			. 'if(n.getAttribute("data-ys-status")!==hit.s){n.setAttribute("data-ys-status",hit.s);}'
