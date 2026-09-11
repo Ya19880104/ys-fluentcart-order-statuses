@@ -1,0 +1,121 @@
+/**
+ * Order Statuses admin screen.
+ */
+
+.ys-fct-status-admin .ys-fct-status-intro {
+	max-width: 70em;
+}
+
+.ys-fct-status-admin .ys-fct-status-notice:empty {
+	display: none;
+}
+
+.ys-fct-status-admin .ys-fct-status-notice {
+	margin: 12px 0;
+}
+
+.ys-fct-status-admin .ys-fct-status-hint {
+	max-width: 70em;
+	margin: 12px 0;
+}
+
+.ys-fct-status-admin .ys-fct-status-panel {
+	margin-top: 16px;
+}
+
+.ys-fct-status-admin .ys-fct-status-table {
+	margin-bottom: 12px;
+}
+
+.ys-fct-status-admin .ys-fct-status-table th,
+.ys-fct-status-admin .ys-fct-status-table td {
+	vertical-align: top;
+	padding: 10px;
+}
+
+.ys-fct-status-admin .ys-fct-col-order {
+	width: 72px;
+}
+
+.ys-fct-status-admin .ys-fct-status-input,
+.ys-fct-status-admin .ys-fct-status-slug {
+	width: 100%;
+	max-width: 20em;
+	margin-bottom: 4px;
+}
+
+.ys-fct-status-admin .ys-fct-status-slug {
+	max-width: 14em;
+	font-family: Consolas, Monaco, monospace;
+}
+
+.ys-fct-status-admin .ys-fct-status-color {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.ys-fct-status-admin .ys-fct-status-color-picker {
+	width: 40px;
+	height: 30px;
+	padding: 2px;
+	border: 1px solid #8c8f94;
+	border-radius: 3px;
+	background: #fff;
+	cursor: pointer;
+}
+
+.ys-fct-status-admin .ys-fct-status-color-text {
+	width: 8em;
+	font-family: Consolas, Monaco, monospace;
+}
+
+.ys-fct-status-admin .ys-fct-status-check {
+	display: block;
+	margin-bottom: 4px;
+	white-space: nowrap;
+}
+
+.ys-fct-status-admin .ys-fct-status-reorder {
+	display: flex;
+	flex-direction: column;
+	gap: 3px;
+}
+
+.ys-fct-status-admin .ys-fct-status-count {
+	text-align: right;
+	font-variant-numeric: tabular-nums;
+}
+
+.ys-fct-status-admin .ys-fct-status-empty {
+	color: #646970;
+	font-style: italic;
+}
+
+.ys-fct-status-admin .ys-fct-status-move {
+	margin-top: 8px;
+	padding: 8px;
+	background: #f6f7f7;
+	border: 1px solid #dcdcde;
+	border-radius: 3px;
+}
+
+.ys-fct-status-admin .ys-fct-status-move label {
+	display: block;
+	margin-bottom: 6px;
+}
+
+.ys-fct-status-admin .ys-fct-status-move select {
+	display: block;
+	margin-top: 4px;
+	max-width: 18em;
+}
+
+.ys-fct-status-admin .ys-fct-status-usage {
+	list-style: disc;
+	margin-left: 20px;
+}
+
+.ys-fct-status-admin .button-link-delete {
+	color: #b32d2e;
+}
