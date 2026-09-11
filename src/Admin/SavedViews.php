@@ -89,6 +89,16 @@ final class SavedViews {
 	 * expression, and the clause is added here instead, on the one filter
 	 * FluentCart applies to the finished list query.
 	 *
+	 * **Version note — measured, do not gate this on 1.6.3.** The hook does not
+	 * appear in a source search for its literal name, because `BaseFilter` composes
+	 * it: `apply_filters("fluent_cart/{$filter}_list_filter_query", …)`, with
+	 * `$filter` from `getFilterName()`. Both call sites are byte-identical in
+	 * 1.6.0 (`BaseFilter.php:1119` and `:1128`) and 1.6.3 (`:1409`, `:1418`), and
+	 * the shipping-axis views are asserted end to end through a real list request
+	 * on both versions — `changer-scenarios.php` S5 and `pipeline-scenarios.php`
+	 * R1. Gating them on 1.6.3 would take a working feature away from every
+	 * 1.6.0 store, which is the version this plugin's minimum already names.
+	 *
 	 * @param mixed $query Fluent ORM builder.
 	 * @return mixed
 	 */
