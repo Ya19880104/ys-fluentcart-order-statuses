@@ -26,6 +26,9 @@ final class OrderRepository {
 	/** Payment statuses that mean "money has arrived". Mirrors `Status::getOrderPaymentSuccessStatuses()`. */
 	const PAID_STATUSES = array( 'paid', 'partially_paid', 'partially_refunded' );
 
+	/** @var array<int,array|null> Per-request row cache, keyed by order id. */
+	private static $cache = array();
+
 	/**
 	 * @return string Fully qualified orders table name.
 	 */
@@ -62,6 +65,14 @@ final class OrderRepository {
 			return null;
 		}
 
+		// Per-request cache. Three callers now ask for the same order inside one
+		// REST request — the payment-requirement veto, the strict-workflow veto
+		// and each of their `editable_order_statuses` passes, and that filter is
+		// applied several times per request on its own.
+		if ( array_key_exists( $orderId, self::$cache ) ) {
+			return self::$cache[ $orderId ];
+		}
+
 		//phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$row = $wpdb->get_row(
 			$wpdb->prepare(
@@ -71,7 +82,30 @@ final class OrderRepository {
 			ARRAY_A
 		);
 
-		return $row ? $row : null;
+		self::$cache[ $orderId ] = $row ? $row : null;
+
+		return self::$cache[ $orderId ];
+	}
+
+	/**
+	 * Drop the cached row for one order, or all of them.
+	 *
+	 * Called after this plugin writes a status: the guards read the row again
+	 * later in the same request, and a stale `status` there would let a second
+	 * change through that the first should have blocked.
+	 *
+	 * @param int $orderId Order id, or 0 for everything.
+	 * @return void
+	 */
+	public static function flush( $orderId = 0 ) {
+		$orderId = (int) $orderId;
+
+		if ( $orderId > 0 ) {
+			unset( self::$cache[ $orderId ] );
+			return;
+		}
+
+		self::$cache = array();
 	}
 
 	/**
@@ -108,6 +142,8 @@ final class OrderRepository {
 			array( '%s' ),
 			'' === $expect ? array( '%d' ) : array( '%d', '%s' )
 		);
+
+		self::flush( $orderId );
 
 		return is_int( $updated ) && $updated > 0;
 	}
@@ -204,6 +240,8 @@ final class OrderRepository {
 			array( '%s' ),
 			array( '%s' )
 		);
+
+		self::flush();
 
 		return is_int( $updated ) ? $updated : 0;
 	}

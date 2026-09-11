@@ -8,6 +8,7 @@
 namespace YangSheep\FluentCart\OrderStatuses\History;
 
 use YangSheep\FluentCart\OrderStatuses\Payment\RestoreHandler;
+use YangSheep\FluentCart\OrderStatuses\Support\OrderRepository;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -75,6 +76,10 @@ final class Recorder {
 			return;
 		}
 
+		// Core has just written a new status; anything that reads the row later
+		// in this request must not be handed the old one.
+		OrderRepository::flush( $parsed['order_id'] );
+
 		$restored = RestoreHandler::restoredThisRequest();
 
 		// Core moved the order to `processing` on payment and we put it straight
@@ -102,6 +107,8 @@ final class Recorder {
 		if ( null === $parsed ) {
 			return;
 		}
+
+		OrderRepository::flush( $parsed['order_id'] );
 
 		HistoryRepository::record(
 			$parsed['order_id'],

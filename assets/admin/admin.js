@@ -743,27 +743,37 @@
 
 	// ── wiring ───────────────────────────────────────────────────────────────
 
+	function showTab( name ) {
+		var found = false;
+
+		root.querySelectorAll( '[data-ys-tab]' ).forEach( function ( other ) {
+			var isTarget = other.getAttribute( 'data-ys-tab' ) === name;
+			found = found || isTarget;
+			other.classList.toggle( 'nav-tab-active', isTarget );
+		} );
+
+		if ( ! found ) {
+			return;
+		}
+
+		root.querySelectorAll( '[data-ys-panel]' ).forEach( function ( panel ) {
+			panel.hidden = panel.getAttribute( 'data-ys-panel' ) !== name;
+		} );
+
+		// The report is several GROUP BY queries; it is fetched when the tab is
+		// first opened rather than on every page load.
+		if ( 'reports' === name && ! report.loaded ) {
+			loadReport();
+		}
+	}
+
 	root.querySelectorAll( '[data-ys-tab]' ).forEach( function ( tab ) {
 		tab.addEventListener( 'click', function ( event ) {
 			event.preventDefault();
-
-			var name = tab.getAttribute( 'data-ys-tab' );
-
-			root.querySelectorAll( '[data-ys-tab]' ).forEach( function ( other ) {
-				other.classList.toggle( 'nav-tab-active', other === tab );
-			} );
-
-			root.querySelectorAll( '[data-ys-panel]' ).forEach( function ( panel ) {
-				panel.hidden = panel.getAttribute( 'data-ys-panel' ) !== name;
-			} );
-
-			// The report is several GROUP BY queries; it is fetched when the
-			// tab is first opened rather than on every page load.
-			if ( 'reports' === name && ! report.loaded ) {
-				loadReport();
-			}
+			showTab( tab.getAttribute( 'data-ys-tab' ) );
 		} );
 	} );
+
 
 	root.querySelectorAll( '[data-ys-add]' ).forEach( function ( button ) {
 		button.addEventListener( 'click', function () {
@@ -1297,6 +1307,13 @@
 		event.returnValue = '';
 		return '';
 	} );
+
+	// Last, once every handler and every module-level binding exists: the daily
+	// summary e-mail links to `…&page=ys-fct-order-statuses#reports`, so the
+	// fragment has to select a tab rather than being decoration.
+	if ( window.location.hash ) {
+		showTab( window.location.hash.replace( '#', '' ) );
+	}
 
 	request( 'settings' )
 		.then( adopt )
