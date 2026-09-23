@@ -345,3 +345,43 @@
 	border-top: 0;
 	padding-top: 0;
 }
+
+/* v0.5 — the payment settings of an order status, folded under "Advanced". */
+.ys-fct-status-admin .ys-fct-status-advanced {
+	margin-top: 4px;
+	font-size: 12px;
+	color: #646970;
+}
+
+.ys-fct-status-admin .ys-fct-status-advanced > summary {
+	width: max-content;
+	max-width: 100%;
+	cursor: pointer;
+}
+
+/* Amber, not red: a restricted status is a deliberate choice, not an error,
+   but it is the one thing on this line worth noticing at a glance. */
+.ys-fct-status-admin .ys-fct-status-advanced.is-custom > summary {
+	color: #996800;
+	font-weight: 600;
+}
+
+.ys-fct-status-admin .ys-fct-status-advanced-body {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px 16px;
+	align-items: center;
+	margin: 8px 0 4px 16px;
+}
+
+.ys-fct-status-admin .ys-fct-status-advanced-body label {
+	display: inline-flex;
+	gap: 6px;
+	align-items: center;
+	color: #1d2327;
+}
+
+.ys-fct-status-admin .ys-fct-status-advanced-body .description {
+	flex-basis: 100%;
+	margin: 0;
+}

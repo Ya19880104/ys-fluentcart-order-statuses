@@ -48,11 +48,15 @@ if ( ! defined( 'ABSPATH' ) ) {
  *   `save()`, so the restore also switches the auto-complete filter off for the
  *   order it just handled.
  *
- * What it must NOT do is undo a deliberate admin change. An admin choosing
- * "Processing" by hand reaches the same action — the discriminator is
+ * What it must NOT do is undo a deliberate admin change. An operator moving an
+ * order to "Processing" by hand reaches the same action — the discriminator is
  * `manageStock`, which core passes as `true` from the payment paths
- * (`syncOrderStatuses()`, `changeOrderStatus()`) and `false` from the admin
- * status dropdown (`OrderResource::updateStatuses()`).
+ * (`syncOrderStatuses()`, `changeOrderStatus()`), and which this plugin's own
+ * order-page control sends as `false` through `OrderResource::updateStatuses()`.
+ * FluentCart's native order page cannot reach this branch by a click at all:
+ * its only order-status buttons are *Mark As Complete* (from `processing`),
+ * *Back to processing* (from `completed`) and *Cancel Order*, none of which
+ * moves an order from a custom status to `processing`.
  */
 final class RestoreHandler {
 
@@ -117,9 +121,10 @@ final class RestoreHandler {
 			return;
 		}
 
-		// `false` is the admin dropdown; `true` is a payment path. Without this
-		// an admin deliberately moving a paid order from `sourcing` to
-		// `Processing` would be bounced straight back.
+		// `false` is an operator's deliberate move (this plugin's order-page
+		// control, or any REST caller doing the same); `true` is a payment path.
+		// Without this an operator deliberately moving a paid order from
+		// `sourcing` to `Processing` would be bounced straight back.
 		if ( true !== ( isset( $data['manageStock'] ) ? $data['manageStock'] : null ) ) {
 			return;
 		}

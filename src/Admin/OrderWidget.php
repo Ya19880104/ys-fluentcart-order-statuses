@@ -41,9 +41,9 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Two entries are contributed, in this order:
  *
  * - **Order workflow** — the control. Where the order stands on both axes, the
- *   moves it may make, and a one-click "next step". It exists because FluentCart
- *   1.6.3 offers no order-status control at all on a *paid* order; see
- *   `Rest\ChangeController` for what was measured.
+ *   moves it may make, and a one-click "next step". It exists because
+ *   FluentCart's admin has no control for choosing an order status at all, on
+ *   any order, paid or not; see `Rest\ChangeController` for what was measured.
  * - **Status history** — 0.2's timeline, unchanged, and still only when there
  *   is something to show.
  */

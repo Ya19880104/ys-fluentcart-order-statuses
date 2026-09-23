@@ -19,15 +19,21 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * `POST ys-fct-status/v1/orders/{id}/change` and `GET …/state`.
  *
- * Why this route exists at all: measured on FluentCart 1.6.3, a **paid** order
- * has no order-status control anywhere in the admin. The header carries Refund,
- * a disabled Edit and a "More Action" menu whose entries are *Change Shipping
- * Status, Cancel Order, Sync Order Statuses, Receipt, Refund, Edit*. An
- * operator whose whole workflow is post-payment therefore cannot move an order
- * along it from FluentCart's own UI, however many custom statuses are
- * registered. (The Orders *list* has a bulk status action, and the shipping
- * axis has its own dialog — see the README for why that axis is the
- * recommended home for a fulfilment workflow.)
+ * Why this route exists at all: FluentCart's admin has **no control for
+ * choosing an order status**, on any order, paid or not. Measured in the
+ * compiled admin app of both 1.6.0 and 1.6.3: not one dropdown is bound to the
+ * order status. The order page's *More Action* menu offers fixed moves only —
+ * *Mark As Complete* (shown only while the order is on `processing`), *Back to
+ * processing* (only while it is `completed`) and *Cancel Order* — beside the
+ * one free choice FluentCart does have, *Change Shipping Status*. The Orders
+ * list's bulk actions only delete. `editable_order_statuses` is localised to
+ * the app and read into one component's data, where nothing ever renders it:
+ * it is the server-side write allow-list and nothing else. So however many
+ * custom order statuses are registered, FluentCart's own UI cannot put an order
+ * on one; this route and the order-page control are how it happens. (The
+ * shipping axis is different — its dialog lists custom statuses directly — see
+ * the README for why that axis is the recommended home for a fulfilment
+ * workflow.)
  *
  * The write does **not** touch the column. It goes through
  * `OrderResource::updateStatuses()` with core's own `change_order_status` /
@@ -39,10 +45,10 @@ if ( ! defined( 'ABSPATH' ) ) {
  * `*_status_changed_to_<slug>` action, FluentCart's own activity line, this
  * plugin's history row, and its linked-shipping follow-up.
  *
- * `manage_stock` is `false`, which is what the admin dropdown sends and what
- * `Payment\RestoreHandler` reads to tell a deliberate admin change apart from a
- * payment-path overwrite. Sending `true` here would make the restore handler
- * undo the operator's own move.
+ * `manage_stock` is `false`: this is an operator's deliberate move, and
+ * `Payment\RestoreHandler` reads `true` as the signature of FluentCart's payment
+ * paths, which is how it tells the two apart. Sending `true` here would make the
+ * restore handler undo the operator's own move.
  */
 final class ChangeController {
 

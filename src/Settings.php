@@ -85,8 +85,9 @@ final class Settings {
 	 * The built-in order status the pipeline starts from.
 	 *
 	 * Not a custom status: it is what core writes the moment payment lands, so
-	 * "paid" is step 0 of every pipeline whether the operator asked for it or
-	 * not. The template relabels it rather than adding a status beside it.
+	 * it is step 0 of every pipeline whether the operator asked for it or not.
+	 * The template leaves it, and its name, alone rather than adding a status
+	 * beside it.
 	 */
 	const PIPELINE_ENTRY = 'processing';
 

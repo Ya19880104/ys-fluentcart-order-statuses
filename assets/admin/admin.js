@@ -405,7 +405,7 @@
 		body.textContent = '';
 
 		if ( ! model[ axis ].length ) {
-			var columns = 'order' === axis ? 10 : 7;
+			var columns = 'order' === axis ? 8 : 7;
 			body.appendChild( el( 'tr', {}, [ el( 'td', { colspan: String( columns ), class: 'ys-fct-status-empty', text: t( 'noCustom' ) } ) ] ) );
 			return;
 		}
@@ -434,17 +434,6 @@
 			];
 
 			if ( 'order' === axis ) {
-				cells.push( el( 'td', {}, [ selectCell( definition, 'payment_requirement', [
-					{ value: 'any', label: t( 'reqAny' ) },
-					{ value: 'paid_only', label: t( 'reqPaid' ) },
-					{ value: 'unpaid_only', label: t( 'reqUnpaid' ) }
-				], t( 'availableOn' ) ) ] ) );
-
-				cells.push( el( 'td', {}, [ selectCell( definition, 'on_payment', [
-					{ value: 'keep', label: t( 'keep' ) },
-					{ value: 'let_core_decide', label: t( 'letCore' ) }
-				], t( 'afterPayment' ) ) ] ) );
-
 				cells.push( el( 'td', {}, [ selectCell(
 					definition,
 					'linked_shipping_status',
@@ -466,13 +455,98 @@
 
 			// Its own row rather than a line inside the label cell: the cell is two
 			// stacked inputs wide, and "E-mail: customer — edit in Email
-			// Notifications" wrapped to three lines in it.
+			// Notifications" wrapped to three lines in it. On the order axis the
+			// same row carries the folded-away payment settings.
+			var extra = [ emailCell( axis, definition ) ];
+
+			if ( 'order' === axis ) {
+				extra.push( advancedCell( definition ) );
+			}
+
 			body.appendChild(
 				el( 'tr', { class: 'ys-fct-status-email-row' }, [
-					el( 'td', { colspan: String( 'order' === axis ? 10 : 7 ) }, [ emailCell( axis, definition ) ] )
+					el( 'td', { colspan: String( 'order' === axis ? 8 : 7 ) }, extra )
 				] )
 			);
 		} );
+	}
+
+	/**
+	 * The two payment settings of an order status, folded away.
+	 *
+	 * "Offered on every order" and "kept when a payment lands" are right for
+	 * almost every shop, and a column of "Paid orders only" beside every status
+	 * made the list read as if it were split into a paid half and an unpaid
+	 * half. So both settings sit behind one collapsed line. Its summary always
+	 * says what they are set to, and turns amber when either differs from the
+	 * default, so a status somebody did restrict is visible without opening
+	 * anything.
+	 */
+	function advancedCell( definition ) {
+		var requirementOptions = [
+			{ value: 'any', label: t( 'reqAny' ) },
+			{ value: 'paid_only', label: t( 'reqPaid' ) },
+			{ value: 'unpaid_only', label: t( 'reqUnpaid' ) }
+		];
+		var paymentOptions = [
+			{ value: 'keep', label: t( 'keep' ) },
+			{ value: 'let_core_decide', label: t( 'letCore' ) }
+		];
+		var summary = el( 'summary', { class: 'ys-fct-status-advanced-summary' } );
+		var details = null;
+
+		function labelFor( options, value ) {
+			for ( var i = 0; i < options.length; i++ ) {
+				if ( options[ i ].value === value ) {
+					return options[ i ].label;
+				}
+			}
+
+			return value;
+		}
+
+		function refreshSummary() {
+			var requirement = definition.payment_requirement || 'any';
+			var onPayment = definition.on_payment || 'keep';
+
+			summary.textContent = t( 'advanced' ) + ' — ' +
+				t( 'availableOn' ) + ': ' + labelFor( requirementOptions, requirement ) + ' · ' +
+				t( 'afterPayment' ) + ': ' + labelFor( paymentOptions, onPayment );
+
+			if ( details ) {
+				details.classList.toggle( 'is-custom', 'any' !== requirement || 'keep' !== onPayment );
+			}
+		}
+
+		// selectCell() stores the value on its own change listener, which is
+		// registered first, so the summary below always reads the new value.
+		var requirementSelect = selectCell( definition, 'payment_requirement', requirementOptions, t( 'availableOn' ) );
+		var paymentSelect = selectCell( definition, 'on_payment', paymentOptions, t( 'afterPayment' ) );
+
+		requirementSelect.addEventListener( 'change', refreshSummary );
+		paymentSelect.addEventListener( 'change', refreshSummary );
+
+		details = el( 'details', {
+			class: 'ys-fct-status-advanced',
+			open: !! definition.__advancedOpen
+		}, [
+			summary,
+			el( 'div', { class: 'ys-fct-status-advanced-body' }, [
+				el( 'label', {}, [ el( 'span', { text: t( 'availableOn' ) } ), requirementSelect ] ),
+				el( 'label', {}, [ el( 'span', { text: t( 'afterPayment' ) } ), paymentSelect ] ),
+				el( 'p', { class: 'description', text: t( 'advancedHint' ) } )
+			] )
+		] );
+
+		// Remembered on the definition so reordering or adding a row — both of
+		// which redraw the table — does not snap an open line shut.
+		details.addEventListener( 'toggle', function () {
+			definition.__advancedOpen = details.open;
+		} );
+
+		refreshSummary();
+
+		return details;
 	}
 
 	/**
@@ -825,6 +899,7 @@
 			payload[ axis ] = payload[ axis ].map( function ( definition, index ) {
 				delete definition.__isNew;
 				delete definition.__slugTouched;
+				delete definition.__advancedOpen;
 				definition.sort_order = ( index + 1 ) * 10;
 				return definition;
 			} );

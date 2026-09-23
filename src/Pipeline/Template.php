@@ -1,6 +1,6 @@
 <?php
 /**
- * The one-click "paid → in production → shipment scheduled → shipped" pipeline.
+ * The one-click "in production → shipment scheduled → shipped" workflows.
  *
  * @package YangSheep\FluentCart\OrderStatuses
  */
@@ -23,20 +23,28 @@ if ( ! defined( 'ABSPATH' ) ) {
  * update would be rewriting order history.
  *
  * Applying either template twice is a no-op. Steps whose slug already exists
- * are left exactly as they are (the operator's colour and label win), and a
- * built-in label the operator has already overridden is never re-overridden.
+ * are left exactly as they are (the operator's colour and label win).
  *
- * **Which one to press.** Both spell the same workflow — paid, in production,
+ * **What the templates do not do, since 0.5.** They do not restrict any step to
+ * paid or unpaid orders — every step is offered on every order, exactly like a
+ * status added by hand — and they do not rename FluentCart's built-in statuses.
+ * Both used to happen, and together they made the workflow read as if it were
+ * split into a "paid" list and an "unpaid" list. A shop that does want a payment
+ * condition still has one, under *Advanced* on each status, and the built-in
+ * labels can still be renamed on the *Built-in labels* tab.
+ *
+ * **Which one to press.** Both spell the same workflow — in production,
  * shipment scheduled, shipped — and they differ in which column carries it:
  *
  * - `orderSteps()` puts it on `status`. That column is rewritten to
  *   `processing` by the payment code every time money arrives, which is what
- *   `Payment\RestoreHandler` exists to undo, and FluentCart 1.6.3 offers no
- *   order-status control at all on a paid order, which is what this plugin's
- *   own control exists to supply.
+ *   `Payment\RestoreHandler` exists to undo. And FluentCart's admin has no
+ *   control for choosing an order status at all — measured on 1.6.0 and 1.6.3:
+ *   only fixed buttons such as *Mark As Complete* and *Cancel Order* — which is
+ *   what this plugin's own order-page control exists to supply.
  * - `shippingSteps()` puts it on `shipping_status`. Nothing in FluentCart ever
  *   writes that column by itself, and FluentCart's own "Change Shipping Status"
- *   dialog drives it on a paid order with no help from us.
+ *   dialog lists the custom steps directly, with no help from us.
  *
  * For a workflow that begins *after* payment — which is what a production
  * schedule is — the shipping axis is the one to use, and the README says so.
@@ -47,7 +55,13 @@ final class Template {
 	 * The three custom order statuses, in pipeline order.
 	 *
 	 * Step 0 is `processing`, which FluentCart already owns — see
-	 * `Settings::PIPELINE_ENTRY`. The template only relabels it.
+	 * `Settings::PIPELINE_ENTRY`. The template leaves it, and its name, alone.
+	 *
+	 * Every step is available on every order (`payment_requirement` = `any`),
+	 * the same default a status added by hand gets. `on_payment` stays `keep`:
+	 * that is not a restriction but the guard that stops FluentCart overwriting
+	 * the step with `processing` when a payment lands, and it is invisible in
+	 * daily use.
 	 *
 	 * @return array<int,array<string,mixed>>
 	 */
@@ -57,10 +71,10 @@ final class Template {
 				'slug'                   => 'in_production',
 				'label'                  => __( 'In production', 'ys-fluentcart-order-statuses' ),
 				'color'                  => '#b45309',
-				'description'            => __( 'Paid, and the goods are being made.', 'ys-fluentcart-order-statuses' ),
+				'description'            => __( 'The goods are being made.', 'ys-fluentcart-order-statuses' ),
 				'editable'               => true,
 				'enabled'                => true,
-				'payment_requirement'    => 'paid_only',
+				'payment_requirement'    => 'any',
 				'on_payment'             => 'keep',
 				'linked_shipping_status' => '',
 				'sort_order'             => 10,
@@ -72,7 +86,7 @@ final class Template {
 				'description'            => __( 'Made, and booked onto a shipment.', 'ys-fluentcart-order-statuses' ),
 				'editable'               => true,
 				'enabled'                => true,
-				'payment_requirement'    => 'paid_only',
+				'payment_requirement'    => 'any',
 				'on_payment'             => 'keep',
 				'linked_shipping_status' => '',
 				'sort_order'             => 20,
@@ -84,7 +98,7 @@ final class Template {
 				'description'            => __( 'Gone. Sets the shipping status to Shipped as well.', 'ys-fluentcart-order-statuses' ),
 				'editable'               => true,
 				'enabled'                => true,
-				'payment_requirement'    => 'paid_only',
+				'payment_requirement'    => 'any',
 				'on_payment'             => 'keep',
 				// The whole reason `linked_shipping_status` exists: the last
 				// step of an order-status pipeline is also a fulfilment fact,
@@ -96,32 +110,22 @@ final class Template {
 	}
 
 	/**
-	 * Built-in labels the template suggests, so the operator sees one vocabulary.
+	 * Built-in labels the order template suggests: none, since 0.5.
 	 *
-	 * `processing` is the important one: core writes it on payment, and calling
-	 * it "Processing" next to a step called "In production" is exactly the
-	 * confusion this template exists to remove.
+	 * It used to rename `processing` to "Paid" and `on-hold` to "Awaiting
+	 * payment", which made the order workflow read like a paid list beside an
+	 * unpaid one. FluentCart's own names are now left exactly as they are; a
+	 * shop that wants other words renames them on the *Built-in labels* tab.
+	 * Kept as an empty map so `merge()` and anything else that calls this keep
+	 * working unchanged.
 	 *
-	 * @return array<string,array<string,string>>
+	 * @return array<string,array<string,array<string,string>>>
 	 */
 	public static function overrides() {
 		return array(
-			'order'    => array(
-				'processing' => array( 'label' => __( 'Paid', 'ys-fluentcart-order-statuses' ), 'color' => '#0f766e' ),
-				'completed'  => array( 'label' => __( 'Completed', 'ys-fluentcart-order-statuses' ), 'color' => '' ),
-				'on-hold'    => array( 'label' => __( 'Awaiting payment', 'ys-fluentcart-order-statuses' ), 'color' => '' ),
-				'canceled'   => array( 'label' => __( 'Canceled', 'ys-fluentcart-order-statuses' ), 'color' => '' ),
-			),
-			'payment'  => array(
-				'pending'  => array( 'label' => __( 'Awaiting payment', 'ys-fluentcart-order-statuses' ), 'color' => '' ),
-				'paid'     => array( 'label' => __( 'Paid', 'ys-fluentcart-order-statuses' ), 'color' => '' ),
-				'refunded' => array( 'label' => __( 'Refunded', 'ys-fluentcart-order-statuses' ), 'color' => '' ),
-			),
-			'shipping' => array(
-				'unshipped' => array( 'label' => __( 'Not shipped', 'ys-fluentcart-order-statuses' ), 'color' => '' ),
-				'shipped'   => array( 'label' => __( 'Shipped', 'ys-fluentcart-order-statuses' ), 'color' => '#15803d' ),
-				'delivered' => array( 'label' => __( 'Delivered', 'ys-fluentcart-order-statuses' ), 'color' => '' ),
-			),
+			'order'    => array(),
+			'payment'  => array(),
+			'shipping' => array(),
 		);
 	}
 
@@ -149,7 +153,7 @@ final class Template {
 				'slug'        => 'in_production',
 				'label'       => __( 'In production', 'ys-fluentcart-order-statuses' ),
 				'color'       => '#b45309',
-				'description' => __( 'Paid, and the goods are being made.', 'ys-fluentcart-order-statuses' ),
+				'description' => __( 'The goods are being made.', 'ys-fluentcart-order-statuses' ),
 				'editable'    => true,
 				'enabled'     => true,
 				'sort_order'  => 10,
@@ -167,31 +171,20 @@ final class Template {
 	}
 
 	/**
-	 * Built-in labels the fulfilment template suggests.
+	 * Built-in labels the fulfilment template suggests: none, since 0.5.
 	 *
-	 * `unshipped` is the one that matters: it is where every physical order
-	 * starts, so on this axis it means "paid, waiting to be made" rather than
-	 * the bare fact that nothing has been posted yet. `paid` and `processing`
-	 * are relabelled too, so the order header beside this workflow reads
-	 * "Paid" rather than "Processing" while the workflow itself runs.
+	 * It used to rename `unshipped` to "Awaiting production" and the payment
+	 * and order statuses around it to "Paid". Same reasoning as `overrides()`:
+	 * FluentCart's built-in names are left alone, and the *Built-in labels* tab
+	 * is where a shop renames them if it wants to.
 	 *
-	 * @return array<string,array<string,string>>
+	 * @return array<string,array<string,array<string,string>>>
 	 */
 	public static function shippingOverrides() {
 		return array(
-			'order'    => array(
-				'processing' => array( 'label' => __( 'Paid', 'ys-fluentcart-order-statuses' ), 'color' => '#0f766e' ),
-				'completed'  => array( 'label' => __( 'Completed', 'ys-fluentcart-order-statuses' ), 'color' => '' ),
-			),
-			'payment'  => array(
-				'paid'    => array( 'label' => __( 'Paid', 'ys-fluentcart-order-statuses' ), 'color' => '' ),
-				'pending' => array( 'label' => __( 'Awaiting payment', 'ys-fluentcart-order-statuses' ), 'color' => '' ),
-			),
-			'shipping' => array(
-				'unshipped' => array( 'label' => __( 'Awaiting production', 'ys-fluentcart-order-statuses' ), 'color' => '#64748b' ),
-				'shipped'   => array( 'label' => __( 'Shipped', 'ys-fluentcart-order-statuses' ), 'color' => '#15803d' ),
-				'delivered' => array( 'label' => __( 'Delivered', 'ys-fluentcart-order-statuses' ), 'color' => '' ),
-			),
+			'order'    => array(),
+			'payment'  => array(),
+			'shipping' => array(),
 		);
 	}
 

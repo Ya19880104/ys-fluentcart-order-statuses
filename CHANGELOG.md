@@ -5,6 +5,53 @@ All notable changes to YS FluentCart Order Statuses.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] — 2026-09-23
+
+A status is now **one list, on every order**. An existing configuration is not
+changed; this is about what the templates create and how the settings screen
+presents the two payment settings.
+
+### Changed
+
+- **The templates no longer restrict their steps by payment.** The order-axis
+  template used to mark *In production*, *Shipment scheduled* and *Shipped* as
+  *paid orders only*, so an unpaid order was offered a different list from a paid
+  one. They are now *any order*, the same default a status added by hand has
+  always had. `on_payment` stays `keep`: that is the guard against FluentCart
+  overwriting the status with *Processing* when a payment lands, not a
+  restriction.
+- **The templates no longer rename FluentCart's built-in statuses.** They used
+  to relabel `processing` to "Paid", `on-hold` and the pending payment status to
+  "Awaiting payment", and `unshipped` to "Awaiting production" — which made the
+  workflow read like a paid list beside an unpaid one. FluentCart's own names
+  are left as they are; the *Built-in labels* tab still renames them for a shop
+  that wants to.
+- **The two payment settings of an order status moved under *Advanced*.**
+  *Available on* and *After payment* are no longer columns of the order-status
+  table; they sit behind a collapsed *Advanced* line beneath each status. Its
+  summary always shows what they are set to, and turns amber when either differs
+  from the default, so a restricted status is still visible at a glance.
+- The first step of the order workflow is described as "Set by FluentCart when
+  a payment is recorded" instead of "Paid — set by FluentCart".
+
+### Fixed
+
+- **Documentation of FluentCart's native controls.** The README and the code
+  comments said FluentCart offers no order-status control *on a paid order*, and
+  that the Orders list has a bulk status action. Measured on 1.6.0 and 1.6.3,
+  neither is right: FluentCart's admin has **no control for choosing an order
+  status on any order** — only *Mark As Complete* (from `processing`), *Back to
+  processing* (from `completed`) and *Cancel Order* — and the Orders list's bulk
+  actions only delete. `editable_order_statuses` is read into one component and
+  never rendered; on FluentCart's side it is only the write allow-list.
+
+### Tests
+
+- The unit and scenario suites assert the new template behaviour, and C2 proves
+  an unpaid order is offered the same custom steps as a paid one before
+  restricting one step under *Advanced* to show the payment condition still
+  works. Run on FluentCart 1.6.0 and 1.6.3.
+
 ## [0.4.0] — 2026-09-12
 
 Every workflow step can now **send an e-mail** — inside FluentCart's own
@@ -273,6 +320,7 @@ First release. Developed against FluentCart 1.6.3; minimum supported 1.6.0.
   settings unless `YS_FCT_STATUS_REMOVE_DATA` is defined.
 - Custom payment statuses are deliberately out of scope for v1.
 
+[0.5.0]: https://yangsheep.com.tw
 [0.4.0]: https://yangsheep.com.tw
 [0.3.0]: https://yangsheep.com.tw
 [0.2.0]: https://yangsheep.com.tw

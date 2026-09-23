@@ -11,10 +11,10 @@ template, an optional "one step at a time" rule, a shipping status that follows
 the order status, and a report that answers the question a production schedule
 actually asks — *what is queued, and what has been sitting there too long?*
 
-Since 0.3 the workflow can be **driven**. FluentCart 1.6.3 offers no
-order-status control at all on a paid order, so the order page gets one, and the
-shipping axis — which FluentCart *does* let you change on a paid order, and
-which nothing ever overwrites — gets a one-click template of its own. §0 is the
+Since 0.3 the workflow can be **driven**. FluentCart's admin has no control for
+choosing an order status at all — on any order, paid or not — so the order page
+gets one, and the shipping axis — whose dialog FluentCart *does* offer, and which
+nothing ever overwrites — gets a one-click template of its own. §0 is the
 two-minute version of which to use.
 
 Since 0.4 every step can **send an e-mail**, registered into FluentCart's own
@@ -22,7 +22,12 @@ notification system rather than beside it: the toggle, the sender, the template
 wrapper, the footer and the preview are FluentCart's, and the operator writes
 the heading and the message in FluentCart's own editor. §2c.
 
-* **Version:** 0.4.0
+Since 0.5 a status is **one list, on every order**. The templates no longer
+restrict their steps to paid orders or rename FluentCart's built-in statuses,
+and the two payment settings of a status sit under a collapsed *Advanced* line
+instead of in their own columns. An existing configuration is not changed. §2.
+
+* **Version:** 0.5.0
 * **Requires:** WordPress 6.0+, PHP 7.4+, FluentCart 1.6.0+ (the full test suite is run against both 1.6.0 and 1.6.3 on every release)
 * **Text domain:** `ys-fluentcart-order-statuses` (ships with zh_TW)
 * **Nothing in FluentCart or WordPress core is patched.** Public filters, one option, one admin page and the plugin's own REST namespace.
@@ -43,18 +48,18 @@ choice matters more than anything else on this page.
 | Where the button is | *Order Statuses → Tools* | *Order Statuses → Order statuses* |
 | Column written | `shipping_status` | `status` |
 | Does FluentCart ever overwrite it? | **No.** Measured on 1.6.3: nothing writes that column by itself, ever. | **Yes** — to `processing`, every time a payment is recorded. §3 is the whole workaround. |
-| Can staff change it in FluentCart's own UI on a **paid** order? | **Yes** — *More Action → Change Shipping Status*, with the workflow steps listed in order. | **No.** FluentCart 1.6.3 shows no order-status control on a paid order at all. This plugin supplies one (§2b). |
+| Can staff change it in FluentCart's own UI? | **Yes** — *More Action → Change Shipping Status* lists your custom steps, in order, on any order. | **No.** FluentCart's admin has no control for choosing an order status on any order — only *Mark As Complete*, *Back to processing* and *Cancel Order*. This plugin supplies one (§2b). |
 | Does the customer see it? | Only where the theme prints a shipping status. | Yes — it is the order status on the customer dashboard. |
 | Does it mark line items fulfilled? | Yes, at `shipped` — core's own `fulfilled_quantity` bookkeeping. | Only through `linked_shipping_status` (§2a). |
 
-**If the workflow starts after the customer has paid, it is a fulfilment
-workflow, and it belongs on the shipping axis.** That is what a production
+**If the workflow is about getting the goods out, it is a fulfilment workflow,
+and it belongs on the shipping axis.** That is what a production
 schedule is. Press *Create the fulfilment workflow (shipping axis)* on the Tools
 tab and you get:
 
 | Step | Status | Slug | Kind |
 |---|---|---|---|
-| 1 | Awaiting production | `unshipped` | built-in, relabelled |
+| 1 | Unshipped | `unshipped` | built-in, untouched |
 | 2 | In production | `in_production` | custom |
 | 3 | Shipment scheduled | `ship_scheduled` | custom |
 | 4 | Shipped | `shipped` | built-in, untouched |
@@ -74,7 +79,7 @@ control it was missing.
 Both templates can be applied to the same store. The slugs `in_production` and
 `ship_scheduled` appear on both axes on purpose: they are independent columns
 with independent definitions, and the same word for the same step is the only
-sane outcome. Whichever template runs first keeps the built-in labels it sets.
+sane outcome. Neither template renames a built-in status.
 
 ---
 
@@ -116,14 +121,20 @@ duplicates.
 | **Slug** | What goes in the database column. ≤ 20 chars, auto-derived from the label, editable until you save. |
 | **Colour** | A hex colour, used for the badge everywhere the status is shown. |
 | **Description** | An internal note; it appears only on the settings screen. |
-| **Available on** (`payment_requirement`) | `any` / `paid orders only` / `unpaid orders only`. See §4. |
-| **After payment** (`on_payment`) | `keep this status` / `let FluentCart set Processing`. See §3. |
+| **Available on** (`payment_requirement`) | Under *Advanced*. `any order` (default) / `paid orders only` / `unpaid orders only`. See §4. |
+| **After payment** (`on_payment`) | Under *Advanced*. `keep this status` (default) / `let FluentCart set Processing`. See §3. |
 | **Also set shipping to** (`linked_shipping_status`) | One shipping status to apply alongside this one. See §2a. |
 | **Enabled** | Off hides it everywhere without deleting the definition — orders already on it keep their value. |
 | **Selectable in the admin** | Off keeps the status displayable but removes it from the status dropdown, for statuses only your own code should set. |
 
 Custom **shipping** statuses carry the same fields minus `payment_requirement`
 and `on_payment`, which have no meaning on that axis.
+
+The two payment settings are folded under a collapsed **Advanced** line beneath
+each order status, because the defaults suit almost every shop: the status is
+offered on every order, and it stays put when a payment lands. The line's summary
+always says what they are set to, and turns amber when either differs from the
+default, so a status somebody did restrict is visible without opening anything.
 
 Everything lives in one option, `ys_fct_status_settings`, and the whole document
 can be exported and imported as JSON from the Tools tab.
@@ -136,27 +147,35 @@ The custom order statuses are a **sequence**, not a set. The order they are
 listed in on the settings screen is the order of the workflow, and step 1 is
 always the built-in `processing` — FluentCart writes that the moment a payment is
 recorded, so every paid order passes through it whether you asked for it or not.
-Rename it on the *Built-in labels* tab; the template below calls it "Paid".
+The template leaves it, and its name, exactly as FluentCart has it.
 
 **Create the standard workflow** builds the shape most shops want:
 
 | Step | Status | Available on | After payment | Also sets shipping to |
 |---|---|---|---|---|
-| 1 | Paid (`processing`, built-in) | — | — | — |
-| 2 | In production (`in_production`) | paid orders only | keep | — |
-| 3 | Shipment scheduled (`ship_scheduled`) | paid orders only | keep | — |
-| 4 | Shipped (`shipped_done`) | paid orders only | keep | `shipped` |
+| 1 | Processing (`processing`, built-in) | — | — | — |
+| 2 | In production (`in_production`) | any order | keep | — |
+| 3 | Shipment scheduled (`ship_scheduled`) | any order | keep | — |
+| 4 | Shipped (`shipped_done`) | any order | keep | `shipped` |
+
+Before 0.5 the template marked every step *paid orders only* and renamed
+`processing` to "Paid" and `on-hold` to "Awaiting payment", which made the
+workflow read like a paid list beside an unpaid one. It does neither now; the
+fulfilment template likewise stopped renaming `unshipped`. A configuration built
+by the old template keeps what it has.
 
 It is a starting point, not a schema: rename, recolour, reorder, extend or delete
 any of it afterwards. Nothing is written until you press the button, nothing you
 have already configured is overwritten, and pressing it twice does nothing.
 
-### The dropdown follows the workflow
+### The list follows the workflow
 
-`fluent_cart/editable_order_statuses` is returned in workflow order, so
-FluentCart's own status dropdown reads *Paid → In production → Shipment scheduled
-→ Shipped* with the remaining built-ins underneath. Array order is the only lever
-that map offers — the dropdown component has no ordering hook of its own.
+`fluent_cart/editable_order_statuses` is returned in workflow order, so the
+order-page control (§2b) lists the moves as *Processing → In production →
+Shipment scheduled → Shipped*, with the remaining built-ins underneath.
+FluentCart's own admin never renders this list: measured on 1.6.0 and 1.6.3, it
+is read into one component's data and not used there, so on FluentCart's side it
+is only the server-side write allow-list.
 
 The shipping axis needs **two** maps ordered, and which two is not obvious.
 `window.fluentCartAdminApp` carries `order_statuses`,
@@ -221,13 +240,16 @@ in flight so core's own write-side allow-list agrees.
 
 ## 2b. The status control on the order page
 
-**The gap, measured in the browser on 1.6.3.** Open a *paid* order in
-FluentCart's admin. The header has *Refund*, a disabled *Edit* and a *More
-Action* menu whose entries are **Change Shipping Status, Cancel Order, Sync
-Order Statuses, Receipt**. There is no order-status control anywhere on the
-page. It does not matter how many custom statuses are registered, or how neatly
-`editable_order_statuses` is ordered: an operator whose whole workflow begins
-after payment cannot move an order along it from FluentCart's own UI.
+**The gap, measured in FluentCart's compiled admin app on 1.6.0 and 1.6.3.**
+Not one dropdown in the admin is bound to the order status. The order page's
+*More Action* menu offers fixed moves only — **Mark As Complete** (shown only
+while the order is on `processing`), **Back to processing** (only while it is
+`completed`) and **Cancel Order** — beside the one free choice FluentCart does
+offer, **Change Shipping Status**. The Orders list's bulk actions only delete.
+That holds for every order, paid or not, so however many custom order statuses
+are registered, FluentCart's own UI cannot put an order on one. (Earlier
+versions of this README said the gap was specific to *paid* orders and that the
+Orders list had a bulk status action. Both were wrong.)
 
 So the *Status history* panel this plugin already owns grew a sibling above it —
 **Order workflow** — which shows, for both axes at once:
@@ -235,7 +257,9 @@ So the *Status history* panel this plugin already owns grew a sibling above it �
 * the status the order is on now, in its configured colour, and which step of
   the workflow that is;
 * a dropdown of **only the moves this order is allowed to make**, in workflow
-  order, and a **Change** button;
+  order, and a **Change** button. With the defaults that is every enabled status,
+  on every order: one drops out only if it is disabled, if strict mode forbids
+  the jump, or if someone restricted it under *Advanced*;
 * a **Next step →** button when the order is on a workflow step and there is one
   after it.
 
@@ -467,6 +491,10 @@ not `status`, so neither is affected — see §6.
 
 ## 4. Payment conditions (`payment_requirement`)
 
+**Optional, and off by default.** Every status is offered on every order unless
+you restrict it here, under *Advanced* on the status's row; the templates never
+do.
+
 A status can be restricted to paid or unpaid orders. "Paid" means
 `payment_status` is one of `paid`, `partially_paid` or `partially_refunded` —
 money arrived.
@@ -663,7 +691,7 @@ bugs in this plugin, and no add-on can route around them without patching core.
 | `Status::getOrderPaymentSuccessStatuses()` / `getReportStatuses()` | These read `payment_status`, so **revenue reporting is unaffected by custom order statuses** — measured: FluentCart's own dashboard returned an identical "Order Value (Paid)" with the same order on `sourcing` and on `processing`. |
 | `SubscriptionReportService` uses `whereIn('status', getOrderSuccessStatuses())` | The handful of reports that filter by *order status* (not payment status) exclude custom statuses. |
 | `OrderResource::updateStatuses()` refuses any change once `status === 'canceled'` | Core behaviour; custom statuses are equally blocked. This is intentional and not worked around — the order-page control says so and offers nothing, rather than offering moves that would all come back as a 400. The *shipping* status of a canceled order can still be changed, which is also core's behaviour. |
-| FluentCart 1.6.3 renders **no order-status control on a paid order** | Nothing in the order page's header or *More Action* menu changes `status` once money has arrived. §2b adds one; §0 explains why the shipping axis avoids the problem entirely. |
+| FluentCart's admin has **no control for choosing an order status**, on any order | Only *Mark As Complete* (from `processing`), *Back to processing* (from `completed`) and *Cancel Order*. §2b adds a control; §0 explains why the shipping axis, whose dialog FluentCart does offer, avoids the problem. |
 | `OrderFilter::getSearchableFields()` has no `shipping_status` entry, and no filter | A saved view cannot filter the Orders list by shipping status with a search expression. Worked around on `fluent_cart/orders_list_filter_query` — see §5a. |
 | The Orders list *tabs* (All / Completed / Processing / On Hold) are a fixed set — `OrderFilter::tabsMap()` has no filter | Custom statuses appear as **saved views** beside them instead (§5a). With four built-in tabs already there, the SPA shows only the first four entries and puts the rest under **More views**. |
 | `BaseFilter::applyAdvancedFilter()` returns immediately unless FluentCart **Pro** is active | A saved view built on an advanced filter would silently match every order on a free store. The views this plugin adds use the simple search expression `status = <slug>` instead, which is not gated. The Orders *advanced filter* UI is extended either way — it just cannot be driven from a saved view without Pro. |

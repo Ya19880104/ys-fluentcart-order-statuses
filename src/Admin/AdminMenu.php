@@ -134,19 +134,19 @@ final class AdminMenu {
 			<section class="ys-fct-status-panel" data-ys-panel="order">
 				<div class="notice notice-info inline ys-fct-status-hint">
 					<p>
-						<?php esc_html_e( 'FluentCart rewrites the order status to “Processing” the moment a payment is recorded — that array is hardcoded in core and has no filter. Statuses set to “Keep after payment” are written back by this plugin immediately afterwards, with a line in the order activity. Workflow steps that are really about fulfilment belong on the Shipping statuses tab, where nothing overwrites them.', 'ys-fluentcart-order-statuses' ); ?>
+						<?php esc_html_e( 'Every status you add here is offered on every order, paid or not. FluentCart rewrites the order status to “Processing” the moment a payment is recorded — that is hardcoded in core and has no filter — so this plugin writes your status straight back, with a line in the order activity. Both behaviours can be changed per status under Advanced. Workflow steps that are really about fulfilment fit better on the Shipping statuses tab, where nothing overwrites them.', 'ys-fluentcart-order-statuses' ); ?>
 					</p>
 				</div>
 
 				<div class="ys-fct-status-pipeline" data-ys-pipeline-preview>
 					<h3><?php esc_html_e( 'The workflow, in order', 'ys-fluentcart-order-statuses' ); ?></h3>
 					<p class="description">
-						<?php esc_html_e( 'Step 1 is the built-in “Processing” status, which FluentCart writes as soon as a payment is recorded — rename it on the Built-in labels tab. The steps after it are the custom statuses below, in the order they are listed here. That order is what the status dropdown on an order follows, and what strict mode enforces.', 'ys-fluentcart-order-statuses' ); ?>
+						<?php esc_html_e( 'Step 1 is the built-in “Processing” status, which FluentCart writes as soon as a payment is recorded. The steps after it are the custom statuses below, in the order they are listed here. That order is how the Order workflow control on each order lists them, and what strict mode enforces.', 'ys-fluentcart-order-statuses' ); ?>
 					</p>
 					<ol class="ys-fct-status-steps" data-ys-steps></ol>
 					<p>
 						<button type="button" class="button" data-ys-template><?php esc_html_e( 'Create the standard workflow', 'ys-fluentcart-order-statuses' ); ?></button>
-						<span class="description"><?php esc_html_e( 'Adds “In production”, “Shipment scheduled” and “Shipped” (the last one also sets the shipping status), and suggests names for the built-in statuses. Nothing you have already set up is overwritten.', 'ys-fluentcart-order-statuses' ); ?></span>
+						<span class="description"><?php esc_html_e( 'Adds “In production”, “Shipment scheduled” and “Shipped” (the last one also sets the shipping status), each offered on every order. FluentCart’s built-in statuses keep their own names, and nothing you have already set up is overwritten.', 'ys-fluentcart-order-statuses' ); ?></span>
 					</p>
 				</div>
 
@@ -157,8 +157,6 @@ final class AdminMenu {
 							<th><?php esc_html_e( 'Label', 'ys-fluentcart-order-statuses' ); ?></th>
 							<th><?php esc_html_e( 'Slug', 'ys-fluentcart-order-statuses' ); ?></th>
 							<th><?php esc_html_e( 'Colour', 'ys-fluentcart-order-statuses' ); ?></th>
-							<th><?php esc_html_e( 'Available on', 'ys-fluentcart-order-statuses' ); ?></th>
-							<th><?php esc_html_e( 'After payment', 'ys-fluentcart-order-statuses' ); ?></th>
 							<th><?php esc_html_e( 'Also set shipping to', 'ys-fluentcart-order-statuses' ); ?></th>
 							<th><?php esc_html_e( 'Options', 'ys-fluentcart-order-statuses' ); ?></th>
 							<th><?php esc_html_e( 'Orders', 'ys-fluentcart-order-statuses' ); ?></th>
@@ -177,7 +175,7 @@ final class AdminMenu {
 			<section class="ys-fct-status-panel" data-ys-panel="shipping" hidden>
 				<div class="notice notice-success inline ys-fct-status-hint">
 					<p>
-						<?php esc_html_e( 'Nothing in FluentCart writes the shipping status automatically — it changes only when someone changes it, and FluentCart’s own “Change Shipping Status” dialog works on a paid order. This is the safest place for a multi-step fulfilment workflow, and the Tools tab will build one for you.', 'ys-fluentcart-order-statuses' ); ?>
+						<?php esc_html_e( 'Nothing in FluentCart writes the shipping status automatically — it changes only when someone changes it — and FluentCart’s own “Change Shipping Status” dialog lists the statuses you add here directly. This is the safest place for a multi-step fulfilment workflow, and the Tools tab will build one for you.', 'ys-fluentcart-order-statuses' ); ?>
 					</p>
 				</div>
 
@@ -288,12 +286,12 @@ final class AdminMenu {
 				<h3><?php esc_html_e( 'Which axis should carry your workflow?', 'ys-fluentcart-order-statuses' ); ?></h3>
 				<div class="notice notice-success inline ys-fct-status-hint">
 					<p>
-						<?php esc_html_e( 'If your workflow starts after the customer has paid — made, packed, booked, shipped — put it on the shipping status. FluentCart never writes that column by itself, and its own “Change Shipping Status” dialog can drive it on a paid order. The order status is the other way round: FluentCart rewrites it to “Processing” whenever a payment lands, and on a paid order it offers no status control at all, so this plugin has to supply both the guard and the control.', 'ys-fluentcart-order-statuses' ); ?>
+						<?php esc_html_e( 'If your workflow is about getting the goods out — made, packed, booked, shipped — put it on the shipping status. FluentCart never writes that column by itself, and its own “Change Shipping Status” dialog lists your custom steps directly. The order status is the other way round: FluentCart rewrites it to “Processing” whenever a payment lands, and its admin has no control for choosing an order status at all — only fixed buttons such as Mark As Complete and Cancel Order — so this plugin supplies both the guard and the control.', 'ys-fluentcart-order-statuses' ); ?>
 					</p>
 				</div>
 				<p>
 					<button type="button" class="button button-primary" data-ys-template-shipping><?php esc_html_e( 'Create the fulfilment workflow (shipping axis)', 'ys-fluentcart-order-statuses' ); ?></button>
-					<span class="description"><?php esc_html_e( 'Adds the shipping statuses “In production” and “Shipment scheduled” between the built-in Unshipped and Shipped, and suggests names for the built-in statuses around them. Nothing you have already set up is overwritten.', 'ys-fluentcart-order-statuses' ); ?></span>
+					<span class="description"><?php esc_html_e( 'Adds the shipping statuses “In production” and “Shipment scheduled” between the built-in Unshipped and Shipped. FluentCart’s built-in statuses keep their own names, and nothing you have already set up is overwritten.', 'ys-fluentcart-order-statuses' ); ?></span>
 				</p>
 				<p class="description">
 					<?php esc_html_e( 'The order-axis version of the same workflow is on the Order statuses tab. Use it when the states you need really are states of the order rather than of the delivery — “awaiting artwork approval”, say — or when you want them on the status your customers already see.', 'ys-fluentcart-order-statuses' ); ?>
@@ -416,6 +414,9 @@ final class AdminMenu {
 			'reqUnpaid'         => __( 'Unpaid orders only', 'ys-fluentcart-order-statuses' ),
 			'keep'              => __( 'Keep this status', 'ys-fluentcart-order-statuses' ),
 			'letCore'           => __( 'Let FluentCart set Processing', 'ys-fluentcart-order-statuses' ),
+			// v0.5 — the two payment settings live under a collapsed Advanced line.
+			'advanced'          => __( 'Advanced', 'ys-fluentcart-order-statuses' ),
+			'advancedHint'      => __( 'The defaults suit almost every shop: the status is offered on every order, and it stays put when a payment lands.', 'ys-fluentcart-order-statuses' ),
 			'emailLabel'        => __( 'E-mail', 'ys-fluentcart-order-statuses' ),
 			'emailOff'          => __( 'off', 'ys-fluentcart-order-statuses' ),
 			'emailCustomer'     => __( 'customer', 'ys-fluentcart-order-statuses' ),
@@ -441,7 +442,7 @@ final class AdminMenu {
 			// v0.2 — pipeline and reports.
 			'linkedNone'        => __( 'Leave the shipping status alone', 'ys-fluentcart-order-statuses' ),
 			'linkedShipping'    => __( 'Also set the shipping status to', 'ys-fluentcart-order-statuses' ),
-			'stepEntry'         => __( 'Paid — set by FluentCart', 'ys-fluentcart-order-statuses' ),
+			'stepEntry'         => __( 'Set by FluentCart when a payment is recorded', 'ys-fluentcart-order-statuses' ),
 			'templateConfirm'   => __( 'Add the standard workflow steps? Anything you have already set up is left alone.', 'ys-fluentcart-order-statuses' ),
 			'templateWorking'   => __( 'Creating the workflow…', 'ys-fluentcart-order-statuses' ),
 			'backfillConfirm'   => __( 'Read FluentCart\'s activity log and rebuild the imported history? Changes recorded since the plugin was installed are kept as they are.', 'ys-fluentcart-order-statuses' ),
