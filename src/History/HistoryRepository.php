@@ -78,6 +78,60 @@ final class HistoryRepository {
 	}
 
 	/**
+	 * Write the same transition for many orders in one statement.
+	 *
+	 * For Move orders, which changes a batch of rows with one UPDATE and fires
+	 * no FluentCart event the `hook` listener could record.
+	 *
+	 * @param int[]  $orderIds  Order ids.
+	 * @param string $axis      'order' or 'shipping'.
+	 * @param string $oldStatus Slug before.
+	 * @param string $newStatus Slug after.
+	 * @param string $source    One of Schema::SOURCES.
+	 * @return int Rows written.
+	 */
+	public static function recordMany( array $orderIds, $axis, $oldStatus, $newStatus, $source ) {
+		global $wpdb;
+
+		$axis   = in_array( $axis, Schema::AXES, true ) ? $axis : 'order';
+		$source = in_array( $source, Schema::SOURCES, true ) ? $source : 'hook';
+
+		if ( '' === (string) $newStatus || ! Schema::tableExists() ) {
+			return 0;
+		}
+
+		$actor  = substr( self::currentActor(), 0, 100 );
+		$now    = gmdate( 'Y-m-d H:i:s' );
+		$rows   = array();
+		$params = array();
+
+		foreach ( $orderIds as $orderId ) {
+			$orderId = (int) $orderId;
+
+			if ( $orderId <= 0 ) {
+				continue;
+			}
+
+			$rows[] = '(%d, %s, %s, %s, %s, %s, %s)';
+			array_push( $params, $orderId, $axis, substr( (string) $oldStatus, 0, 20 ), substr( (string) $newStatus, 0, 20 ), $actor, $source, $now );
+		}
+
+		if ( empty( $rows ) ) {
+			return 0;
+		}
+
+		//phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared
+		$written = $wpdb->query(
+			$wpdb->prepare(
+				'INSERT INTO `' . Schema::table() . '` (order_id, axis, old_status, new_status, changed_by, source, changed_at) VALUES ' . implode( ', ', $rows ),
+				$params
+			)
+		);
+
+		return is_int( $written ) ? $written : 0;
+	}
+
+	/**
 	 * Who is making the change, as a display string.
 	 *
 	 * Deliberately a name and not a user id: the row outlives the user account,

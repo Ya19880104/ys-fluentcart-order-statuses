@@ -190,60 +190,124 @@ final class OrderRepository {
 	}
 
 	/**
+	 * Every value in one status column, with how many orders carry it.
+	 *
+	 * One GROUP BY for the whole column rather than an `IN (…)` list, because
+	 * the settings screen needs the values nothing knows about as well as the
+	 * known ones — see `Settings::orphanCounts()`.
+	 *
+	 * @param string $axis 'order' or 'shipping'.
+	 * @return array<string,int> value => count.
+	 */
+	public static function countAll( $axis ) {
+		global $wpdb;
+
+		$column = 'shipping' === $axis ? 'shipping_status' : 'status';
+
+		//phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$rows = $wpdb->get_results(
+			'SELECT `' . $column . '` AS slug, COUNT(*) AS total FROM `' . self::table() . '` GROUP BY `' . $column . '`',
+			ARRAY_A
+		);
+
+		$out = array();
+
+		foreach ( (array) $rows as $row ) {
+			$slug = null === $row['slug'] ? '' : (string) $row['slug'];
+
+			$out[ $slug ] = ( isset( $out[ $slug ] ) ? $out[ $slug ] : 0 ) + (int) $row['total'];
+		}
+
+		return $out;
+	}
+
+	/**
 	 * Ids of the orders sitting on one slug, newest first.
 	 *
 	 * @param string $axis  'order' or 'shipping'.
 	 * @param string $slug  Slug.
-	 * @param int    $limit Maximum ids.
+	 * @param int    $limit Maximum ids; 0 for all of them.
 	 * @return int[]
 	 */
 	public static function idsWithStatus( $axis, $slug, $limit = 500 ) {
 		global $wpdb;
 
 		$column = 'shipping' === $axis ? 'shipping_status' : 'status';
-		$limit  = max( 1, min( 5000, (int) $limit ) );
+		$limit  = (int) $limit;
 
 		//phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$ids = $wpdb->get_col(
-			$wpdb->prepare(
-				'SELECT id FROM `' . self::table() . '` WHERE `' . $column . '` = %s ORDER BY id DESC LIMIT %d',
-				(string) $slug,
-				$limit
+		$ids = $limit > 0
+			? $wpdb->get_col(
+				$wpdb->prepare(
+					'SELECT id FROM `' . self::table() . '` WHERE `' . $column . '` = %s ORDER BY id DESC LIMIT %d',
+					(string) $slug,
+					$limit
+				)
 			)
-		);
+			: $wpdb->get_col(
+				$wpdb->prepare(
+					'SELECT id FROM `' . self::table() . '` WHERE `' . $column . '` = %s ORDER BY id DESC',
+					(string) $slug
+				)
+			);
 
 		return array_map( 'intval', (array) $ids );
 	}
 
 	/**
-	 * Move every order off one slug onto another.
+	 * Move these orders from one slug to another, where they still hold it.
+	 *
+	 * Compare-and-set per row: an order that something else moved on between
+	 * the caller's read and this write keeps the status it now has, and is not
+	 * in the returned list. `updated_at` is written the way FluentCart's own
+	 * model writes it (GMT, `Y-m-d H:i:s`), so a moved order no longer looks
+	 * untouched since long before the move.
 	 *
 	 * @param string $axis 'order' or 'shipping'.
-	 * @param string $from Slug to empty.
-	 * @param string $to   Slug to move to.
-	 * @return int Rows changed.
+	 * @param int[]  $ids  Order ids — one batch.
+	 * @param string $from Slug the orders are on.
+	 * @param string $to   Slug to move them to.
+	 * @return int[] Ids that were moved.
 	 */
-	public static function migrateStatus( $axis, $from, $to ) {
+	public static function moveOrders( $axis, array $ids, $from, $to ) {
 		global $wpdb;
 
 		$column = 'shipping' === $axis ? 'shipping_status' : 'status';
+		$ids    = array_values( array_filter( array_map( 'intval', $ids ) ) );
 
-		if ( '' === (string) $from || $from === $to ) {
-			return 0;
+		if ( empty( $ids ) || '' === (string) $from || '' === (string) $to || $from === $to ) {
+			return array();
 		}
 
-		//phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
-		$updated = $wpdb->update(
-			self::table(),
-			array( $column => (string) $to ),
-			array( $column => (string) $from ),
-			array( '%s' ),
-			array( '%s' )
+		$placeholders = implode( ', ', array_fill( 0, count( $ids ), '%d' ) );
+
+		//phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared
+		$still = $wpdb->get_col(
+			$wpdb->prepare(
+				'SELECT id FROM `' . self::table() . '` WHERE `' . $column . '` = %s AND id IN (' . $placeholders . ')',
+				array_merge( array( (string) $from ), $ids )
+			)
+		);
+
+		$still = array_values( array_filter( array_map( 'intval', (array) $still ) ) );
+
+		if ( empty( $still ) ) {
+			return array();
+		}
+
+		$placeholders = implode( ', ', array_fill( 0, count( $still ), '%d' ) );
+
+		//phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared
+		$wpdb->query(
+			$wpdb->prepare(
+				'UPDATE `' . self::table() . '` SET `' . $column . '` = %s, updated_at = %s WHERE `' . $column . '` = %s AND id IN (' . $placeholders . ')',
+				array_merge( array( (string) $to, gmdate( 'Y-m-d H:i:s' ), (string) $from ), $still )
+			)
 		);
 
 		self::flush();
 
-		return is_int( $updated ) ? $updated : 0;
+		return $still;
 	}
 
 	/**

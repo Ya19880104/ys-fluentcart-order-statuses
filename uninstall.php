@@ -33,6 +33,7 @@ delete_option( 'ys_fct_status_settings' );
 delete_option( 'ys_fct_status_remove_data' );
 delete_option( 'ys_fct_status_summary_last_sent' );
 delete_option( 'ys_fct_status_db_version' );
+delete_option( 'ys_fct_status_settings_backup' );
 
 // The status history goes with the definitions — it is a table of slugs whose
 // only translation just got deleted.

@@ -371,6 +371,13 @@ final class AdminMenu {
 				<p>
 					<button type="button" class="button" data-ys-import><?php esc_html_e( 'Import', 'ys-fluentcart-order-statuses' ); ?></button>
 				</p>
+				<p class="description">
+					<?php esc_html_e( 'Before anything is written you are shown what the file would change. An import that would remove a status orders are still on is refused, and the configuration it replaces is kept so the import can be undone.', 'ys-fluentcart-order-statuses' ); ?>
+				</p>
+				<p data-ys-undo-wrap hidden>
+					<button type="button" class="button" data-ys-undo><?php esc_html_e( 'Undo the last import', 'ys-fluentcart-order-statuses' ); ?></button>
+					<span class="description" data-ys-undo-note></span>
+				</p>
 			</section>
 
 			<template data-ys-template="move">
@@ -441,6 +448,13 @@ final class AdminMenu {
 
 			// v0.6 — guard rails.
 			'slugLocked'        => __( 'A saved status keeps its slug, because that is the value its orders carry. To use a different slug, add a new status and move the orders to it.', 'ys-fluentcart-order-statuses' ),
+			'importChecking'    => __( 'Reading the file…', 'ys-fluentcart-order-statuses' ),
+			'importWorking'     => __( 'Importing…', 'ys-fluentcart-order-statuses' ),
+			'importNothing'     => __( 'The file matches the current settings, so nothing would change. Import it anyway?', 'ys-fluentcart-order-statuses' ),
+			'undoConfirm'       => __( 'Undo the last import? The statuses, settings and e-mail text go back to what they were before it, including anything changed on this screen since.', 'ys-fluentcart-order-statuses' ),
+			'undoWorking'       => __( 'Undoing the import…', 'ys-fluentcart-order-statuses' ),
+			/* translators: 1: number of orders, 2: status label, 3: target status label */
+			'moveConfirm'       => __( 'Move %1$d order(s) from “%2$s” to “%3$s”? This writes straight to the orders: no e-mail is sent and FluentCart’s own automations do not run.', 'ys-fluentcart-order-statuses' ),
 
 			// v0.2 — pipeline and reports.
 			'linkedNone'        => __( 'Leave the shipping status alone', 'ys-fluentcart-order-statuses' ),

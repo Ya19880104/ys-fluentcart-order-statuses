@@ -23,6 +23,8 @@
 	var builtin = {};
 	var usage = { order: {}, shipping: {} };
 	var emails = { order: {}, shipping: {} };
+	var backup = null;
+	var moveTargets = { order: [], shipping: [] };
 	var dirty = false;
 
 	// ── helpers ──────────────────────────────────────────────────────────────
@@ -306,16 +308,41 @@
 		return options;
 	}
 
-	function targetOptions( axis, exceptSlug ) {
-		var options = [];
+	/** The name a slug goes by on this screen: its row, a renamed built-in, the built-in, or the slug. */
+	function labelOf( axis, slug ) {
+		var found = '';
 
-		Object.keys( builtin[ axis ] || {} ).forEach( function ( slug ) {
-			options.push( { value: slug, label: builtin[ axis ][ slug ] } );
+		( model[ axis ] || [] ).forEach( function ( definition ) {
+			if ( ( definition.__stored || definition.slug ) === slug ) {
+				found = definition.label || slug;
+			}
 		} );
 
-		model[ axis ].forEach( function ( definition ) {
-			if ( definition.slug && definition.slug !== exceptSlug ) {
-				options.push( { value: definition.slug, label: definition.label || definition.slug } );
+		if ( found ) {
+			return found;
+		}
+
+		var override = model.overrides && model.overrides[ axis ] ? model.overrides[ axis ][ slug ] : null;
+
+		if ( override && override.label ) {
+			return override.label;
+		}
+
+		return ( builtin[ axis ] && builtin[ axis ][ slug ] ) || slug;
+	}
+
+	/**
+	 * Where Move orders may put orders: the server's list, not every status.
+	 * Canceled, Completed, Shipped and the like would be written without any
+	 * of what normally comes with them, so the server refuses them and this
+	 * list never offers them.
+	 */
+	function moveOptions( axis, exceptSlug ) {
+		var options = [];
+
+		( moveTargets[ axis ] || [] ).forEach( function ( slug ) {
+			if ( slug !== exceptSlug ) {
+				options.push( { value: slug, label: labelOf( axis, slug ) } );
 			}
 		} );
 
@@ -353,7 +380,7 @@
 				class: 'button button-small',
 				text: t( 'move' ),
 				onclick: function () {
-					openMove( axis, definition, count, cell );
+					openMove( axis, { slug: definition.__stored || definition.slug, label: definition.label || definition.slug }, count, cell );
 				}
 			} ) );
 		}
@@ -361,41 +388,78 @@
 		return cell;
 	}
 
-	function openMove( axis, definition, count, cell ) {
+	/**
+	 * The Move orders control, opened inside `cell`.
+	 *
+	 * @param {string}      axis   'order' or 'shipping'.
+	 * @param {Object}      source `{ slug, label }` — the status to empty.
+	 * @param {number}      count  Orders on it.
+	 * @param {HTMLElement} cell   Where the control goes.
+	 */
+	function openMove( axis, source, count, cell ) {
 		if ( cell.querySelector( '.ys-fct-status-move' ) ) {
 			return;
 		}
 
 		var template = root.querySelector( '[data-ys-template="move"]' );
+
+		if ( ! template ) {
+			return;
+		}
+
 		var fragment = template.content.cloneNode( true );
 		var box = fragment.querySelector( '.ys-fct-status-move' );
 		var select = fragment.querySelector( '[data-ys-move-target]' );
+		var go = fragment.querySelector( '[data-ys-move-go]' );
+		var cancel = fragment.querySelector( '[data-ys-move-cancel]' );
+		var options = moveOptions( axis, source.slug );
 
 		fragment.querySelector( '[data-ys-move-label]' ).textContent =
-			sprintf( t( 'moveTo' ), [ count, definition.label || definition.slug ] );
+			sprintf( t( 'moveTo' ), [ count, source.label ] );
 
 		select.setAttribute( 'aria-label', t( 'move' ) );
 
-		targetOptions( axis, definition.slug ).forEach( function ( option ) {
+		options.forEach( function ( option ) {
 			select.appendChild( el( 'option', { value: option.value, text: option.label } ) );
 		} );
 
-		fragment.querySelector( '[data-ys-move-cancel]' ).addEventListener( 'click', function () {
+		go.disabled = ! options.length;
+
+		cancel.addEventListener( 'click', function () {
 			box.remove();
 		} );
 
-		fragment.querySelector( '[data-ys-move-go]' ).addEventListener( 'click', function () {
+		go.addEventListener( 'click', function () {
+			var target = select.value;
+			var targetLabel = select.selectedIndex >= 0 ? select.options[ select.selectedIndex ].textContent : target;
+
+			if ( ! target ) {
+				return;
+			}
+
+			// The move writes the order rows directly. Say exactly that before
+			// doing it: nothing downstream of a normal status change happens.
+			if ( ! window.confirm( sprintf( t( 'moveConfirm' ), [ count, source.label, targetLabel ] ) ) ) {
+				return;
+			}
+
+			go.disabled = true;
+			cancel.disabled = true;
+			select.disabled = true;
 			notice( t( 'moving' ), 'info' );
 
 			request( 'migrate', {
 				method: 'POST',
-				body: { axis: axis, from: definition.slug, to: select.value }
+				body: { axis: axis, from: source.slug, to: target }
 			} ).then( function ( payload ) {
 				usage = payload.usage || usage;
 				notice( payload.message, 'success' );
 				renderAxis( axis );
 				renderUsageSummary();
 			} ).catch( function ( error ) {
+				go.disabled = false;
+				cancel.disabled = false;
+				select.disabled = false;
 				notice( error.message, 'error' );
 			} );
 		} );
@@ -878,6 +942,7 @@
 		renderSteps();
 		renderShippingSteps();
 		renderTools();
+		renderUndo();
 	}
 
 	// ── state ────────────────────────────────────────────────────────────────
@@ -911,9 +976,25 @@
 		builtin = payload.builtin || {};
 		usage = payload.usage || { order: {}, shipping: {} };
 		emails = payload.emails || { order: {}, shipping: {} };
+		backup = payload.backup || null;
+		moveTargets = payload.move_targets || { order: [], shipping: [] };
 		dirty = false;
 
 		renderAll();
+	}
+
+	/** The Undo button exists only while there is an import to undo. */
+	function renderUndo() {
+		var wrap = root.querySelector( '[data-ys-undo-wrap]' );
+		var note = root.querySelector( '[data-ys-undo-note]' );
+
+		if ( wrap ) {
+			wrap.hidden = ! backup;
+		}
+
+		if ( note ) {
+			note.textContent = backup && backup.note ? backup.note : '';
+		}
 	}
 
 	function save() {
@@ -1535,10 +1616,6 @@
 				return;
 			}
 
-			if ( ! window.confirm( t( 'importConfirm' ) ) ) {
-				return;
-			}
-
 			var parsed;
 
 			try {
@@ -1548,13 +1625,60 @@
 				return;
 			}
 
-			request( 'import', { method: 'POST', body: { payload: parsed } } )
+			importButton.disabled = true;
+			notice( t( 'importChecking' ), 'info' );
+
+			// Ask the server what the file would change first, and put that in
+			// the confirm: "replace every status?" alone does not tell anyone
+			// that their strict mode is about to switch off. A file the server
+			// refuses never reaches the dialog at all.
+			request( 'import', { method: 'POST', body: { payload: parsed, dry_run: true } } )
+				.then( function ( preview ) {
+					var lines = ( preview.summary || [] ).join( '\n' );
+					var question = preview.empty ? t( 'importNothing' ) : t( 'importConfirm' );
+
+					if ( ! window.confirm( ( lines ? lines + '\n\n' : '' ) + question ) ) {
+						notice( '' );
+						return null;
+					}
+
+					notice( t( 'importWorking' ), 'info' );
+
+					return request( 'import', { method: 'POST', body: { payload: parsed } } ).then( function ( payload ) {
+						adopt( payload );
+						notice( payload.message, 'success' );
+					} );
+				} )
+				.catch( function ( error ) {
+					notice( error.message || t( 'importFailed' ), 'error' );
+				} )
+				.then( function () {
+					importButton.disabled = false;
+				} );
+		} );
+	}
+
+	var undoButton = root.querySelector( '[data-ys-undo]' );
+
+	if ( undoButton ) {
+		undoButton.addEventListener( 'click', function () {
+			if ( ! window.confirm( t( 'undoConfirm' ) ) ) {
+				return;
+			}
+
+			undoButton.disabled = true;
+			notice( t( 'undoWorking' ), 'info' );
+
+			request( 'import/undo', { method: 'POST', body: {} } )
 				.then( function ( payload ) {
 					adopt( payload );
 					notice( payload.message, 'success' );
 				} )
 				.catch( function ( error ) {
-					notice( error.message || t( 'importFailed' ), 'error' );
+					notice( error.message || t( 'saveFailed' ), 'error' );
+				} )
+				.then( function () {
+					undoButton.disabled = false;
 				} );
 		} );
 	}

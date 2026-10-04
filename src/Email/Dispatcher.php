@@ -34,8 +34,9 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * What deliberately sends nothing, because it fires no event at all:
  *
- *  - `OrderRepository::migrateStatus()` — the "Move orders" tool writes the
- *    status column with one UPDATE and never builds an `OrderStatusUpdated`.
+ *  - `OrderRepository::moveOrders()` — the "Move orders" tool writes the
+ *    status column with one UPDATE per batch and never builds an
+ *    `OrderStatusUpdated`.
  *  - `OrderRepository::setOrderStatus()` — the payment-restore path in
  *    `Payment\RestoreHandler`, same reason.
  *

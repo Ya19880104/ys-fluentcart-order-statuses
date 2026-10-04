@@ -41,8 +41,12 @@ final class Schema {
 	 * Where a row came from. Not in the original spec, but `backfill` has to be
 	 * distinguishable: it is the only source that can legitimately be deleted
 	 * and rebuilt, and a second backfill would otherwise double every row.
+	 *
+	 * `migrate` (0.6) is Move orders on the settings screen: a direct write to
+	 * the column that fires no FluentCart event, so it is the one change the
+	 * `hook` listener can never see and has to be recorded where it is made.
 	 */
-	const SOURCES = array( 'hook', 'restore', 'linked', 'backfill' );
+	const SOURCES = array( 'hook', 'restore', 'linked', 'backfill', 'migrate' );
 
 	/**
 	 * @return string Fully qualified table name.

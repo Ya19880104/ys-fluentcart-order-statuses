@@ -9,12 +9,14 @@ namespace YangSheep\FluentCart\OrderStatuses\Rest;
 
 use YangSheep\FluentCart\OrderStatuses\Email\ContentStore;
 use YangSheep\FluentCart\OrderStatuses\Email\NotificationRegistry;
+use YangSheep\FluentCart\OrderStatuses\History\HistoryRepository;
 use YangSheep\FluentCart\OrderStatuses\Settings;
 use YangSheep\FluentCart\OrderStatuses\StatusRegistry;
 use YangSheep\FluentCart\OrderStatuses\Support\ActivityLog;
 use YangSheep\FluentCart\OrderStatuses\Support\Labels;
 use YangSheep\FluentCart\OrderStatuses\Support\OrderRepository;
 use YangSheep\FluentCart\OrderStatuses\Support\Permissions;
+use YangSheep\FluentCart\OrderStatuses\Support\SettingsBackup;
 use YangSheep\FluentCart\OrderStatuses\Support\SettingsChange;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -24,7 +26,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * `ys-fct-status/v1`.
  *
- * Six routes, all administrator-only and all nonce-checked. The client posts
+ * Seven routes, all administrator-only and all nonce-checked. The client posts
  * the whole settings document rather than patching individual statuses: the
  * document is small, the sanitiser is a whitelist that has to see all of it at
  * once to catch duplicate slugs, and "save" then means the same thing for a new
@@ -33,6 +35,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 final class StatusController {
 
 	const NAMESPACE_V1 = 'ys-fct-status/v1';
+
+	/** Orders per UPDATE / history INSERT when moving orders in bulk. */
+	const MOVE_BATCH = 500;
 
 	/**
 	 * @return void
@@ -103,20 +108,23 @@ final class StatusController {
 				'permission_callback' => $permission,
 			)
 		);
+
+		register_rest_route(
+			self::NAMESPACE_V1,
+			'/import/undo',
+			array(
+				'methods'             => 'POST',
+				'callback'            => array( $this, 'undoImport' ),
+				'permission_callback' => $permission,
+			)
+		);
 	}
 
 	/**
 	 * @return \WP_REST_Response
 	 */
 	public function getSettings() {
-		return rest_ensure_response(
-			array(
-				'settings' => Settings::all(),
-				'builtin'  => $this->builtinLabels(),
-				'usage'    => $this->usageMap(),
-				'emails'   => NotificationRegistry::stateMap(),
-			)
-		);
+		return rest_ensure_response( $this->screenPayload( Settings::all() ) );
 	}
 
 	/**
@@ -140,14 +148,7 @@ final class StatusController {
 		// behaviour for a stored row but a terrible one for a form: the operator
 		// would press Save and watch their status vanish without a word.
 		if ( ! empty( $rejected ) ) {
-			return new \WP_Error(
-				'ys_fct_status_invalid_slug',
-				implode( ' ', $rejected ),
-				array(
-					'status'   => 422,
-					'rejected' => $rejected,
-				)
-			);
+			return self::slugRefusal( $rejected );
 		}
 
 		$inUse = $this->inUseRefusal( Settings::all(), $incoming );
@@ -167,13 +168,7 @@ final class StatusController {
 		ContentStore::pruneOrphans();
 
 		return rest_ensure_response(
-			array(
-				'settings' => $saved,
-				'builtin'  => $this->builtinLabels(),
-				'usage'    => $this->usageMap(),
-				'emails'   => NotificationRegistry::stateMap(),
-				'message'  => __( 'Statuses saved.', 'ys-fluentcart-order-statuses' ),
-			)
+			$this->screenPayload( $saved, array( 'message' => __( 'Statuses saved.', 'ys-fluentcart-order-statuses' ) ) )
 		);
 	}
 
@@ -187,9 +182,14 @@ final class StatusController {
 	/**
 	 * Move every order off one status onto another.
 	 *
-	 * Used when deleting a status that is still in use — but deliberately a
-	 * route of its own, because it rewrites order rows and should be auditable
-	 * separately from "the operator saved the settings form".
+	 * Used to empty a status before removing it, and to rescue orders left on a
+	 * status that no longer exists. Deliberately a route of its own, and
+	 * deliberately narrow, because it writes the order rows directly: no
+	 * FluentCart event fires, so no e-mail goes out, no stock moves and none of
+	 * FluentCart's automations run. That is why the source may not be one of
+	 * FluentCart's own statuses and the target has to be a place to wait
+	 * (`Settings::moveTargets()`), and why every moved order gets a history row
+	 * and an activity line here — nothing else will record it.
 	 *
 	 * @param \WP_REST_Request $request Request.
 	 * @return \WP_REST_Response|\WP_Error
@@ -207,32 +207,42 @@ final class StatusController {
 			return new \WP_Error( 'ys_fct_status_bad_migration', __( 'Pick a different status to move these orders to.', 'ys-fluentcart-order-statuses' ), array( 'status' => 400 ) );
 		}
 
-		if ( ! in_array( $to, $this->knownSlugs( $axis ), true ) ) {
-			return new \WP_Error( 'ys_fct_status_unknown_target', __( 'That target status does not exist.', 'ys-fluentcart-order-statuses' ), array( 'status' => 400 ) );
+		$settings  = Settings::all();
+		$fromLabel = $this->labelFor( $axis, $from, $settings );
+		$toLabel   = $this->labelFor( $axis, $to, $settings );
+
+		switch ( Settings::moveError( $axis, $from, $to, $settings ) ) {
+			case 'from_builtin':
+				return new \WP_Error(
+					'ys_fct_status_builtin_source',
+					sprintf(
+						/* translators: %s: status label */
+						__( 'Orders on “%s” cannot be moved in bulk: it is one of FluentCart’s own statuses. Change those orders one at a time on the order page.', 'ys-fluentcart-order-statuses' ),
+						$fromLabel
+					),
+					array( 'status' => 400 )
+				);
+
+			case 'bad_target':
+				return new \WP_Error(
+					'ys_fct_status_bad_target',
+					'shipping' === $axis
+						? sprintf(
+							/* translators: %s: label of the built-in Unshipped status */
+							__( 'Orders can only be moved in bulk to “%s” or to one of your enabled shipping statuses.', 'ys-fluentcart-order-statuses' ),
+							$this->labelFor( 'shipping', 'unshipped', $settings )
+						)
+						: sprintf(
+							/* translators: 1: label of the built-in Processing status, 2: label of the built-in On Hold status */
+							__( 'Orders can only be moved in bulk to “%1$s”, “%2$s” or one of your enabled order statuses.', 'ys-fluentcart-order-statuses' ),
+							$this->labelFor( 'order', 'processing', $settings ),
+							$this->labelFor( 'order', 'on-hold', $settings )
+						),
+					array( 'status' => 400 )
+				);
 		}
 
-		$ids     = OrderRepository::idsWithStatus( $axis, $from, 5000 );
-		$changed = OrderRepository::migrateStatus( $axis, $from, $to );
-
-		$labels = $this->allLabels( $axis );
-		$fromLabel = isset( $labels[ $from ] ) ? $labels[ $from ] : $from;
-		$toLabel   = isset( $labels[ $to ] ) ? $labels[ $to ] : $to;
-
-		foreach ( $ids as $orderId ) {
-			ActivityLog::order(
-				$orderId,
-				'shipping' === $axis
-					? __( 'Shipping status migrated', 'ys-fluentcart-order-statuses' )
-					: __( 'Order status migrated', 'ys-fluentcart-order-statuses' ),
-				sprintf(
-					/* translators: 1: old status label, 2: new status label */
-					__( 'The custom status %1$s was removed. This order was moved to %2$s.', 'ys-fluentcart-order-statuses' ),
-					$fromLabel,
-					$toLabel
-				),
-				'warning'
-			);
-		}
+		$changed = $this->moveInBatches( $axis, $from, $to, $fromLabel, $toLabel );
 
 		return rest_ensure_response(
 			array(
@@ -269,6 +279,14 @@ final class StatusController {
 	}
 
 	/**
+	 * Replace the configuration with an exported file.
+	 *
+	 * Held to the same rules as Save — the same slug sentences, the same
+	 * in-use refusal — plus one of its own: the file has to be an export.
+	 * `dry_run` answers what the import would change without writing, which is
+	 * what the settings screen puts in its confirm dialog. A real import keeps
+	 * the configuration it replaces for one step of undo.
+	 *
 	 * @param \WP_REST_Request $request Request.
 	 * @return \WP_REST_Response|\WP_Error
 	 */
@@ -279,7 +297,10 @@ final class StatusController {
 			$payload = json_decode( $payload, true );
 		}
 
-		if ( ! is_array( $payload ) ) {
+		// Only a file this plugin exported. Until 0.6 any JSON object was taken
+		// as the whole settings document, so `{}` emptied the configuration.
+		// Every export since 0.1 carries this envelope, a 0.3 one included.
+		if ( ! SettingsChange::isExportEnvelope( $payload ) ) {
 			return new \WP_Error(
 				'ys_fct_status_bad_json',
 				__( 'That does not look like an exported status file.', 'ys-fluentcart-order-statuses' ),
@@ -287,38 +308,167 @@ final class StatusController {
 			);
 		}
 
-		// Accept both the wrapped export and a bare settings document; the
-		// sanitiser is the same whitelist either way, so nothing from the file
-		// reaches the option unfiltered.
-		$settings = isset( $payload['settings'] ) && is_array( $payload['settings'] ) ? $payload['settings'] : $payload;
+		$incoming = $payload['settings'];
+		$rejected = $this->rejectedSlugs( $incoming );
 
-		$saved = Settings::save( $settings );
+		if ( ! empty( $rejected ) ) {
+			return self::slugRefusal( $rejected );
+		}
 
-		StatusRegistry::flushCache();
-		NotificationRegistry::flushCache();
+		$stored = Settings::all();
+		$inUse  = $this->inUseRefusal( $stored, $incoming );
+
+		if ( null !== $inUse ) {
+			return $inUse;
+		}
 
 		// A 0.3 export has no `email_content` key at all, and that is not an
 		// error: the statuses are imported and whatever e-mail text this site
 		// already has is left alone. Only a document that carries the key
 		// replaces it.
-		if ( isset( $payload['email_content'] ) && is_array( $payload['email_content'] ) ) {
+		$hasEmail = isset( $payload['email_content'] ) && is_array( $payload['email_content'] );
+
+		if ( rest_sanitize_boolean( $request->get_param( 'dry_run' ) ) ) {
+			return rest_ensure_response( $this->importPreview( $stored, Settings::sanitize( $incoming ), $hasEmail ? $payload['email_content'] : null ) );
+		}
+
+		SettingsBackup::store( $stored, ContentStore::all() );
+
+		$saved = Settings::save( $incoming );
+
+		StatusRegistry::flushCache();
+		NotificationRegistry::flushCache();
+
+		if ( $hasEmail ) {
 			ContentStore::replaceAll( $payload['email_content'] );
 		}
 
 		ContentStore::pruneOrphans();
 
 		return rest_ensure_response(
+			$this->screenPayload(
+				$saved,
+				array(
+					'message' => sprintf(
+						/* translators: 1: custom order statuses, 2: custom shipping statuses */
+						__( 'Imported %1$d order statuses and %2$d shipping statuses.', 'ys-fluentcart-order-statuses' ),
+						count( $saved['order'] ),
+						count( $saved['shipping'] )
+					),
+				)
+			)
+		);
+	}
+
+	/**
+	 * Put back the configuration the last import replaced.
+	 *
+	 * The in-use rule applies here too: orders may have been moved onto a
+	 * status the import added, and undoing would strand them.
+	 *
+	 * @param \WP_REST_Request $request Request.
+	 * @return \WP_REST_Response|\WP_Error
+	 */
+	public function undoImport( $request ) {
+		unset( $request );
+
+		$backup = SettingsBackup::get();
+
+		if ( null === $backup ) {
+			return new \WP_Error(
+				'ys_fct_status_no_backup',
+				__( 'There is no import to undo.', 'ys-fluentcart-order-statuses' ),
+				array( 'status' => 404 )
+			);
+		}
+
+		$inUse = $this->inUseRefusal( Settings::all(), $backup['settings'] );
+
+		if ( null !== $inUse ) {
+			return $inUse;
+		}
+
+		$saved = Settings::save( $backup['settings'] );
+
+		StatusRegistry::flushCache();
+		NotificationRegistry::flushCache();
+
+		ContentStore::replaceAll( $backup['email_content'] );
+		ContentStore::pruneOrphans();
+		SettingsBackup::clear();
+
+		return rest_ensure_response(
+			$this->screenPayload(
+				$saved,
+				array( 'message' => __( 'The last import was undone. The statuses, settings and e-mail text are back as they were before it.', 'ys-fluentcart-order-statuses' ) )
+			)
+		);
+	}
+
+	/**
+	 * What an import would change, without changing it.
+	 *
+	 * @param array      $stored       Normalised stored settings.
+	 * @param array      $incoming     Normalised incoming settings.
+	 * @param array|null $emailContent The file's e-mail content, or null when it has none.
+	 * @return array
+	 */
+	private function importPreview( array $stored, array $incoming, $emailContent ) {
+		$diff  = SettingsChange::diff( $stored, $incoming );
+		$lines = SettingsChange::summaryLines( $diff );
+
+		// Loose on purpose: the same rows in a different key order are not a change.
+		$emailChanges = is_array( $emailContent ) && ContentStore::sanitizeAll( $emailContent ) != ContentStore::all(); // phpcs:ignore Universal.Operators.StrictComparisons.LooseNotEqual
+
+		if ( $emailChanges ) {
+			$lines[] = __( 'The e-mail headings and messages are replaced with the ones in the file.', 'ys-fluentcart-order-statuses' );
+		}
+
+		$diff['email_content'] = $emailChanges;
+
+		return array(
+			'dry_run' => true,
+			'changes' => $diff,
+			'empty'   => SettingsChange::isEmpty( $diff ) && ! $emailChanges,
+			'summary' => $lines,
+		);
+	}
+
+	/**
+	 * The document the settings screen renders from, after any write.
+	 *
+	 * @param array $settings Normalised settings.
+	 * @param array $extra    Keys to add, such as `message`.
+	 * @return array
+	 */
+	private function screenPayload( array $settings, array $extra = array() ) {
+		return array_merge(
 			array(
-				'settings' => $saved,
-				'builtin'  => $this->builtinLabels(),
-				'usage'    => $this->usageMap(),
-				'emails'   => NotificationRegistry::stateMap(),
-				'message'  => sprintf(
-					/* translators: 1: custom order statuses, 2: custom shipping statuses */
-					__( 'Imported %1$d order statuses and %2$d shipping statuses.', 'ys-fluentcart-order-statuses' ),
-					count( $saved['order'] ),
-					count( $saved['shipping'] )
+				'settings'     => $settings,
+				'builtin'      => $this->builtinLabels(),
+				'usage'        => $this->usageMap(),
+				'emails'       => NotificationRegistry::stateMap(),
+				'backup'       => SettingsBackup::meta(),
+				'move_targets' => array(
+					'order'    => Settings::moveTargets( 'order', $settings ),
+					'shipping' => Settings::moveTargets( 'shipping', $settings ),
 				),
+			),
+			$extra
+		);
+	}
+
+	/**
+	 * @param string[] $rejected `rejectedSlugs()`.
+	 * @return \WP_Error
+	 */
+	private static function slugRefusal( array $rejected ) {
+		return new \WP_Error(
+			'ys_fct_status_invalid_slug',
+			implode( ' ', $rejected ),
+			array(
+				'status'   => 422,
+				'rejected' => $rejected,
 			)
 		);
 	}
@@ -360,19 +510,71 @@ final class StatusController {
 	}
 
 	/**
-	 * @param string $axis 'order' or 'shipping'.
-	 * @return array<string,string> slug => label, built-ins and customs.
+	 * The name an operator knows a slug by: its definition (enabled or not),
+	 * the renamed or original built-in name, or the slug itself.
+	 *
+	 * @param string $axis     'order' or 'shipping'.
+	 * @param string $slug     Slug.
+	 * @param array  $settings Normalised settings.
+	 * @return string
 	 */
-	private function allLabels( $axis ) {
-		$labels   = $this->builtinLabels();
-		$out      = isset( $labels[ $axis ] ) ? $labels[ $axis ] : array();
-		$settings = Settings::all();
+	private function labelFor( $axis, $slug, array $settings ) {
+		$definition = Settings::definition( $axis, $slug, $settings );
 
-		foreach ( $settings[ $axis ] as $definition ) {
-			$out[ $definition['slug'] ] = $definition['label'];
+		if ( null !== $definition ) {
+			return $definition['label'];
 		}
 
-		return $out;
+		return Labels::forSlug( $axis, $slug, $settings );
+	}
+
+	/**
+	 * Move orders in batches, recording each one where nothing else will.
+	 *
+	 * No cap: every order on the source status is moved, a batch of ids at a
+	 * time so neither the UPDATE nor the history INSERT grows without bound.
+	 *
+	 * @param string $axis      'order' or 'shipping'.
+	 * @param string $from      Source slug.
+	 * @param string $to        Target slug.
+	 * @param string $fromLabel Source label.
+	 * @param string $toLabel   Target label.
+	 * @return int Orders moved.
+	 */
+	private function moveInBatches( $axis, $from, $to, $fromLabel, $toLabel ) {
+		$title = 'shipping' === $axis
+			? __( 'Shipping status moved in bulk', 'ys-fluentcart-order-statuses' )
+			: __( 'Order status moved in bulk', 'ys-fluentcart-order-statuses' );
+
+		$note = sprintf(
+			'shipping' === $axis
+				/* translators: 1: old status label, 2: new status label */
+				? __( 'Shipping status moved in bulk from “%1$s” to “%2$s”.', 'ys-fluentcart-order-statuses' )
+				/* translators: 1: old status label, 2: new status label */
+				: __( 'Order status moved in bulk from “%1$s” to “%2$s”.', 'ys-fluentcart-order-statuses' ),
+			$fromLabel,
+			$toLabel
+		);
+
+		$moved = 0;
+
+		foreach ( array_chunk( OrderRepository::idsWithStatus( $axis, $from, 0 ), self::MOVE_BATCH ) as $batch ) {
+			$done = OrderRepository::moveOrders( $axis, $batch, $from, $to );
+
+			if ( empty( $done ) ) {
+				continue;
+			}
+
+			HistoryRepository::recordMany( $done, $axis, $from, $to, 'migrate' );
+
+			foreach ( $done as $orderId ) {
+				ActivityLog::order( $orderId, $title, $note, 'info' );
+			}
+
+			$moved += count( $done );
+		}
+
+		return $moved;
 	}
 
 	/**
