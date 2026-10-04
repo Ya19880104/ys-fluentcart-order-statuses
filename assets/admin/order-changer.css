@@ -96,3 +96,35 @@
 .ys-fct-changer-message.is-info {
 	opacity: .75;
 }
+
+/* The "Change Order Status" dialog opened from FluentCart's More Action menu.
+   Element Plus and FluentCart's own stylesheet draw it from its classes; these
+   rules only cover what a copy appended to <body> does not inherit. */
+
+.ys-fct-native [hidden] {
+	display: none !important;
+}
+
+.ys-fct-native .el-select {
+	/* FluentCart scopes this rule to its own dialog's wrapper. */
+	width: 100%;
+}
+
+.ys-fct-native .el-select__wrapper:not(.is-disabled) {
+	cursor: pointer;
+}
+
+.ys-fct-native-note {
+	margin: 0 0 12px;
+}
+
+.ys-fct-native-error {
+	margin: 4px 0 12px;
+	color: var(--el-color-danger, #d63638);
+}
+
+.ys-fct-native .dialog-footer {
+	display: flex;
+	justify-content: flex-end;
+	margin-top: 12px;
+}

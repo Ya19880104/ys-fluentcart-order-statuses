@@ -107,6 +107,17 @@ final class OrderWidget {
 					'confirmCompleted' => __( 'Move this order to “%s”? This marks the order as finished.', 'ys-fluentcart-order-statuses' ),
 					/* translators: %s: status label */
 					'confirmCanceled'  => __( 'Move this order to “%s”? A canceled order cannot be changed afterwards: FluentCart refuses every later change to its order status.', 'ys-fluentcart-order-statuses' ),
+					// v0.6 — the entry in FluentCart's own More Action menu and its dialog.
+					'menuLabel'        => __( 'Change Order Status', 'ys-fluentcart-order-statuses' ),
+					'dialogTitle'      => __( 'Update Order Status', 'ys-fluentcart-order-statuses' ),
+					'fieldLabel'       => __( 'Order Status', 'ys-fluentcart-order-statuses' ),
+					'update'           => __( 'Update', 'ys-fluentcart-order-statuses' ),
+					'close'            => __( 'Close this dialog', 'ys-fluentcart-order-statuses' ),
+					'loading'          => __( 'Loading…', 'ys-fluentcart-order-statuses' ),
+					'loadFailed'       => __( 'The order could not be loaded. The Order workflow card on this page can still change it.', 'ys-fluentcart-order-statuses' ),
+					'nowhere'          => __( 'There is nowhere for this order to move on this axis.', 'ys-fluentcart-order-statuses' ),
+					'noStatus'         => __( 'no status', 'ys-fluentcart-order-statuses' ),
+					'changed'          => __( 'The order status was changed.', 'ys-fluentcart-order-statuses' ),
 				),
 			)
 		);

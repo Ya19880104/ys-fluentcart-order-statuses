@@ -48,7 +48,7 @@ choice matters more than anything else on this page.
 | Where the button is | *Order Statuses → Tools* | *Order Statuses → Order statuses* |
 | Column written | `shipping_status` | `status` |
 | Does FluentCart ever overwrite it? | **No.** Measured on 1.6.3: nothing writes that column by itself, ever. | **Yes** — to `processing`, every time a payment is recorded. §3 is the whole workaround. |
-| Can staff change it in FluentCart's own UI? | **Yes** — *More Action → Change Shipping Status* lists your custom steps, in order, on any order. | **No.** FluentCart's admin has no control for choosing an order status on any order — only *Mark As Complete*, *Back to processing* and *Cancel Order*. This plugin supplies one (§2b). |
+| Can staff change it in FluentCart's own UI? | **Yes** — *More Action → Change Shipping Status* lists your custom steps, in order, on any order. | **Only through this plugin.** FluentCart's admin has no control for choosing an order status on any order — only *Mark As Complete*, *Back to processing* and *Cancel Order*. This plugin adds *More Action → Change Order Status* beside them, and an *Order workflow* card (§2b). |
 | Does the customer see it? | Only where the theme prints a shipping status. | Yes — it is the order status on the customer dashboard. |
 | Does it mark line items fulfilled? | Yes, at `shipped` — core's own `fulfilled_quantity` bookkeeping. | Only through `linked_shipping_status` (§2a). |
 
@@ -251,8 +251,28 @@ are registered, FluentCart's own UI cannot put an order on one. (Earlier
 versions of this README said the gap was specific to *paid* orders and that the
 Orders list had a bulk status action. Both were wrong.)
 
-So the *Status history* panel this plugin already owns grew a sibling above it —
-**Order workflow** — which shows, for both axes at once:
+**Where the order status is changed (0.6).** In FluentCart's own place: the
+order page's **More Action** menu gains **Change Order Status**, as its first
+entry, beside FluentCart's *Change Shipping Status*. It opens an **Update Order
+Status** dialog drawn with the same Element Plus markup as FluentCart's *Update
+Shipping Status* dialog — the order's current status as the placeholder, a list
+of the moves this order may make, and **Update**. FluentCart has no extension
+point for order actions, so the entry is added to the menu when the menu opens,
+found through the trigger's `aria-controls` (never by its text, which may be
+translated); the header's button group itself is not touched. On a canceled
+order the dialog shows FluentCart's rule and no Update button.
+
+The dialog and the card below share one write path: the same list, the same
+confirmation for *Completed* and *Canceled*, the same route, errors shown beside
+whichever control was used. After a change, FluentCart's own toast appears and
+FluentCart's own order-actions component is asked to `reload` the order — the
+same two steps its own status dialogs take (in 1.6.0 and 1.6.3 that reload is a
+full page load). If any of FluentCart's internals cannot be reached, the page is
+reloaded instead: it never goes on showing a status the order no longer has.
+
+The *Status history* panel this plugin already owns also has a sibling above
+it — **Order workflow** — which stays as it was and is also the fallback should
+a FluentCart update change the menu's markup. It shows, for both axes at once:
 
 * the status the order is on now, in its configured colour, and which step of
   the workflow that is;
@@ -279,28 +299,40 @@ the control**, in exactly the words the REST veto would have used:
 > production". Turn off strict order workflow on the Order Statuses screen to
 > allow skipping.
 
+**Completed and Canceled are never one click away (0.6).** *Completed* is
+offered only on an order that has been paid — FluentCart offers *Mark As
+Complete* on the same condition — and the route refuses it on an unpaid order
+with a sentence saying so. Both *Completed* and *Canceled* ask first, naming the
+status and what it means ("marks the order as finished"; a canceled order
+"cannot be changed afterwards"), and the route itself refuses either one with
+`409` unless the request says `confirmed: true`, so a page with an older cached
+script, or a bare API call, cannot make the move in one step either. Return in
+the dropdown no longer submits; the button does.
+
 **The write goes through FluentCart.** `POST ys-fct-status/v1/orders/{id}/change`
 hands the change to `OrderResource::updateStatuses()` with core's own
-`change_order_status` / `change_shipping_status` action and `manage_stock:
-false` — the same call the admin dropdown makes, and the same one
-`Pipeline\LinkedShipping` has made since 0.2. Everything downstream therefore
-still happens: core's validation, its canceled-order refusal, `fulfilled_quantity`
-on the shipping axis, the `OrderStatusUpdated` event and with it every
-`*_status_changed_to_<slug>` action, FluentCart's own activity line, this
-plugin's history row and its linked-shipping follow-up. `manage_stock: false` is
-load-bearing — it is what tells `Payment\RestoreHandler` this is a person and
-not a payment, and sending `true` would make the restore undo the operator's own
-move.
+`change_order_status` / `change_shipping_status` action — the same call the admin
+dropdown makes, and the same one `Pipeline\LinkedShipping` has made since 0.2.
+Everything downstream therefore still happens: core's validation, its
+canceled-order refusal, `fulfilled_quantity` on the shipping axis, the
+`OrderStatusUpdated` event and with it every `*_status_changed_to_<slug>` action,
+FluentCart's own activity line, this plugin's history row and its linked-shipping
+follow-up. `manage_stock` is `false`, and that is load-bearing — it is what tells
+`Payment\RestoreHandler` this is a person and not a payment, and sending `true`
+on a move to *Processing* would make the restore undo the operator's own move.
+The one exception is a cancel, sent with `true` exactly as FluentCart's own
+*Cancel Order* sends it, which is what returns the items to stock.
 
 **There is no inline script.** FluentCart injects an `html` widget's content
 with `innerHTML`, which does not execute script nodes, so the markup is inert
 and the behaviour lives in `assets/admin/order-changer.js` — enqueued on
-FluentCart's own screens, listening through one delegated handler on `document`,
-and costing nothing until a click lands inside the control. A successful change
-reloads the order view, because it moves more of the page than this one panel:
-the header badge, the activity feed, the fulfilment marker on the order items
-and — when the new status carries a linked shipping status — the other axis of
-the control itself. A refusal never reloads.
+FluentCart's own screens, listening through delegated handlers on `document`,
+and costing nothing until a click lands inside the control or on the More Action
+menu. A successful change hands the page back to FluentCart (see above), because
+it moves more of the page than this one panel: the header badge, the activity
+feed, the fulfilment marker on the order items and — when the new status carries
+a linked shipping status — the other axis of the control itself. A refusal never
+reloads.
 
 Two axes, two sets of rules, and the difference is the point:
 

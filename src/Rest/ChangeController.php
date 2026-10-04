@@ -7,6 +7,7 @@
 
 namespace YangSheep\FluentCart\OrderStatuses\Rest;
 
+use YangSheep\FluentCart\OrderStatuses\Admin\OrderWidget;
 use YangSheep\FluentCart\OrderStatuses\Pipeline\Changer;
 use YangSheep\FluentCart\OrderStatuses\Settings;
 use YangSheep\FluentCart\OrderStatuses\Support\Labels;
@@ -130,6 +131,11 @@ final class ChangeController {
 		if ( null === $state ) {
 			return self::notFound();
 		}
+
+		// The card as the order page renders it, so a script that has just
+		// changed the status somewhere else on the page can bring the card up
+		// to date without a second renderer in JavaScript.
+		$state['html'] = OrderWidget::renderChanger( $state );
 
 		return rest_ensure_response( $state );
 	}
