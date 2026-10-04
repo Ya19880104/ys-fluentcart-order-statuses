@@ -12,6 +12,10 @@
  * Hence one delegated listener on `document` and no element references kept
  * anywhere. Nothing here runs, or costs anything, until a click lands inside a
  * `[data-ys-changer]` block.
+ *
+ * Every order-status write from this script goes through `changeStatus()`:
+ * the confirmation, the request and the reading of its answer are one function,
+ * whichever control the operator used.
  */
 ( function () {
 	'use strict';
@@ -39,27 +43,87 @@
 	}
 
 	/**
-	 * Post the change, then reload.
+	 * Ask before a move the server will only make when it is confirmed.
+	 *
+	 * @param {string} kind  The target slug when it needs confirming, else ''.
+	 * @param {string} label The target's label, for the question.
+	 * @return {boolean} Whether to go ahead.
+	 */
+	function confirmed( kind, label ) {
+		if ( ! kind ) {
+			return true;
+		}
+
+		var template = 'canceled' === kind ? t( 'confirmCanceled' ) : t( 'confirmCompleted' );
+
+		return window.confirm( String( template ).replace( '%s', label || kind ) );
+	}
+
+	/**
+	 * The one write path.
+	 *
+	 * Resolves with `null` when the operator declined the confirmation (nothing
+	 * was sent), with the server's order state on success, and rejects with an
+	 * Error whose message is the sentence to show beside the control.
+	 *
+	 * @param {Object} move `{ orderId, axis, slug, label, confirm }`.
+	 * @return {Promise<Object|null>}
+	 */
+	function changeStatus( move ) {
+		if ( ! confirmed( move.confirm, move.label ) ) {
+			return Promise.resolve( null );
+		}
+
+		var body = { axis: move.axis, status: move.slug };
+
+		if ( move.confirm ) {
+			body.confirmed = true;
+		}
+
+		return window.fetch( cfg.restUrl + 'orders/' + encodeURIComponent( move.orderId ) + '/change', {
+			method: 'POST',
+			credentials: 'same-origin',
+			headers: {
+				'Content-Type': 'application/json',
+				'X-WP-Nonce': cfg.restNonce
+			},
+			body: JSON.stringify( body )
+		} ).then( function ( response ) {
+			return response.json().catch( function () {
+				return {};
+			} ).then( function ( payload ) {
+				if ( ! response.ok ) {
+					// A 422 from this plugin carries the same sentence the REST
+					// veto would have produced for the same move, a 409 asks for
+					// the confirmation, and a 400 from FluentCart carries core's
+					// own words. Either way the operator reads why.
+					throw new Error( ( payload && payload.message ) || t( 'failed' ) );
+				}
+
+				return payload || {};
+			} );
+		} );
+	}
+
+	/**
+	 * The sidebar card's submit: busy state, then `changeStatus()`, then reload.
 	 *
 	 * A successful change moves more of the page than this widget: FluentCart's
 	 * own header badge, its activity feed, the order-items panel's fulfilment
 	 * marker and — when the new status carries a linked shipping status — the
 	 * other axis of this very control. Re-rendering our own markup alone would
 	 * leave every one of those stale and disagreeing with the database, which
-	 * is a worse failure than a flash of reload: the operator would be reading
-	 * numbers that are no longer true. The error path never reloads, because
-	 * there the whole point is to keep the page exactly as it was and explain.
+	 * is a worse failure than a flash of reload. The error path never reloads,
+	 * because there the whole point is to keep the page as it was and explain.
 	 *
-	 * @param {HTMLElement} root  The `[data-ys-changer]` block.
-	 * @param {string}      axis  'order' or 'shipping'.
-	 * @param {string}      slug  Target status.
+	 * @param {HTMLElement} root The `[data-ys-changer]` block.
+	 * @param {Object}      move `{ axis, slug, label, confirm }`.
 	 * @return {void}
 	 */
-	function submit( root, axis, slug ) {
+	function submit( root, move ) {
 		var box = root.querySelector( '[data-ys-changer-message]' );
-		var orderId = root.getAttribute( 'data-ys-order' );
 
-		if ( ! slug ) {
+		if ( ! move.slug ) {
 			say( box, t( 'pick' ), 'error' );
 			return;
 		}
@@ -68,35 +132,21 @@
 			return;
 		}
 
+		move.orderId = root.getAttribute( 'data-ys-order' );
+
 		busy = true;
 		root.classList.add( 'is-busy' );
 		say( box, t( 'working' ), 'info' );
 
-		window.fetch( cfg.restUrl + 'orders/' + encodeURIComponent( orderId ) + '/change', {
-			method: 'POST',
-			credentials: 'same-origin',
-			headers: {
-				'Content-Type': 'application/json',
-				'X-WP-Nonce': cfg.restNonce
-			},
-			body: JSON.stringify( { axis: axis, status: slug } )
-		} ).then( function ( response ) {
-			return response.json().then( function ( payload ) {
-				return { ok: response.ok, payload: payload || {} };
-			} );
-		} ).then( function ( result ) {
-			if ( ! result.ok ) {
-				// A 422 from this plugin carries the same sentence the REST
-				// veto would have produced for the same move; a 400 from
-				// FluentCart carries core's own words. Either way the operator
-				// reads why, beside the control they used.
+		changeStatus( move ).then( function ( state ) {
+			if ( null === state ) {
 				busy = false;
 				root.classList.remove( 'is-busy' );
-				say( box, result.payload.message || t( 'failed' ), 'error' );
+				say( box, '' );
 				return;
 			}
 
-			say( box, result.payload.message || '', 'success' );
+			say( box, state.message || '', 'success' );
 			window.location.reload();
 		} ).catch( function ( error ) {
 			busy = false;
@@ -129,40 +179,27 @@
 		var next = button.getAttribute( 'data-ys-changer-next' );
 
 		if ( next ) {
-			submit( root, next, button.getAttribute( 'data-ys-changer-status' ) || '' );
+			submit( root, {
+				axis: next,
+				slug: button.getAttribute( 'data-ys-changer-status' ) || '',
+				label: button.getAttribute( 'data-ys-changer-label' ) || '',
+				confirm: button.getAttribute( 'data-ys-confirm' ) || ''
+			} );
 			return;
 		}
 
 		var axis = button.getAttribute( 'data-ys-changer-go' );
 		var select = root.querySelector( '[data-ys-changer-select="' + axis + '"]' );
+		var option = select && select.selectedIndex >= 0 ? select.options[ select.selectedIndex ] : null;
 
-		submit( root, axis, select ? select.value : '' );
-	} );
-
-	// Choosing a status and pressing Return is what a keyboard user expects a
-	// select beside a button to do, and the widget is not inside a <form> that
-	// could do it for us.
-	document.addEventListener( 'keydown', function ( event ) {
-		if ( 'Enter' !== event.key ) {
-			return;
-		}
-
-		var select = event.target && event.target.closest
-			? event.target.closest( '[data-ys-changer-select]' )
-			: null;
-
-		if ( ! select ) {
-			return;
-		}
-
-		var root = select.closest( '[data-ys-changer]' );
-
-		if ( ! root ) {
-			return;
-		}
-
-		event.preventDefault();
-		submit( root, select.getAttribute( 'data-ys-changer-select' ), select.value );
+		// The button is the only trigger. Return in the select used to submit
+		// too, which made it one keystroke from Completed or Canceled.
+		submit( root, {
+			axis: axis,
+			slug: select ? select.value : '',
+			label: option ? option.textContent : '',
+			confirm: option ? ( option.getAttribute( 'data-ys-confirm' ) || '' ) : ''
+		} );
 	} );
 
 	// A stale message after the operator changes their mind is noise, and a

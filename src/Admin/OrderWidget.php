@@ -100,9 +100,13 @@ final class OrderWidget {
 				'restUrl'   => esc_url_raw( rest_url( StatusController::NAMESPACE_V1 . '/' ) ),
 				'restNonce' => wp_create_nonce( 'wp_rest' ),
 				'i18n'      => array(
-					'working' => __( 'Changing…', 'ys-fluentcart-order-statuses' ),
-					'failed'  => __( 'The status could not be changed.', 'ys-fluentcart-order-statuses' ),
-					'pick'    => __( 'Choose a status first.', 'ys-fluentcart-order-statuses' ),
+					'working'          => __( 'Changing…', 'ys-fluentcart-order-statuses' ),
+					'failed'           => __( 'The status could not be changed.', 'ys-fluentcart-order-statuses' ),
+					'pick'             => __( 'Choose a status first.', 'ys-fluentcart-order-statuses' ),
+					/* translators: %s: status label */
+					'confirmCompleted' => __( 'Move this order to “%s”? This marks the order as finished.', 'ys-fluentcart-order-statuses' ),
+					/* translators: %s: status label */
+					'confirmCanceled'  => __( 'Move this order to “%s”? A canceled order cannot be changed afterwards: FluentCart refuses every later change to its order status.', 'ys-fluentcart-order-statuses' ),
 				),
 			)
 		);
@@ -244,7 +248,9 @@ final class OrderWidget {
 			. '<option value="">' . esc_html__( 'Move to…', 'ys-fluentcart-order-statuses' ) . '</option>';
 
 		foreach ( $axisState['targets'] as $target ) {
-			$out .= '<option value="' . esc_attr( $target['slug'] ) . '">' . esc_html( $target['label'] ) . '</option>';
+			$out .= '<option value="' . esc_attr( $target['slug'] ) . '"'
+				. ( empty( $target['confirm'] ) ? '' : ' data-ys-confirm="' . esc_attr( $target['slug'] ) . '"' )
+				. '>' . esc_html( $target['label'] ) . '</option>';
 		}
 
 		$out .= '</select>'
@@ -255,7 +261,10 @@ final class OrderWidget {
 		if ( is_array( $axisState['next'] ) ) {
 			$out .= '<button type="button" class="button button-primary ys-fct-changer-next"'
 				. ' data-ys-changer-next="' . esc_attr( $axis ) . '"'
-				. ' data-ys-changer-status="' . esc_attr( $axisState['next']['slug'] ) . '">'
+				. ' data-ys-changer-status="' . esc_attr( $axisState['next']['slug'] ) . '"'
+				. ' data-ys-changer-label="' . esc_attr( $axisState['next']['label'] ) . '"'
+				. ( empty( $axisState['next']['confirm'] ) ? '' : ' data-ys-confirm="' . esc_attr( $axisState['next']['slug'] ) . '"' )
+				. '>'
 				. esc_html(
 					sprintf(
 						/* translators: %s: the next workflow step's label */

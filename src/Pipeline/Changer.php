@@ -48,6 +48,30 @@ final class Changer {
 	/** Core refuses every order-status change once an order is canceled. */
 	const CANCELED = 'canceled';
 
+	/** FluentCart's own "this order is finished". */
+	const COMPLETED = 'completed';
+
+	/**
+	 * Order statuses the control moves to only after the operator confirms.
+	 *
+	 * Neither is an ordinary step. FluentCart refuses every later order-status
+	 * change once an order is canceled, and completing an order is what its
+	 * reports and the customer's account read as "done" — FluentCart's own
+	 * screen puts a confirmation on Cancel Order for the same reason. The route
+	 * insists on `confirmed: true` for both, so a cached copy of an older script
+	 * or a bare API call cannot make either move in one step.
+	 */
+	const NEEDS_CONFIRMATION = array( self::COMPLETED, self::CANCELED );
+
+	/**
+	 * @param string $axis 'order' or 'shipping'.
+	 * @param string $slug Target slug.
+	 * @return bool Whether moving there has to be confirmed.
+	 */
+	public static function needsConfirmation( $axis, $slug ) {
+		return 'order' === $axis && in_array( (string) $slug, self::NEEDS_CONFIRMATION, true );
+	}
+
 	/**
 	 * Everything the order-page control and the REST response need.
 	 *
@@ -135,9 +159,10 @@ final class Changer {
 			}
 
 			$out[] = array(
-				'slug'  => $slug,
-				'label' => (string) $label,
-				'color' => isset( $colors[ $slug ] ) ? $colors[ $slug ] : '',
+				'slug'    => $slug,
+				'label'   => (string) $label,
+				'color'   => isset( $colors[ $slug ] ) ? $colors[ $slug ] : '',
+				'confirm' => self::needsConfirmation( $axis, $slug ),
 			);
 		}
 
@@ -222,6 +247,18 @@ final class Changer {
 		// The specific sentence, naming the status and the reason, is the whole
 		// point of refusing in words rather than by omission.
 		if ( 'order' === $axis ) {
+			// FluentCart offers Mark As Complete only on an order that has been
+			// paid. The control follows the same rule rather than finishing an
+			// order nobody has paid for, and says so in the words the payment
+			// condition of a custom status already uses.
+			if ( self::COMPLETED === $slug && ! OrderRepository::isPaid( isset( $row['payment_status'] ) ? $row['payment_status'] : '' ) ) {
+				return sprintf(
+					/* translators: %s: status label */
+					__( '“%s” can only be used on orders that have been paid. This order has not been paid yet.', 'ys-fluentcart-order-statuses' ),
+					Labels::forSlug( 'order', self::COMPLETED, StatusRegistry::settings() )
+				);
+			}
+
 			$requirement = RequirementGuard::rejectionReason( $slug, $orderId );
 
 			if ( null !== $requirement ) {

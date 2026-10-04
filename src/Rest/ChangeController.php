@@ -9,6 +9,7 @@ namespace YangSheep\FluentCart\OrderStatuses\Rest;
 
 use YangSheep\FluentCart\OrderStatuses\Pipeline\Changer;
 use YangSheep\FluentCart\OrderStatuses\Settings;
+use YangSheep\FluentCart\OrderStatuses\Support\Labels;
 use YangSheep\FluentCart\OrderStatuses\Support\OrderRepository;
 use YangSheep\FluentCart\OrderStatuses\Support\Permissions;
 
@@ -45,10 +46,17 @@ if ( ! defined( 'ABSPATH' ) ) {
  * `*_status_changed_to_<slug>` action, FluentCart's own activity line, this
  * plugin's history row, and its linked-shipping follow-up.
  *
- * `manage_stock` is `false`: this is an operator's deliberate move, and
- * `Payment\RestoreHandler` reads `true` as the signature of FluentCart's payment
- * paths, which is how it tells the two apart. Sending `true` here would make the
- * restore handler undo the operator's own move.
+ * `manage_stock` is `false` for every move but one: this is an operator's
+ * deliberate move, and `Payment\RestoreHandler` reads `true` on a move to
+ * `processing` as the signature of FluentCart's payment paths — sending `true`
+ * there would make the restore handler undo the operator's own move. The
+ * exception is a cancel, which is sent with `true` because that is what
+ * FluentCart's own Cancel Order sends: it is what returns the items to stock.
+ * The restore handler never looks at a cancel.
+ *
+ * Completed and Canceled are refused with 409 unless the request carries
+ * `confirmed: true` (see `Changer::NEEDS_CONFIRMATION`), and Completed is
+ * refused with 422 on an order that has not been paid.
  */
 final class ChangeController {
 
@@ -182,6 +190,22 @@ final class ChangeController {
 			);
 		}
 
+		// Asked after the rules, so a move that would be refused anyway says
+		// why rather than asking to be confirmed. The control confirms in the
+		// browser and sends `confirmed: true`; anything that does not — an old
+		// cached script, a bare API call — is stopped here, before core runs.
+		if ( Changer::needsConfirmation( $axis, $slug ) && ! rest_sanitize_boolean( $request->get_param( 'confirmed' ) ) ) {
+			return new \WP_Error(
+				'ys_fct_status_confirm_required',
+				sprintf(
+					/* translators: %s: status label */
+					__( 'Moving an order to “%s” has to be confirmed. Reload the page and choose it again.', 'ys-fluentcart-order-statuses' ),
+					Labels::forSlug( 'order', $slug )
+				),
+				array( 'status' => 409 )
+			);
+		}
+
 		$written = self::write( $orderId, $axis, $slug );
 
 		if ( is_wp_error( $written ) ) {
@@ -246,10 +270,9 @@ final class ChangeController {
 					'order'        => array( 'id' => (int) $orderId ),
 					'action'       => self::ACTIONS[ $axis ],
 					'statuses'     => $statuses,
-					// `false` is what the admin dropdown sends, and what
-					// `Payment\RestoreHandler` reads to know this is a person
-					// rather than a payment. See the class docblock.
-					'manage_stock' => false,
+					// See the class docblock: `true` only for a cancel, exactly
+					// as FluentCart's own Cancel Order sends it.
+					'manage_stock' => 'order' === $axis && Changer::CANCELED === $slug,
 				)
 			);
 		} catch ( \Throwable $e ) {
