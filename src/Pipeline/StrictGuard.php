@@ -11,6 +11,7 @@ use YangSheep\FluentCart\OrderStatuses\Settings;
 use YangSheep\FluentCart\OrderStatuses\StatusRegistry;
 use YangSheep\FluentCart\OrderStatuses\Support\OrderContext;
 use YangSheep\FluentCart\OrderStatuses\Support\OrderRepository;
+use YangSheep\FluentCart\OrderStatuses\Support\Permissions;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -80,6 +81,12 @@ final class StrictGuard {
 		$newStatus = OrderContext::requestedOrderStatus( $request );
 
 		if ( '' === $newStatus ) {
+			return $result;
+		}
+
+		// Before FluentCart's permission check, like the requirement veto: a
+		// stranger gets FluentCart's own 401 / 403, never the workflow step.
+		if ( ! Permissions::canChangeOrderStatuses() ) {
 			return $result;
 		}
 

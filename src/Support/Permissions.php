@@ -49,6 +49,37 @@ final class Permissions {
 	}
 
 	/**
+	 * Whether the current user may change an order's status at all.
+	 *
+	 * The two `rest_pre_dispatch` vetoes run before FluentCart's own permission
+	 * check, so without this an anonymous request would be answered with this
+	 * plugin's sentence — which says whether the order exists, whether it is
+	 * paid and which step it is on. For anyone who may not change statuses
+	 * the vetoes stand aside, and FluentCart's own 401 / 403 is the answer.
+	 * FluentCart's status route asks for `orders/manage_statuses`; this
+	 * plugin's own screens ask for `orders/manage`. Either will do here.
+	 *
+	 * @return bool
+	 */
+	public static function canChangeOrderStatuses() {
+		if ( current_user_can( self::FALLBACK_CAP ) ) {
+			return true;
+		}
+
+		$manager = '\\FluentCart\\App\\Services\\Permission\\PermissionManager';
+
+		if ( class_exists( $manager ) && method_exists( $manager, 'hasPermission' ) ) {
+			try {
+				return (bool) $manager::hasPermission( array( 'orders/manage_statuses', self::FCT_PERMISSION ) );
+			} catch ( \Throwable $e ) {
+				return false;
+			}
+		}
+
+		return false;
+	}
+
+	/**
 	 * Who may read an order's status history.
 	 *
 	 * Lower bar than `canManage()` on purpose: the order-page widget is
