@@ -468,6 +468,7 @@ final class AdminMenu {
 			/* translators: 1: status label, 2: number of orders */
 			'disableConfirm'    => __( '“%1$s” is on %2$d order(s). Switched off, it stays on those orders, but it can no longer be chosen, FluentCart shows its raw slug, it sends no e-mail, and a payment recorded on one of those orders moves it to Processing. Switch it off anyway?', 'ys-fluentcart-order-statuses' ),
 			'emailDisabled'     => __( 'disabled', 'ys-fluentcart-order-statuses' ),
+			'saveFirst'         => __( 'Save or discard your changes first.', 'ys-fluentcart-order-statuses' ),
 			/* translators: %d: number of orders */
 			'orphansWarning'    => __( '%d order(s) are on a status that is no longer defined, so FluentCart shows them by their raw slug.', 'ys-fluentcart-order-statuses' ),
 			'orphansLink'       => __( 'Move them on the Tools tab', 'ys-fluentcart-order-statuses' ),

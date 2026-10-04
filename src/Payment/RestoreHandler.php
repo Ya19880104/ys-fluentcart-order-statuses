@@ -218,6 +218,13 @@ final class RestoreHandler {
 			return null;
 		}
 
+		// A status for unpaid orders only cannot be kept on an order that has
+		// just been paid: writing it back would put a paid order on a status
+		// its own condition forbids. FluentCart's Processing stands.
+		if ( 'unpaid_only' === $custom[ $slug ]['payment_requirement'] ) {
+			return null;
+		}
+
 		return 'keep' === $custom[ $slug ]['on_payment'] ? $custom[ $slug ] : null;
 	}
 

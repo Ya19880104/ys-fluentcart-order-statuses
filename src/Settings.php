@@ -401,6 +401,43 @@ final class Settings {
 	}
 
 	/**
+	 * Whether a slug is one of FluentCart's own on another axis.
+	 *
+	 * Not invalid in itself — the columns are separate — but FluentCart's badge
+	 * classes and this plugin's label tagging are keyed by slug alone, so an
+	 * order status slugged `shipped` or `paid` would rename and recolour
+	 * FluentCart's own shipping or payment badge. Refused for new statuses
+	 * only: a slug already stored has orders on it, and is left alone.
+	 *
+	 * @param string $slug Already sanitised slug.
+	 * @param string $axis 'order' or 'shipping' — the axis the slug is for.
+	 * @return bool
+	 */
+	public static function reservedElsewhere( $slug, $axis ) {
+		$elsewhere = 'shipping' === $axis
+			? array_merge( self::BUILTIN_ORDER, self::BUILTIN_PAYMENT )
+			: array_merge( self::BUILTIN_SHIPPING, self::BUILTIN_PAYMENT );
+
+		return in_array( (string) $slug, $elsewhere, true );
+	}
+
+	/**
+	 * A short fingerprint of the stored settings.
+	 *
+	 * Handed to the settings screen with every read and sent back with every
+	 * write, so a tab that was left open while somebody else saved is told so
+	 * instead of silently undoing their change.
+	 *
+	 * @param array $settings Optional pre-read normalised settings.
+	 * @return string
+	 */
+	public static function revision( array $settings = null ) {
+		$settings = null === $settings ? self::all() : $settings;
+
+		return substr( md5( (string) wp_json_encode( $settings ) ), 0, 12 );
+	}
+
+	/**
 	 * @param mixed $raw Raw colour.
 	 * @return string A `#rrggbb` string.
 	 */

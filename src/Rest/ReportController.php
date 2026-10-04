@@ -268,9 +268,16 @@ final class ReportController {
 
 	/**
 	 * @param \WP_REST_Request $request Request.
-	 * @return \WP_REST_Response
+	 * @return \WP_REST_Response|\WP_Error
 	 */
 	public function applyTemplate( $request ) {
+		// Same rule as Save and Import: a screen that is out of date is told.
+		$stale = StatusController::staleRefusal( $request );
+
+		if ( null !== $stale ) {
+			return $stale;
+		}
+
 		$axis = 'shipping' === (string) $request->get_param( 'axis' ) ? 'shipping' : 'order';
 
 		$merged = 'shipping' === $axis

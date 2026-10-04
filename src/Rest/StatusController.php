@@ -142,6 +142,12 @@ final class StatusController {
 			);
 		}
 
+		$stale = self::staleRefusal( $request );
+
+		if ( null !== $stale ) {
+			return $stale;
+		}
+
 		$rejected = $this->rejectedSlugs( $incoming );
 
 		// The sanitiser silently drops an invalid definition, which is the right
@@ -308,6 +314,12 @@ final class StatusController {
 			);
 		}
 
+		$stale = self::staleRefusal( $request );
+
+		if ( null !== $stale ) {
+			return $stale;
+		}
+
 		$incoming = $payload['settings'];
 		$rejected = $this->rejectedSlugs( $incoming );
 
@@ -449,12 +461,38 @@ final class StatusController {
 				'usage'        => $this->usageMap(),
 				'emails'       => NotificationRegistry::stateMap(),
 				'backup'       => SettingsBackup::meta(),
+				'revision'     => Settings::revision( $settings ),
 				'move_targets' => array(
 					'order'    => Settings::moveTargets( 'order', $settings ),
 					'shipping' => Settings::moveTargets( 'shipping', $settings ),
 				),
 			),
 			$extra
+		);
+	}
+
+	/**
+	 * Refuse a write made from a screen that is out of date.
+	 *
+	 * The settings screen sends back the `revision` it was handed. When the
+	 * stored settings have changed since — another tab, another person — the
+	 * write would silently undo that change, so it is refused instead. A
+	 * request without a revision (a script, an older screen) is not checked.
+	 *
+	 * @param \WP_REST_Request $request Request.
+	 * @return \WP_Error|null
+	 */
+	public static function staleRefusal( $request ) {
+		$revision = $request->get_param( 'revision' );
+
+		if ( ! is_string( $revision ) || '' === $revision || Settings::revision() === $revision ) {
+			return null;
+		}
+
+		return new \WP_Error(
+			'ys_fct_status_stale',
+			__( 'These settings were changed by someone else after you opened this page. Reload the page to see their changes, then make yours again.', 'ys-fluentcart-order-statuses' ),
+			array( 'status' => 409 )
 		);
 	}
 
@@ -657,10 +695,12 @@ final class StatusController {
 	 */
 	private function rejectedSlugs( array $incoming ) {
 		$messages = array();
+		$stored   = Settings::all();
 
 		foreach ( Settings::AXES as $axis ) {
 			$definitions = isset( $incoming[ $axis ] ) && is_array( $incoming[ $axis ] ) ? $incoming[ $axis ] : array();
 			$seen        = array();
+			$existing    = array_column( $stored[ $axis ], 'slug' );
 
 			foreach ( $definitions as $definition ) {
 				if ( ! is_array( $definition ) ) {
@@ -670,6 +710,12 @@ final class StatusController {
 				$raw  = isset( $definition['slug'] ) ? (string) $definition['slug'] : '';
 				$slug = Settings::sanitizeSlug( $raw );
 				$code = Settings::slugError( $slug, $axis, $seen );
+
+				// 0.6: a *new* status may not take another axis's built-in slug.
+				// One already stored keeps it — its orders carry that value.
+				if ( null === $code && ! in_array( $slug, $existing, true ) && Settings::reservedElsewhere( $slug, $axis ) ) {
+					$code = 'reserved_elsewhere';
+				}
 
 				if ( null === $code ) {
 					$seen[] = $slug;
@@ -702,6 +748,13 @@ final class StatusController {
 				return sprintf(
 					/* translators: %s: slug */
 					__( '“%s” is one of FluentCart\'s own statuses. Rename it on the Built-in labels tab instead of redefining it.', 'ys-fluentcart-order-statuses' ),
+					$slug
+				);
+
+			case 'reserved_elsewhere':
+				return sprintf(
+					/* translators: %s: slug */
+					__( '“%s” is already the slug of one of FluentCart’s own statuses on another axis (order, payment or shipping). Pick another one — otherwise FluentCart’s own badge for that status would take this status’s name and colour.', 'ys-fluentcart-order-statuses' ),
 					$slug
 				);
 

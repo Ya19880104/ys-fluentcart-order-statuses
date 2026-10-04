@@ -833,6 +833,20 @@ the browser:**
   shows **Undo the last import** while there is one to undo.
 * **The Tools tab has its own Save changes button** for strict mode, the stuck
   threshold, the daily summary and the payment restore switch.
+* **A screen that is out of date is told.** Every response carries a `revision`
+  of the stored settings, and Save, Import and the template buttons send it
+  back; if someone else saved in between, the write is refused with `409` and a
+  request to reload, instead of silently undoing their change. The template
+  buttons also refuse while the screen has unsaved edits.
+* **A new status cannot take another axis's built-in slug** (an order status
+  called `shipped` or `paid`, a shipping status called `processing`): FluentCart's
+  badge classes are keyed by slug alone, so its own badge would take the new
+  status's name and colour. A status already stored with such a slug is left
+  alone.
+* **"Unpaid orders only" is never kept after payment.** Writing such a status
+  back onto an order that has just been paid would contradict its own
+  condition, so the restore skips it and the *Advanced* line holds *After
+  payment* at *Let FluentCart set Processing*.
 
 REST namespace `ys-fct-status/v1`, every route capability-gated
 (`PermissionManager::hasPermission(['orders/manage'])`, falling back to
@@ -842,7 +856,7 @@ nonce-less GET is readable by any page the logged-in shopkeeper happens to open:
 
 | Route | Method | Purpose |
 |---|---|---|
-| `/settings` | GET / POST | read or replace the whole status document; POST refuses (`422`) a document that would remove or re-slug a status orders are on |
+| `/settings` | GET / POST | read or replace the whole status document, with its `revision`; POST refuses (`422`) a document that would remove or re-slug a status orders are on, and (`409`) a stale `revision` |
 | `/usage` | GET | per-slug order counts for both axes, and `orphans`: per axis, the values no status defines, with their counts |
 | `/migrate` | POST | move every order off one slug onto another (not from a built-in; only to *Processing*, *On Hold*, *Unshipped* or an enabled custom status), with a history row (`migrate`) and an activity note per order |
 | `/export` | GET | the settings document, the e-mail content map (`email_content`) and export metadata |

@@ -46,6 +46,15 @@ what gets written down when something does.
 - **The order page's status history shows the latest changes**, not the
   earliest, and says how many older ones are not shown. A cancellation is
   recorded as leaving the status the order was really on.
+- **Two people on the Order Statuses screen at once no longer undo each
+  other.** A Save, Import or template from a screen that is out of date is
+  refused with a message to reload. The template buttons also refuse while you
+  have unsaved changes on the screen.
+- **A status for "unpaid orders only" is no longer put back after payment.**
+  Its *After payment* setting is fixed at *Let FluentCart set Processing*.
+- **A new status cannot take a slug FluentCart already uses on another axis**
+  — an order status called `shipped`, say, which would rename FluentCart's own
+  shipping badge. A status already saved with such a slug is left alone.
 
 ### Changed (technical)
 
@@ -84,12 +93,23 @@ what gets written down when something does.
 - `ContentStore::pruneOrphans()` keeps the text of every defined status, enabled
   or not.
 - The order page's history panel selects the newest 40 rows.
+- `GET settings` (and every settings-screen response) carries a `revision`, a
+  fingerprint of the stored settings. `POST settings`, `POST import` and
+  `POST template` refuse with `409` (`ys_fct_status_stale`) when the revision
+  sent back no longer matches; a request without one is not checked.
+- `Payment\RestoreHandler` never restores a status whose payment condition is
+  `unpaid_only`; the settings screen holds such a status's *After payment* at
+  `let_core_decide`.
+- A **new** status whose slug is a built-in of another axis (order, payment or
+  shipping) is refused with `422` (`reserved_elsewhere`); stored ones are left
+  alone.
 
 ### Tests
 
 - New `tests/guard-scenarios.php` covering every item above with refusing and
-  accepting cases, and unit cases for the new rules. `status-scenarios` T11/T13
-  and `email-scenarios` E5 now state the new Move and Save behaviour;
+  accepting cases, and unit cases for the new rules. `status-scenarios` T6, T11
+  and T13 and `email-scenarios` E5 now state the new restore, Move and Save
+  behaviour;
   `pipeline-scenarios` R5 no longer assumes the activity log is shorter than the
   backfill's 2000-line window. All suites run on FluentCart 1.6.0 and 1.6.3.
 

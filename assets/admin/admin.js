@@ -24,6 +24,7 @@
 	var usage = { order: {}, shipping: {} };
 	var emails = { order: {}, shipping: {} };
 	var backup = null;
+	var revision = '';
 	var moveTargets = { order: [], shipping: [] };
 	var dirty = false;
 
@@ -607,8 +608,27 @@
 		var requirementSelect = selectCell( definition, 'payment_requirement', requirementOptions, t( 'availableOn' ) );
 		var paymentSelect = selectCell( definition, 'on_payment', paymentOptions, t( 'afterPayment' ) );
 
-		requirementSelect.addEventListener( 'change', refreshSummary );
+		// "Unpaid orders only" and "keep after payment" contradict each other:
+		// keeping the status would put a paid order on a status it may not
+		// take. The server never restores such a status, and the row says so
+		// by setting — and holding — the second choice.
+		function applyRequirement() {
+			var unpaidOnly = 'unpaid_only' === ( definition.payment_requirement || 'any' );
+
+			if ( unpaidOnly && 'let_core_decide' !== definition.on_payment ) {
+				definition.on_payment = 'let_core_decide';
+				paymentSelect.value = 'let_core_decide';
+			}
+
+			paymentSelect.disabled = unpaidOnly;
+		}
+
+		requirementSelect.addEventListener( 'change', function () {
+			applyRequirement();
+			refreshSummary();
+		} );
 		paymentSelect.addEventListener( 'change', refreshSummary );
+		applyRequirement();
 
 		details = el( 'details', {
 			class: 'ys-fct-status-advanced',
@@ -1078,6 +1098,7 @@
 		usage = payload.usage || { order: {}, shipping: {} };
 		emails = payload.emails || { order: {}, shipping: {} };
 		backup = payload.backup || null;
+		revision = payload.revision || '';
 		moveTargets = payload.move_targets || { order: [], shipping: [] };
 		dirty = false;
 
@@ -1114,7 +1135,7 @@
 			} );
 		} );
 
-		request( 'settings', { method: 'POST', body: { settings: payload } } )
+		request( 'settings', { method: 'POST', body: { settings: payload, revision: revision } } )
 			.then( function ( response ) {
 				adopt( response );
 				notice( response.message || t( 'saved' ), 'success' );
@@ -1238,13 +1259,21 @@
 
 	if ( templateButton ) {
 		templateButton.addEventListener( 'click', function () {
+			if ( dirty ) {
+				// The template is merged into the stored settings, not into this
+				// form, and the screen is reloaded afterwards: unsaved edits would
+				// be lost without a word.
+				notice( t( 'saveFirst' ), 'warning' );
+				return;
+			}
+
 			if ( ! window.confirm( t( 'templateConfirm' ) ) ) {
 				return;
 			}
 
 			notice( t( 'templateWorking' ), 'info' );
 
-			request( 'template', { method: 'POST', body: {} } )
+			request( 'template', { method: 'POST', body: { revision: revision } } )
 				.then( function ( payload ) {
 					// The template writes straight to the option, so the screen
 					// has to be reloaded from the server rather than patched:
@@ -1264,13 +1293,21 @@
 
 	if ( shippingTemplateButton ) {
 		shippingTemplateButton.addEventListener( 'click', function () {
+			if ( dirty ) {
+				// The template is merged into the stored settings, not into this
+				// form, and the screen is reloaded afterwards: unsaved edits would
+				// be lost without a word.
+				notice( t( 'saveFirst' ), 'warning' );
+				return;
+			}
+
 			if ( ! window.confirm( t( 'shippingConfirm' ) ) ) {
 				return;
 			}
 
 			notice( t( 'templateWorking' ), 'info' );
 
-			request( 'template', { method: 'POST', body: { axis: 'shipping' } } )
+			request( 'template', { method: 'POST', body: { axis: 'shipping', revision: revision } } )
 				.then( function ( payload ) {
 					// Same reasoning as the order-axis button: the template
 					// writes straight to the option, so the screen is reloaded
@@ -1733,7 +1770,7 @@
 			// the confirm: "replace every status?" alone does not tell anyone
 			// that their strict mode is about to switch off. A file the server
 			// refuses never reaches the dialog at all.
-			request( 'import', { method: 'POST', body: { payload: parsed, dry_run: true } } )
+			request( 'import', { method: 'POST', body: { payload: parsed, dry_run: true, revision: revision } } )
 				.then( function ( preview ) {
 					var lines = ( preview.summary || [] ).join( '\n' );
 					var question = preview.empty ? t( 'importNothing' ) : t( 'importConfirm' );
@@ -1745,7 +1782,7 @@
 
 					notice( t( 'importWorking' ), 'info' );
 
-					return request( 'import', { method: 'POST', body: { payload: parsed } } ).then( function ( payload ) {
+					return request( 'import', { method: 'POST', body: { payload: parsed, revision: revision } } ).then( function ( payload ) {
 						adopt( payload );
 						notice( payload.message, 'success' );
 					} );
