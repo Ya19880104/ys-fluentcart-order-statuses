@@ -131,6 +131,8 @@ final class AdminMenu {
 
 			<div class="ys-fct-status-notice" data-ys-notice role="status" aria-live="polite"></div>
 
+			<div class="ys-fct-status-orphans-warning" data-ys-orphans-warning hidden></div>
+
 			<section class="ys-fct-status-panel" data-ys-panel="order">
 				<div class="notice notice-info inline ys-fct-status-hint">
 					<p>
@@ -354,6 +356,14 @@ final class AdminMenu {
 					<?php esc_html_e( 'Applies per status, to the ones set to “Keep after payment”. Switch this off to let FluentCart move every paid order to Processing as it normally would.', 'ys-fluentcart-order-statuses' ); ?>
 				</p>
 
+				<p><button type="button" class="button button-primary" data-ys-save><?php esc_html_e( 'Save changes', 'ys-fluentcart-order-statuses' ); ?></button></p>
+
+				<h3><?php esc_html_e( 'Orders on statuses that no longer exist', 'ys-fluentcart-order-statuses' ); ?></h3>
+				<p class="description">
+					<?php esc_html_e( 'An order whose status is neither one of FluentCart’s own nor defined here — a status that was removed while orders were still on it, or a value written by something else — is listed below. FluentCart shows such an order by its raw slug. Move the orders to a status that exists.', 'ys-fluentcart-order-statuses' ); ?>
+				</p>
+				<div data-ys-orphans></div>
+
 				<h3><?php esc_html_e( 'Before you deactivate', 'ys-fluentcart-order-statuses' ); ?></h3>
 				<p class="description">
 					<?php esc_html_e( 'Deactivating this plugin does not change a single order row — orders sitting on a custom status keep it, and FluentCart simply shows the raw slug. To clear them out first, move each custom status\'s orders to a built-in one with the Move button on its row.', 'ys-fluentcart-order-statuses' ); ?>
@@ -455,6 +465,15 @@ final class AdminMenu {
 			'undoWorking'       => __( 'Undoing the import…', 'ys-fluentcart-order-statuses' ),
 			/* translators: 1: number of orders, 2: status label, 3: target status label */
 			'moveConfirm'       => __( 'Move %1$d order(s) from “%2$s” to “%3$s”? This writes straight to the orders: no e-mail is sent and FluentCart’s own automations do not run.', 'ys-fluentcart-order-statuses' ),
+			/* translators: 1: status label, 2: number of orders */
+			'disableConfirm'    => __( '“%1$s” is on %2$d order(s). Switched off, it stays on those orders, but it can no longer be chosen, FluentCart shows its raw slug, it sends no e-mail, and a payment recorded on one of those orders moves it to Processing. Switch it off anyway?', 'ys-fluentcart-order-statuses' ),
+			'emailDisabled'     => __( 'disabled', 'ys-fluentcart-order-statuses' ),
+			/* translators: %d: number of orders */
+			'orphansWarning'    => __( '%d order(s) are on a status that is no longer defined, so FluentCart shows them by their raw slug.', 'ys-fluentcart-order-statuses' ),
+			'orphansLink'       => __( 'Move them on the Tools tab', 'ys-fluentcart-order-statuses' ),
+			'orphansNone'       => __( 'Every order is on a status that is defined here or built into FluentCart.', 'ys-fluentcart-order-statuses' ),
+			/* translators: %d: number of orders */
+			'orphanCount'       => __( '%d order(s)', 'ys-fluentcart-order-statuses' ),
 
 			// v0.2 — pipeline and reports.
 			'linkedNone'        => __( 'Leave the shipping status alone', 'ys-fluentcart-order-statuses' ),

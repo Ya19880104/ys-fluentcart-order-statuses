@@ -52,8 +52,23 @@ final class OrderContext {
 	 */
 	private static $activeView = '';
 
+	/**
+	 * The order status each status-changing request found, read before it ran.
+	 *
+	 * FluentCart reports a cancellation with the *shipping* status in the
+	 * old-status slot (see `History\Recorder::canceledFrom()`), and by the time
+	 * the event fires the row already says `canceled`. The only moment the
+	 * real previous value can be read is before the controller runs.
+	 *
+	 * @var array<int,string>
+	 */
+	private static $statusBefore = array();
+
 	/** Matches any FluentCart order-scoped REST route. */
 	const ROUTE_PATTERN = '#^/[a-z0-9\-]+/v\d+/orders/(\d+)(?:/|$)#i';
+
+	/** The two routes that change an order status: FluentCart's own and the order-page control's. */
+	const STATUS_WRITE_PATTERN = '#/orders/\d+/(?:statuses|change)$#';
 
 	/**
 	 * @return void
@@ -70,8 +85,9 @@ final class OrderContext {
 	 * @return mixed Untouched.
 	 */
 	public static function capture( $result, $server, $request ) {
-		self::$orderId    = 0;
-		self::$activeView = '';
+		self::$orderId      = 0;
+		self::$activeView   = '';
+		self::$statusBefore = array();
 
 		if ( ! is_object( $request ) || ! method_exists( $request, 'get_route' ) ) {
 			return $result;
@@ -79,6 +95,16 @@ final class OrderContext {
 
 		if ( preg_match( self::ROUTE_PATTERN, (string) $request->get_route(), $matches ) ) {
 			self::$orderId = (int) $matches[1];
+
+			// One uncached read, and only for the two routes that write a status.
+			if ( preg_match( self::STATUS_WRITE_PATTERN, (string) $request->get_route() )
+				&& method_exists( $request, 'get_method' ) && 'GET' !== strtoupper( (string) $request->get_method() ) ) {
+				$status = OrderRepository::freshStatus( self::$orderId );
+
+				if ( null !== $status ) {
+					self::$statusBefore[ self::$orderId ] = $status;
+				}
+			}
 		}
 
 		$view = $request->get_param( 'active_view' );
@@ -97,8 +123,9 @@ final class OrderContext {
 	 * @return mixed Untouched.
 	 */
 	public static function release( $response, $server, $request ) {
-		self::$orderId    = 0;
-		self::$activeView = '';
+		self::$orderId      = 0;
+		self::$activeView   = '';
+		self::$statusBefore = array();
 
 		return $response;
 	}
@@ -108,6 +135,16 @@ final class OrderContext {
 	 */
 	public static function orderId() {
 		return self::$orderId;
+	}
+
+	/**
+	 * @param int $orderId Order id.
+	 * @return string The order status before the request in flight changed it, or '' when unknown.
+	 */
+	public static function statusBefore( $orderId ) {
+		$orderId = (int) $orderId;
+
+		return isset( self::$statusBefore[ $orderId ] ) ? self::$statusBefore[ $orderId ] : '';
 	}
 
 	/**

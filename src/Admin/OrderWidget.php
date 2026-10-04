@@ -170,18 +170,22 @@ final class OrderWidget {
 			return $widgets;
 		}
 
-		$rows = HistoryRepository::forOrder( $orderId, '', self::MAX_ROWS );
+		// The newest rows, not the oldest: on a long-lived order the change
+		// somebody is looking for is the recent one.
+		$rows = HistoryRepository::latestForOrder( $orderId, self::MAX_ROWS );
 
 		if ( empty( $rows ) ) {
 			return $widgets;
 		}
+
+		$total = HistoryRepository::countForOrder( $orderId );
 
 		$widgets[] = array(
 			'type'     => 'html',
 			'title'    => __( 'Status history', 'ys-fluentcart-order-statuses' ),
 			'subtitle' => __( 'Every order and shipping status this order has been through, and how long it stayed.', 'ys-fluentcart-order-statuses' ),
 			'use_card' => true,
-			'content'  => self::render( $rows ),
+			'content'  => self::render( $rows, max( 0, $total - count( $rows ) ) ),
 		);
 
 		return $widgets;
@@ -225,6 +229,14 @@ final class OrderWidget {
 			. '<span class="ys-fct-changer-badge" style="background:' . esc_attr( $color ) . '">'
 			. esc_html( '' === $axisState['label'] ? self::emptyLabel( $axis ) : $axisState['label'] )
 			. '</span>';
+
+		$standing = isset( $axisState['standing'] ) ? $axisState['standing'] : '';
+
+		if ( 'undefined' === $standing ) {
+			$out .= '<span class="ys-fct-changer-note">' . esc_html__( 'not defined — this status was removed', 'ys-fluentcart-order-statuses' ) . '</span>';
+		} elseif ( 'disabled' === $standing ) {
+			$out .= '<span class="ys-fct-changer-note">' . esc_html__( 'disabled', 'ys-fluentcart-order-statuses' ) . '</span>';
+		}
 
 		if ( $axisState['step'] >= 0 ) {
 			$out .= '<span class="ys-fct-changer-step">' . esc_html(
@@ -312,10 +324,11 @@ final class OrderWidget {
 	}
 
 	/**
-	 * @param array $rows History rows, oldest first.
+	 * @param array $rows   History rows, oldest first.
+	 * @param int   $hidden Older rows that were left out.
 	 * @return string Escaped HTML.
 	 */
-	public static function render( array $rows ) {
+	public static function render( array $rows, $hidden = 0 ) {
 		$settings = StatusRegistry::settings();
 
 		$labels = array(
@@ -362,6 +375,17 @@ final class OrderWidget {
 		}
 
 		$out .= '</ul>';
+
+		// Newest first, so the rows that did not fit are below the last one.
+		if ( (int) $hidden > 0 ) {
+			$out .= '<p class="ys-fct-status-older" style="margin:8px 0 0;opacity:.7;font-size:12px">' . esc_html(
+				sprintf(
+					/* translators: %d: number of older status changes not listed */
+					_n( '%d older change not shown.', '%d older changes not shown.', (int) $hidden, 'ys-fluentcart-order-statuses' ),
+					(int) $hidden
+				)
+			) . '</p>';
+		}
 
 		return $out;
 	}

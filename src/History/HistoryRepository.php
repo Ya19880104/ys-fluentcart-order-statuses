@@ -204,6 +204,88 @@ final class HistoryRepository {
 	}
 
 	/**
+	 * One order's most recent rows, returned oldest first.
+	 *
+	 * The order page shows a bounded timeline, and the rows worth showing are
+	 * the latest ones: they are selected newest first and handed back in
+	 * chronological order, which is what the renderer's stay calculation
+	 * expects.
+	 *
+	 * @param int $orderId Order id.
+	 * @param int $limit   Maximum rows.
+	 * @return array<int,array<string,string>>
+	 */
+	public static function latestForOrder( $orderId, $limit ) {
+		global $wpdb;
+
+		$orderId = (int) $orderId;
+		$limit   = max( 1, min( self::MAX_ROWS, (int) $limit ) );
+
+		if ( $orderId <= 0 || ! Schema::tableExists() ) {
+			return array();
+		}
+
+		//phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				'SELECT id, order_id, axis, old_status, new_status, changed_by, source, changed_at'
+				. ' FROM `' . Schema::table() . '` WHERE order_id = %d ORDER BY changed_at DESC, id DESC LIMIT %d',
+				$orderId,
+				$limit
+			),
+			ARRAY_A
+		);
+
+		return array_reverse( (array) $rows );
+	}
+
+	/**
+	 * @param int $orderId Order id.
+	 * @return int Rows recorded for this order, both axes.
+	 */
+	public static function countForOrder( $orderId ) {
+		global $wpdb;
+
+		$orderId = (int) $orderId;
+
+		if ( $orderId <= 0 || ! Schema::tableExists() ) {
+			return 0;
+		}
+
+		//phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		return (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM `' . Schema::table() . '` WHERE order_id = %d', $orderId ) );
+	}
+
+	/**
+	 * The status the newest row on one axis put the order on, or ''.
+	 *
+	 * @param int    $orderId Order id.
+	 * @param string $axis    'order' or 'shipping'.
+	 * @return string
+	 */
+	public static function latestStatus( $orderId, $axis ) {
+		global $wpdb;
+
+		$orderId = (int) $orderId;
+		$axis    = in_array( $axis, Schema::AXES, true ) ? $axis : 'order';
+
+		if ( $orderId <= 0 || ! Schema::tableExists() ) {
+			return '';
+		}
+
+		//phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$value = $wpdb->get_var(
+			$wpdb->prepare(
+				'SELECT new_status FROM `' . Schema::table() . '` WHERE order_id = %d AND axis = %s ORDER BY changed_at DESC, id DESC LIMIT 1',
+				$orderId,
+				$axis
+			)
+		);
+
+		return null === $value ? '' : (string) $value;
+	}
+
+	/**
 	 * Average and longest completed stay in each status.
 	 *
 	 * "Completed" is the operative word: only transitions that have a successor

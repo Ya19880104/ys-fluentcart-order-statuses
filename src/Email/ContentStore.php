@@ -7,6 +7,8 @@
 
 namespace YangSheep\FluentCart\OrderStatuses\Email;
 
+use YangSheep\FluentCart\OrderStatuses\Settings;
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -212,12 +214,17 @@ final class ContentStore {
 	}
 
 	/**
-	 * Drop every row whose notification no longer exists.
+	 * Drop every row whose status no longer exists at all.
 	 *
 	 * Called after a settings save. Not strictly required — an orphan row is
 	 * never read, because the template and the editor both start from a
 	 * registered notification — but leaving deleted statuses' text in an
 	 * exported file would be confusing.
+	 *
+	 * A *disabled* status keeps its text. It registers no notification while
+	 * it is off, but it is one tick away from coming back, and until 0.6 the
+	 * heading and message somebody wrote for it were silently deleted the
+	 * moment it was switched off.
 	 *
 	 * @return void
 	 */
@@ -228,11 +235,30 @@ final class ContentStore {
 			return;
 		}
 
-		$known = NotificationRegistry::entries();
-		$kept  = array_intersect_key( $all, $known );
+		$kept = array_intersect_key( $all, self::definedNames( Settings::all() ) );
 
 		if ( count( $kept ) !== count( $all ) ) {
 			self::replaceAll( $kept );
 		}
+	}
+
+	/**
+	 * Every notification name a defined status owns, enabled or not.
+	 *
+	 * @param array $settings Normalised settings.
+	 * @return array<string,bool> name => true.
+	 */
+	public static function definedNames( array $settings ) {
+		$names = array();
+
+		foreach ( Settings::AXES as $axis ) {
+			foreach ( isset( $settings[ $axis ] ) && is_array( $settings[ $axis ] ) ? $settings[ $axis ] : array() as $definition ) {
+				foreach ( array( 'customer', 'admin' ) as $recipient ) {
+					$names[ NotificationRegistry::nameFor( $axis, $definition['slug'], $recipient ) ] = true;
+				}
+			}
+		}
+
+		return $names;
 	}
 }

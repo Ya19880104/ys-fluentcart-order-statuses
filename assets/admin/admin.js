@@ -182,13 +182,24 @@
 		return select;
 	}
 
-	function checkboxLabel( definition, field, label ) {
+	function checkboxLabel( definition, field, label, axis ) {
 		return el( 'label', { class: 'ys-fct-status-check' }, [
 			el( 'input', {
 				type: 'checkbox',
 				'aria-label': label,
 				checked: !! definition[ field ],
 				onchange: function ( event ) {
+					// Switching off a status orders are on changes what happens
+					// to those orders, quietly. Say what, and let it be undone.
+					if ( 'enabled' === field && axis && ! event.target.checked ) {
+						var count = usageOf( axis, definition );
+
+						if ( count > 0 && ! window.confirm( sprintf( t( 'disableConfirm' ), [ definition.label || definition.slug, count ] ) ) ) {
+							event.target.checked = true;
+							return;
+						}
+					}
+
 					definition[ field ] = event.target.checked;
 					markDirty();
 				}
@@ -456,6 +467,7 @@
 				notice( payload.message, 'success' );
 				renderAxis( axis );
 				renderUsageSummary();
+				renderOrphans();
 			} ).catch( function ( error ) {
 				go.disabled = false;
 				cancel.disabled = false;
@@ -515,7 +527,7 @@
 			}
 
 			cells.push( el( 'td', {}, [
-				checkboxLabel( definition, 'enabled', t( 'enabled' ) ),
+				checkboxLabel( definition, 'enabled', t( 'enabled' ), axis ),
 				el( 'br' ),
 				checkboxLabel( definition, 'editable', t( 'editable' ) )
 			] ) );
@@ -638,7 +650,11 @@
 		if ( ! state ) {
 			// A status that has never been saved has no notification yet — the
 			// registry is built from the stored settings, not from this form.
-			wrap.appendChild( el( 'em', { text: t( 'emailUnsaved' ) } ) );
+			// A saved one that is switched off has none either, and says so:
+			// its heading and message are kept for when it is switched on.
+			wrap.appendChild( el( 'em', {
+				text: ! definition.__isNew && ! definition.enabled ? t( 'emailDisabled' ) : t( 'emailUnsaved' )
+			} ) );
 			return wrap;
 		}
 
@@ -820,6 +836,90 @@
 		target.appendChild( list );
 	}
 
+	/**
+	 * Orders sitting on a value nothing defines: a warning at the top of the
+	 * screen, and a list with a Move orders control on the Tools tab.
+	 */
+	function renderOrphans() {
+		var orphans = ( usage && usage.orphans ) || {};
+		var rows = [];
+		var total = 0;
+
+		[ 'order', 'shipping' ].forEach( function ( axis ) {
+			var counts = orphans[ axis ] || {};
+
+			Object.keys( counts ).forEach( function ( slug ) {
+				rows.push( { axis: axis, slug: slug, count: counts[ slug ] } );
+				total += counts[ slug ];
+			} );
+		} );
+
+		var warning = root.querySelector( '[data-ys-orphans-warning]' );
+
+		if ( warning ) {
+			warning.textContent = '';
+			warning.hidden = ! rows.length;
+			warning.className = rows.length ? 'notice notice-warning inline ys-fct-status-orphans-warning' : 'ys-fct-status-orphans-warning';
+
+			if ( rows.length ) {
+				warning.appendChild( el( 'p', {}, [
+					sprintf( t( 'orphansWarning' ), [ total ] ) + ' ',
+					el( 'a', {
+						href: '#tools',
+						text: t( 'orphansLink' ),
+						onclick: function ( event ) {
+							event.preventDefault();
+							showTab( 'tools' );
+
+							var section = root.querySelector( '[data-ys-orphans]' );
+
+							if ( section && section.scrollIntoView ) {
+								section.scrollIntoView( { block: 'center' } );
+							}
+						}
+					} )
+				] ) );
+			}
+		}
+
+		var list = root.querySelector( '[data-ys-orphans]' );
+
+		if ( ! list ) {
+			return;
+		}
+
+		list.textContent = '';
+
+		if ( ! rows.length ) {
+			list.appendChild( el( 'p', { text: t( 'orphansNone' ) } ) );
+			return;
+		}
+
+		var body = el( 'tbody' );
+
+		rows.forEach( function ( row ) {
+			var cell = el( 'td', {} );
+
+			cell.appendChild( el( 'button', {
+				type: 'button',
+				class: 'button button-small',
+				text: t( 'move' ),
+				onclick: function () {
+					openMove( row.axis, { slug: row.slug, label: row.slug }, row.count, cell );
+				}
+			} ) );
+
+			body.appendChild( el( 'tr', {}, [
+				el( 'td', {}, [ el( 'code', { text: row.slug } ) ] ),
+				el( 'td', { text: 'shipping' === row.axis ? t( 'axisShipping' ) : t( 'axisOrder' ) } ),
+				el( 'td', { text: sprintf( t( 'orphanCount' ), [ row.count ] ) } ),
+				cell
+			] ) );
+		} );
+
+		list.appendChild( el( 'table', { class: 'widefat striped ys-fct-status-table' }, [ body ] ) );
+	}
+
 	function renderSteps() {
 		var list = root.querySelector( '[data-ys-steps]' );
 
@@ -943,6 +1043,7 @@
 		renderShippingSteps();
 		renderTools();
 		renderUndo();
+		renderOrphans();
 	}
 
 	// ── state ────────────────────────────────────────────────────────────────

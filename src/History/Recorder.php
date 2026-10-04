@@ -8,6 +8,9 @@
 namespace YangSheep\FluentCart\OrderStatuses\History;
 
 use YangSheep\FluentCart\OrderStatuses\Payment\RestoreHandler;
+use YangSheep\FluentCart\OrderStatuses\Pipeline\Changer;
+use YangSheep\FluentCart\OrderStatuses\Settings;
+use YangSheep\FluentCart\OrderStatuses\Support\OrderContext;
 use YangSheep\FluentCart\OrderStatuses\Support\OrderRepository;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -79,6 +82,17 @@ final class Recorder {
 		// Core has just written a new status; anything that reads the row later
 		// in this request must not be handed the old one.
 		OrderRepository::flush( $parsed['order_id'] );
+
+		if ( Changer::CANCELED === $parsed['new_status'] ) {
+			$order = $data['order'];
+
+			$parsed['old_status'] = self::canceledFrom(
+				$parsed['old_status'],
+				OrderContext::statusBefore( $parsed['order_id'] ),
+				HistoryRepository::latestStatus( $parsed['order_id'], 'order' ),
+				isset( $order->shipping_status ) ? (string) $order->shipping_status : ''
+			);
+		}
 
 		$restored = RestoreHandler::restoredThisRequest();
 
@@ -154,6 +168,41 @@ final class Recorder {
 		}
 
 		HistoryRepository::record( $orderId, 'order', 'processing', $slug, 'restore' );
+	}
+
+	/**
+	 * The order status a cancellation really left.
+	 *
+	 * `OrderResource::updateStatuses()` dispatches a cancel as
+	 * `OrderStatusUpdated($order, $shippingStatus, 'canceled', …)` — the
+	 * *shipping* status in the old-status slot, in 1.6.0 and 1.6.3 alike — so
+	 * the event's own value would record "Unshipped → Canceled" on the order
+	 * axis. In order of preference: the status read before the request ran,
+	 * the status the order's latest order-axis history row put it on, and only
+	 * then the event's value, unless it is evidently the shipping status.
+	 *
+	 * @param string $eventOld       The event's old status.
+	 * @param string $snapshot       `OrderContext::statusBefore()`.
+	 * @param string $latest         `HistoryRepository::latestStatus()` on the order axis.
+	 * @param string $shippingStatus The order's shipping status.
+	 * @return string '' when nothing trustworthy is known.
+	 */
+	public static function canceledFrom( $eventOld, $snapshot, $latest, $shippingStatus ) {
+		foreach ( array( $snapshot, $latest ) as $candidate ) {
+			$candidate = (string) $candidate;
+
+			if ( '' !== $candidate && Changer::CANCELED !== $candidate ) {
+				return $candidate;
+			}
+		}
+
+		$eventOld = (string) $eventOld;
+
+		if ( ( '' !== (string) $shippingStatus && $eventOld === (string) $shippingStatus ) || in_array( $eventOld, Settings::BUILTIN_SHIPPING, true ) ) {
+			return '';
+		}
+
+		return $eventOld;
 	}
 
 	/**

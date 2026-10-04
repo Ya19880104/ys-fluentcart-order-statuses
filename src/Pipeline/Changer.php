@@ -102,10 +102,26 @@ final class Changer {
 			// for an answer that cannot have changed in between.
 			$targets = self::targets( $orderId, $axis, $row );
 
+			// What the current value is: one of FluentCart's own, a status
+			// defined here (switched on or off), or a slug nothing defines any
+			// more. A disabled status is still named by its label; an
+			// undefined one can only be shown as its slug, and says so.
+			$definition = Settings::definition( $axis, $current, $settings );
+			$builtin    = 'shipping' === $axis ? Settings::BUILTIN_SHIPPING : Settings::BUILTIN_ORDER;
+
+			if ( '' === $current ) {
+				$standing = '';
+			} elseif ( null !== $definition ) {
+				$standing = empty( $definition['enabled'] ) ? 'disabled' : 'enabled';
+			} else {
+				$standing = in_array( $current, $builtin, true ) ? 'builtin' : 'undefined';
+			}
+
 			$out['axes'][ $axis ] = array(
 				'current'   => $current,
-				'label'     => Labels::forSlug( $axis, $current, $settings ),
-				'color'     => self::colorFor( $axis, $current, $settings ),
+				'standing'  => $standing,
+				'label'     => 'disabled' === $standing ? $definition['label'] : Labels::forSlug( $axis, $current, $settings ),
+				'color'     => 'disabled' === $standing ? $definition['color'] : self::colorFor( $axis, $current, $settings ),
 				'step'      => Settings::pipelinePositionFor( $axis, $current, $settings ),
 				'steps'     => count( Settings::pipelineFor( $axis, $settings ) ),
 				'targets'   => $targets,

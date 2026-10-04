@@ -88,6 +88,31 @@ final class OrderRepository {
 	}
 
 	/**
+	 * The order status exactly as the database holds it now.
+	 *
+	 * Deliberately not `find()`: its per-request cache may already hold a row
+	 * read earlier in the request, and the one caller of this method needs
+	 * the value from before a write that has not happened yet.
+	 *
+	 * @param int $orderId Order id.
+	 * @return string|null Null when the order does not exist.
+	 */
+	public static function freshStatus( $orderId ) {
+		global $wpdb;
+
+		$orderId = (int) $orderId;
+
+		if ( $orderId <= 0 ) {
+			return null;
+		}
+
+		//phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$value = $wpdb->get_var( $wpdb->prepare( 'SELECT status FROM `' . self::table() . '` WHERE id = %d', $orderId ) );
+
+		return null === $value ? null : (string) $value;
+	}
+
+	/**
 	 * Drop the cached row for one order, or all of them.
 	 *
 	 * Called after this plugin writes a status: the guards read the row again

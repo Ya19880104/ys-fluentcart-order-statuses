@@ -118,7 +118,7 @@ duplicates.
 | Field | Meaning |
 |---|---|
 | **Label** | What staff and customers see. Translatable through the usual WordPress tooling. |
-| **Slug** | What goes in the database column. ≤ 20 chars, auto-derived from the label, editable until you save. |
+| **Slug** | What goes in the database column. ≤ 20 chars, auto-derived from the label, editable until you save — read-only afterwards, because it is the value the orders carry. |
 | **Colour** | A hex colour, used for the badge everywhere the status is shown. |
 | **Description** | An internal note; it appears only on the settings screen. |
 | **Available on** (`payment_requirement`) | Under *Advanced*. `any order` (default) / `paid orders only` / `unpaid orders only`. See §4. |
@@ -406,9 +406,11 @@ the customer should only get one.
 
 **What never sends a mail:**
 
-* **Move orders** (§8, `/migrate`). It rewrites the status column with one
-  UPDATE and fires no event, by design — moving a thousand orders off a deleted
-  status is not a thousand things the customer needs to hear about.
+* **Move orders** (§8, `/migrate`). It rewrites the status column directly, a
+  batch at a time, and fires no event, by design — moving a thousand orders off
+  a deleted status is not a thousand things the customer needs to hear about.
+  The screen says so in its confirmation, and every moved order gets a history
+  row (source `migrate`) and an activity line instead.
 * **The payment restore** (§3). Writing a custom status back after FluentCart
   overwrote it does not fire a status-changed event either, so paying for an
   order does not re-announce the step it was already on.
@@ -741,8 +743,8 @@ Two more, by design:
   rename the built-in payment statuses, which is safe.
 * **Deactivating the plugin never changes an order row.** Orders sitting on a
   custom status keep their value and FluentCart falls back to showing the raw
-  slug. Use the **Move orders** button on a status's row to migrate them to a
-  built-in status first. Uninstalling does not delete the settings either, unless
+  slug. Use the **Move orders** button on a status's row to move them to
+  *Processing* or *On Hold* first. Uninstalling does not delete the settings either, unless
   you opt in with `define( 'YS_FCT_STATUS_REMOVE_DATA', true );` — the definitions
   are the only thing that can turn a stored slug back into a name a human
   recognises.
@@ -793,9 +795,44 @@ This plugin adds two of its own:
 **FluentCart → Order Statuses**, a plain WordPress page (no build step, no CDN)
 with five tabs: *Order statuses*, *Shipping statuses*, *Built-in labels*, *Order
 Status Report* and *Tools*. Each row shows how many orders currently sit on that
-status, and a status still in use cannot be removed until its orders are moved.
-Both workflow tabs draw the workflow as a numbered strip above the table, so the
-effect of reordering a row is visible before anything is saved.
+status. Both workflow tabs draw the workflow as a numbered strip above the table,
+so the effect of reordering a row is visible before anything is saved.
+
+**What the screen will not let happen (0.6), checked on the server as well as in
+the browser:**
+
+* **A status orders are on cannot be removed or re-slugged.** Save refuses the
+  whole document with `422` and one sentence per status — "“Sourcing” is still on
+  74 orders. Move them to another status first." The slug of a saved status is
+  read-only on the screen; to change it, add a new status and move the orders.
+  Switching a status *off* is allowed, but asks first when orders are on it, and
+  says what happens to them; its e-mail heading and message are kept.
+* **Move orders** (on the row of a status that has orders, and on *Tools* for
+  orders on a status that no longer exists) asks first and says that it writes
+  straight to the orders — no e-mail, none of FluentCart's automations. It can
+  empty any custom status, defined or not, but never one of FluentCart's own, and
+  it moves orders only to *Processing*, *On Hold* or an enabled custom status
+  (*Unshipped* or an enabled custom status on the shipping axis): *Canceled*,
+  *Completed*, *Shipped* and the like mean something happened, and writing them
+  without it happening is refused. Every moved order — all of them, in batches of
+  500 — gets `updated_at` refreshed, a history row with source `migrate` and the
+  acting user, and an activity line "Order status moved in bulk from “X” to “Y”."
+* **Orders on a status nothing defines** — left behind by a status removed
+  before 0.6, or written by something else — are counted in `usage.orphans`,
+  announced at the top of the screen, and listed on *Tools* with a Move orders
+  control. On the order page such a status is shown by its slug with "not defined
+  — this status was removed"; a disabled one by its label with "disabled".
+* **Export / import.** Import accepts only a file this plugin exported (the
+  `plugin` field and both status lists); anything else — `{}` included — is
+  refused with `400`. The file goes through the same slug and in-use checks as
+  Save. Before anything is written, the screen asks the server what the file
+  would change (`dry_run`) and shows that in the confirmation: statuses added,
+  removed and changed per axis, switches that flip, renamed built-ins, and whether
+  the e-mail text is replaced. The configuration and e-mail text an import
+  replaces are kept in a non-autoloaded option, and *Tools → Export / import*
+  shows **Undo the last import** while there is one to undo.
+* **The Tools tab has its own Save changes button** for strict mode, the stuck
+  threshold, the daily summary and the payment restore switch.
 
 REST namespace `ys-fct-status/v1`, every route capability-gated
 (`PermissionManager::hasPermission(['orders/manage'])`, falling back to
@@ -805,14 +842,15 @@ nonce-less GET is readable by any page the logged-in shopkeeper happens to open:
 
 | Route | Method | Purpose |
 |---|---|---|
-| `/settings` | GET / POST | read or replace the whole status document |
-| `/usage` | GET | per-slug order counts for both axes |
-| `/migrate` | POST | move every order off one slug onto another, with an activity note per order |
+| `/settings` | GET / POST | read or replace the whole status document; POST refuses (`422`) a document that would remove or re-slug a status orders are on |
+| `/usage` | GET | per-slug order counts for both axes, and `orphans`: per axis, the values no status defines, with their counts |
+| `/migrate` | POST | move every order off one slug onto another (not from a built-in; only to *Processing*, *On Hold*, *Unshipped* or an enabled custom status), with a history row (`migrate`) and an activity note per order |
 | `/export` | GET | the settings document, the e-mail content map (`email_content`) and export metadata |
-| `/import` | POST | replace everything from an exported file; a 0.3 file without `email_content` imports without touching the stored e-mail text |
+| `/import` | POST | replace everything from an exported file (`400` for anything that is not one; `422` for bad slugs or in-use statuses); `dry_run: true` returns the changes without writing; a 0.3 file without `email_content` imports without touching the stored e-mail text |
+| `/import/undo` | POST | put back the configuration and e-mail text the last import replaced |
 | `/template` | POST | merge a workflow template into the current settings (`axis` = `order` / `shipping`) |
-| `/orders/{id}/state` | GET | where one order stands on both axes, the moves it may make, and its next step |
-| `/orders/{id}/change` | POST | move one order (`axis` = `order` / `shipping`, `status` = slug), through `OrderResource::updateStatuses()` |
+| `/orders/{id}/state` | GET | where one order stands on both axes, the moves it may make, its next step, and the Order workflow card's markup (`html`) |
+| `/orders/{id}/change` | POST | move one order (`axis` = `order` / `shipping`, `status` = slug), through `OrderResource::updateStatuses()`; *Completed* and *Canceled* need `confirmed: true` (`409` otherwise), and *Completed* a paid order (`422` otherwise) |
 | `/reports/overview` | GET | distribution, funnel, dwell and stuck list (`axis`, `since` / `until` optional) |
 | `/reports/history` | GET | one order's status timeline (`order_id`) |
 | `/reports/export` | GET | one report as CSV (`type` = `distribution` / `shipping` / `dwell` / `stalled`, `axis` optional) |
@@ -822,7 +860,13 @@ nonce-less GET is readable by any page the logged-in shopkeeper happens to open:
 One table, `{prefix}ys_fct_status_history` (`order_id`, `axis`, `old_status`,
 `new_status`, `changed_by`, `source`, `changed_at`), created with `dbDelta`
 behind the `ys_fct_status_db_version` option and written **from hooks only** —
-nothing accepts a row from a request.
+nothing accepts a row from a request. The one exception to "from hooks" is
+Move orders, which fires no hook and so writes its own rows (`source` =
+`migrate`). Since 0.6 a cancellation records the order status it really left:
+FluentCart reports a cancel with the *shipping* status in the old-status slot,
+so the recorder uses the status read before the request ran, or the order's
+latest order-axis row. The order page's *Status history* panel shows the newest
+40 rows and says how many older ones are not shown.
 
 ---
 

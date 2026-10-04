@@ -479,17 +479,35 @@ final class StatusController {
 	 * @return array<string,array<string,int>>
 	 */
 	private function usageMap() {
-		if ( ! OrderRepository::tableExists() ) {
-			return array(
+		$out = array(
+			'order'    => array(),
+			'shipping' => array(),
+			// 0.6: values in the column that nothing here or in FluentCart
+			// defines — orders left behind by a removed status. Per axis,
+			// slug => count.
+			'orphans'  => array(
 				'order'    => array(),
 				'shipping' => array(),
-			);
+			),
+		);
+
+		if ( ! OrderRepository::tableExists() ) {
+			return $out;
 		}
 
-		return array(
-			'order'    => OrderRepository::countByStatus( 'order', $this->knownSlugs( 'order' ) ),
-			'shipping' => OrderRepository::countByStatus( 'shipping', $this->knownSlugs( 'shipping' ) ),
-		);
+		$settings = Settings::all();
+
+		foreach ( Settings::AXES as $axis ) {
+			$all = OrderRepository::countAll( $axis );
+
+			foreach ( $this->knownSlugs( $axis ) as $slug ) {
+				$out[ $axis ][ $slug ] = isset( $all[ $slug ] ) ? $all[ $slug ] : 0;
+			}
+
+			$out['orphans'][ $axis ] = Settings::orphanCounts( $axis, $all, $settings );
+		}
+
+		return $out;
 	}
 
 	/**
