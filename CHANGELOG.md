@@ -5,6 +5,94 @@ All notable changes to YS FluentCart Order Statuses.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] — 2026-10-04
+
+Guard rails and records. Nothing about an existing configuration changes on
+upgrade; what changes is what the screens and the routes will let happen, and
+what gets written down when something does.
+
+### For shop staff
+
+- **The order status is changed where FluentCart changes the shipping status.**
+  The order page's *More Action* menu has a new first entry, **Change Order
+  Status**, which opens an *Update Order Status* dialog that looks and works like
+  FluentCart's own *Update Shipping Status*. The *Order workflow* card in the
+  sidebar is still there and does the same thing.
+- **Completed and Canceled are never one click away.** Both ask first, saying
+  what they mean. *Completed* is offered only on an order that has been paid,
+  as in FluentCart's own *Mark As Complete*. Pressing Return in the card's
+  dropdown no longer changes the status — only the button does. Canceling from
+  the card or the dialog now returns the items to stock, as FluentCart's own
+  *Cancel Order* does.
+- **A status orders are on cannot be removed or renamed by accident.** Saving
+  refuses with the status and the number of orders on it. The slug of a saved
+  status can no longer be edited. Switching a status off asks first when orders
+  are on it, and no longer deletes its e-mail heading and message.
+- **Move orders asks first and leaves a trace.** It says how many orders move,
+  from where to where, and that no e-mail goes out. It only moves orders to
+  *Processing*, *On Hold* or one of your enabled statuses (*Unshipped* or an
+  enabled status on the shipping axis) — never to *Canceled*, *Completed*,
+  *Shipped* and the like. Every moved order shows the move in its activity and
+  in its status history.
+- **Orders on a status that no longer exists are no longer invisible.** The
+  Order Statuses screen warns at the top, and *Tools* lists them with a Move
+  orders button. On the order page such a status reads "not defined — this
+  status was removed"; a switched-off one reads "disabled".
+- **Import shows what it will change before it changes it, and can be undone.**
+  Only a file exported by this plugin is accepted. The confirmation lists the
+  statuses added, removed and changed and the settings that flip. *Tools →
+  Export / import* offers **Undo the last import** afterwards.
+- **The Tools tab has its own Save changes button.**
+- **The order page's status history shows the latest changes**, not the
+  earliest, and says how many older ones are not shown. A cancellation is
+  recorded as leaving the status the order was really on.
+
+### Changed (technical)
+
+- `POST orders/{id}/change`: `completed` is refused with `422` on an unpaid
+  order; `completed` and `canceled` are refused with `409`
+  (`ys_fct_status_confirm_required`) unless the body carries `confirmed: true`;
+  a cancel is handed to `OrderResource::updateStatuses()` with
+  `manage_stock: true`, everything else keeps `false`. Targets carry a
+  `confirm` flag. `GET orders/{id}/state` also returns the card's markup
+  (`html`) and, per axis, `standing` (`builtin` / `enabled` / `disabled` /
+  `undefined`).
+- `POST settings` refuses (`422`, `ys_fct_status_in_use`) a document that drops
+  or re-slugs a stored status with orders on it, per axis, before writing.
+- `POST import` accepts only the export envelope (`plugin` and
+  `settings.order` / `settings.shipping` lists) — `400` otherwise, `{}` included;
+  runs the same slug and in-use checks as Save; `dry_run: true` returns the
+  diff (`changes`, `summary`, `empty`) without writing. A real import stores the
+  replaced settings and e-mail content in `ys_fct_status_settings_backup` (not
+  autoloaded; time and user); `POST import/undo` restores it under the same
+  in-use rule. Uninstall with data removal deletes the option.
+- `POST migrate`: the source may not be a built-in of its axis and the target
+  must be `processing`, `on-hold` (order axis), `unshipped` (shipping axis) or an
+  enabled custom status — `400` otherwise. Every order on the source is moved
+  in batches of 500 with no cap, `updated_at` is refreshed (GMT, as FluentCart's
+  models write it), and each gets a history row with the new source `migrate`
+  and an activity line. `OrderRepository::migrateStatus()` is replaced by
+  `moveOrders()`.
+- `usage` gains `orphans`: per axis, slug → count for values that are neither
+  built-in nor defined (enabled or not).
+- The payment-condition and strict-workflow vetoes stand aside for users who
+  may not change order statuses, so FluentCart's own 401 / 403 answers them.
+- A cancellation's history row takes its old status from an uncached read made
+  on `rest_pre_dispatch` for the two status-changing routes, or from the
+  order's latest order-axis history row — FluentCart's event carries the
+  shipping status there in 1.6.0 and 1.6.3.
+- `ContentStore::pruneOrphans()` keeps the text of every defined status, enabled
+  or not.
+- The order page's history panel selects the newest 40 rows.
+
+### Tests
+
+- New `tests/guard-scenarios.php` covering every item above with refusing and
+  accepting cases, and unit cases for the new rules. `status-scenarios` T11/T13
+  and `email-scenarios` E5 now state the new Move and Save behaviour;
+  `pipeline-scenarios` R5 no longer assumes the activity log is shorter than the
+  backfill's 2000-line window. All suites run on FluentCart 1.6.0 and 1.6.3.
+
 ## [0.5.0] — 2026-09-23
 
 A status is now **one list, on every order**. An existing configuration is not

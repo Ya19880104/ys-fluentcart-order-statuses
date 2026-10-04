@@ -3,7 +3,7 @@
  * Plugin Name: YS FluentCart Order Statuses
  * Plugin URI: https://yangsheep.com.tw
  * Description: Custom order and shipping statuses for FluentCart — add your own workflow states (with colours, payment conditions and a "keep this status after payment" guard), and rename the built-in ones. Nothing in FluentCart core is patched.
- * Version: 0.5.0
+ * Version: 0.6.0
  * Author: YANGSHEEP DESIGN
  * Author URI: https://yangsheep.com.tw
  * Text Domain: ys-fluentcart-order-statuses
@@ -21,7 +21,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // ── Plugin constants ─────────────────────────────────────────────────────────
 
-define( 'YS_FCT_STATUS_VERSION', '0.5.0' );
+define( 'YS_FCT_STATUS_VERSION', '0.6.0' );
 define( 'YS_FCT_STATUS_FILE', __FILE__ );
 define( 'YS_FCT_STATUS_DIR', plugin_dir_path( __FILE__ ) );
 define( 'YS_FCT_STATUS_URL', plugin_dir_url( __FILE__ ) );

@@ -27,7 +27,7 @@ restrict their steps to paid orders or rename FluentCart's built-in statuses,
 and the two payment settings of a status sit under a collapsed *Advanced* line
 instead of in their own columns. An existing configuration is not changed. §2.
 
-* **Version:** 0.5.0
+* **Version:** 0.6.0
 * **Requires:** WordPress 6.0+, PHP 7.4+, FluentCart 1.6.0+ (the full test suite is run against both 1.6.0 and 1.6.3 on every release)
 * **Text domain:** `ys-fluentcart-order-statuses` (ships with zh_TW)
 * **Nothing in FluentCart or WordPress core is patched.** Public filters, one option, one admin page and the plugin's own REST namespace.
@@ -887,6 +887,7 @@ wp eval-file tests/status-scenarios.php     # T1–T15  (0.1)
 wp eval-file tests/pipeline-scenarios.php   # P1–P5, R1–R7  (0.2)
 wp eval-file tests/changer-scenarios.php    # C1–C7, S1–S6  (0.3)
 wp eval-file tests/email-scenarios.php      # E0–E10  (0.4)
+wp eval-file tests/guard-scenarios.php      # A1–A4, N, B1–B6  (0.6)
 wp eval-file tests/revenue-probe.php
 wp eval-file tests/measure-editable-filter.php
 ```
@@ -899,7 +900,8 @@ what would have been sent.
 
 Each scenario file rewrites `ys_fct_status_settings` and creates `STATUS-`
 orders; they touch nothing else. Run them in the order above if you want the
-site left holding the 0.4 configuration.
+site left holding the 0.6 guard-suite configuration. `tests/guard-scenarios.php`
+short-circuits `wp_mail()` the same way.
 
 The suites, the fixtures and the per-release test reports (with the database
 evidence behind every assertion) live in the development tree and are not part
