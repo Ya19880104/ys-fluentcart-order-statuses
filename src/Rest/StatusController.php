@@ -15,6 +15,7 @@ use YangSheep\FluentCart\OrderStatuses\Support\ActivityLog;
 use YangSheep\FluentCart\OrderStatuses\Support\Labels;
 use YangSheep\FluentCart\OrderStatuses\Support\OrderRepository;
 use YangSheep\FluentCart\OrderStatuses\Support\Permissions;
+use YangSheep\FluentCart\OrderStatuses\Support\SettingsChange;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -147,6 +148,12 @@ final class StatusController {
 					'rejected' => $rejected,
 				)
 			);
+		}
+
+		$inUse = $this->inUseRefusal( Settings::all(), $incoming );
+
+		if ( null !== $inUse ) {
+			return $inUse;
 		}
 
 		$saved = Settings::save( $incoming );
@@ -380,6 +387,46 @@ final class StatusController {
 	 */
 	private function builtinLabels() {
 		return Labels::builtin();
+	}
+
+	/**
+	 * Refuse a document that would leave orders on a status it no longer has.
+	 *
+	 * The settings screen has always blocked Remove on a status in use, but only
+	 * in the browser: the route itself accepted anything, so a stale tab, a
+	 * script or a hand-written request could delete — or re-slug — a status with
+	 * orders on it. Those orders then show a raw slug, are never restored after
+	 * payment, and lose their e-mail text. Checked here, per axis, before a
+	 * single byte is written.
+	 *
+	 * @param array $stored   Normalised stored settings.
+	 * @param array $incoming Incoming document.
+	 * @return \WP_Error|null
+	 */
+	private function inUseRefusal( array $stored, array $incoming ) {
+		$removed = SettingsChange::removed( $stored, $incoming );
+		$counts  = array();
+
+		foreach ( $removed as $axis => $slugs ) {
+			$counts[ $axis ] = empty( $slugs ) || ! OrderRepository::tableExists()
+				? array()
+				: OrderRepository::countByStatus( $axis, array_map( 'strval', array_keys( $slugs ) ) );
+		}
+
+		$messages = SettingsChange::inUseMessages( $removed, $counts );
+
+		if ( empty( $messages ) ) {
+			return null;
+		}
+
+		return new \WP_Error(
+			'ys_fct_status_in_use',
+			implode( ' ', $messages ),
+			array(
+				'status' => 422,
+				'in_use' => $messages,
+			)
+		);
 	}
 
 	/**

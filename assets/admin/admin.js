@@ -277,6 +277,14 @@
 	}
 
 	/**
+	 * Orders on a row's status, counted by the slug that was stored — the one
+	 * the orders actually carry. A row that has never been saved has none.
+	 */
+	function usageOf( axis, definition ) {
+		return definition.__isNew ? 0 : countFor( axis, definition.__stored || definition.slug );
+	}
+
+	/**
 	 * Everything `linked_shipping_status` may point at: the built-in shipping
 	 * statuses plus whatever custom ones are defined on the other tab. Rebuilt
 	 * on every render rather than cached, because adding a shipping status and
@@ -315,7 +323,7 @@
 	}
 
 	function actionCell( axis, definition, index ) {
-		var count = countFor( axis, definition.slug );
+		var count = usageOf( axis, definition );
 		var cell = el( 'td', {} );
 
 		cell.appendChild( el( 'button', {
@@ -448,7 +456,7 @@
 				checkboxLabel( definition, 'editable', t( 'editable' ) )
 			] ) );
 
-			cells.push( el( 'td', { class: 'ys-fct-status-count', text: String( countFor( axis, definition.slug ) ) } ) );
+			cells.push( el( 'td', { class: 'ys-fct-status-count', text: String( usageOf( axis, definition ) ) } ) );
 			cells.push( actionCell( axis, definition, index ) );
 
 			body.appendChild( el( 'tr', { 'data-ys-slug-row': definition.slug || '' }, cells ) );
@@ -599,6 +607,11 @@
 	}
 
 	function slugCell( definition ) {
+		// A saved slug is the value the orders carry. Editing it would leave
+		// every one of them on the old value, which the server now refuses
+		// anyway — so the field says so up front instead of failing at Save.
+		var saved = ! definition.__isNew;
+
 		var input = el( 'input', {
 			type: 'text',
 			value: definition.slug || '',
@@ -606,8 +619,14 @@
 			'aria-label': t( 'slug' ),
 			class: 'code ys-fct-status-slug',
 			placeholder: t( 'slugPlaceholder' ),
-			'data-ys-slug': '1'
+			'data-ys-slug': '1',
+			readonly: saved,
+			title: saved ? t( 'slugLocked' ) : null
 		} );
+
+		if ( saved ) {
+			return input;
+		}
 
 		input.addEventListener( 'input', function () {
 			definition.__slugTouched = true;
@@ -714,7 +733,7 @@
 
 		[ 'order', 'shipping' ].forEach( function ( axis ) {
 			model[ axis ].forEach( function ( definition ) {
-				var count = countFor( axis, definition.slug );
+				var count = usageOf( axis, definition );
 
 				if ( count > 0 ) {
 					rows.push( ( definition.label || definition.slug ) + ' (' + definition.slug + '): ' + count );
@@ -882,6 +901,13 @@
 			definition.linked_shipping_status = definition.linked_shipping_status || '';
 		} );
 
+		// What the orders carry, remembered beside the editable copy.
+		[ 'order', 'shipping' ].forEach( function ( axis ) {
+			model[ axis ].forEach( function ( definition ) {
+				definition.__stored = definition.slug;
+			} );
+		} );
+
 		builtin = payload.builtin || {};
 		usage = payload.usage || { order: {}, shipping: {} };
 		emails = payload.emails || { order: {}, shipping: {} };
@@ -900,6 +926,7 @@
 				delete definition.__isNew;
 				delete definition.__slugTouched;
 				delete definition.__advancedOpen;
+				delete definition.__stored;
 				definition.sort_order = ( index + 1 ) * 10;
 				return definition;
 			} );

@@ -115,6 +115,20 @@ final class Settings {
 	const DEFAULT_STALL_DAYS = 3;
 
 	/**
+	 * Built-in order statuses Move orders may put orders on.
+	 *
+	 * Move orders writes the column directly — no event, no stock, no e-mail,
+	 * none of FluentCart's automations — so only statuses that are a place to
+	 * wait qualify. `canceled`, `completed` and `failed` all mean something
+	 * happened, and writing them without the thing happening is a lie in the
+	 * order row.
+	 */
+	const MOVE_TARGETS_ORDER = array( 'processing', 'on-hold' );
+
+	/** The shipping-axis twin: `shipped`, `delivered` and `unshippable` are outcomes, not places. */
+	const MOVE_TARGETS_SHIPPING = array( 'unshipped' );
+
+	/**
 	 * The shipped defaults: no custom statuses, no overrides, restore switched on.
 	 *
 	 * @return array
@@ -423,6 +437,115 @@ final class Settings {
 
 			$out[ $definition['slug'] ] = $definition;
 		}
+
+		return $out;
+	}
+
+	/**
+	 * One stored definition, enabled or not.
+	 *
+	 * `customStatuses()` answers "what may be used"; this answers "what is this
+	 * slug", which a disabled status still has an answer to.
+	 *
+	 * @param string $axis     'order' or 'shipping'.
+	 * @param string $slug     Slug.
+	 * @param array  $settings Optional pre-read settings.
+	 * @return array|null
+	 */
+	public static function definition( $axis, $slug, array $settings = null ) {
+		$settings = null === $settings ? self::all() : $settings;
+
+		if ( ! isset( $settings[ $axis ] ) || ! is_array( $settings[ $axis ] ) ) {
+			return null;
+		}
+
+		foreach ( $settings[ $axis ] as $definition ) {
+			if ( (string) $slug === $definition['slug'] ) {
+				return $definition;
+			}
+		}
+
+		return null;
+	}
+
+	/**
+	 * Where Move orders may put orders on one axis.
+	 *
+	 * @param string $axis     'order' or 'shipping'.
+	 * @param array  $settings Optional pre-read settings.
+	 * @return string[] Slugs: the waiting built-ins, then every enabled custom status.
+	 */
+	public static function moveTargets( $axis, array $settings = null ) {
+		$settings = null === $settings ? self::all() : $settings;
+		$targets  = 'shipping' === $axis ? self::MOVE_TARGETS_SHIPPING : self::MOVE_TARGETS_ORDER;
+
+		foreach ( self::customStatuses( 'shipping' === $axis ? 'shipping' : 'order', $settings ) as $slug => $definition ) {
+			$targets[] = (string) $slug;
+		}
+
+		return array_values( array_unique( $targets ) );
+	}
+
+	/**
+	 * Why a bulk move is refused, or null when it is allowed.
+	 *
+	 * The source may be a custom status (defined or not — orders left on a
+	 * status that was deleted are exactly what this is for) but never one of
+	 * FluentCart's own: emptying `canceled` would un-cancel orders without any
+	 * of the stock or payment consequences of doing so.
+	 *
+	 * @param string $axis     'order' or 'shipping'.
+	 * @param string $from     Source slug.
+	 * @param string $to       Target slug.
+	 * @param array  $settings Optional pre-read settings.
+	 * @return string|null 'from_builtin', 'bad_target' or null.
+	 */
+	public static function moveError( $axis, $from, $to, array $settings = null ) {
+		$builtin = 'shipping' === $axis ? self::BUILTIN_SHIPPING : self::BUILTIN_ORDER;
+
+		if ( in_array( (string) $from, $builtin, true ) ) {
+			return 'from_builtin';
+		}
+
+		if ( ! in_array( (string) $to, self::moveTargets( $axis, $settings ), true ) ) {
+			return 'bad_target';
+		}
+
+		return null;
+	}
+
+	/**
+	 * The counts of order values that nothing knows how to name.
+	 *
+	 * A slug is an orphan when it is neither one of FluentCart's own nor
+	 * defined here, enabled or not: a status that was removed while orders were
+	 * still on it, or one written by something else entirely. FluentCart shows
+	 * those orders with the raw slug, and nothing offers to move them.
+	 *
+	 * @param string            $axis     'order' or 'shipping'.
+	 * @param array<string,int> $counts   Every value in the column => order count.
+	 * @param array             $settings Optional pre-read settings.
+	 * @return array<string,int> slug => count, sorted by slug.
+	 */
+	public static function orphanCounts( $axis, array $counts, array $settings = null ) {
+		$settings = null === $settings ? self::all() : $settings;
+		$axis     = 'shipping' === $axis ? 'shipping' : 'order';
+		$builtin  = 'shipping' === $axis ? self::BUILTIN_SHIPPING : self::BUILTIN_ORDER;
+		$defined  = isset( $settings[ $axis ] ) && is_array( $settings[ $axis ] ) ? array_column( $settings[ $axis ], 'slug' ) : array();
+		$out      = array();
+
+		foreach ( $counts as $slug => $count ) {
+			$slug = (string) $slug;
+
+			// '' is a digital order's shipping column: no status at all, not a lost one.
+			if ( '' === $slug || (int) $count <= 0 || in_array( $slug, $builtin, true ) || in_array( $slug, $defined, true ) ) {
+				continue;
+			}
+
+			$out[ $slug ] = (int) $count;
+		}
+
+		ksort( $out, SORT_STRING );
 
 		return $out;
 	}

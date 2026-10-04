@@ -439,6 +439,9 @@ final class AdminMenu {
 			'slugPlaceholder'   => __( 'stored_value', 'ys-fluentcart-order-statuses' ),
 			'unsaved'           => __( 'You have unsaved changes.', 'ys-fluentcart-order-statuses' ),
 
+			// v0.6 — guard rails.
+			'slugLocked'        => __( 'A saved status keeps its slug, because that is the value its orders carry. To use a different slug, add a new status and move the orders to it.', 'ys-fluentcart-order-statuses' ),
+
 			// v0.2 — pipeline and reports.
 			'linkedNone'        => __( 'Leave the shipping status alone', 'ys-fluentcart-order-statuses' ),
 			'linkedShipping'    => __( 'Also set the shipping status to', 'ys-fluentcart-order-statuses' ),
