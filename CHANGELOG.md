@@ -5,6 +5,170 @@ All notable changes to YS FluentCart Order Statuses.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 this project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0] — 2026-10-05
+
+The order page's *Order workflow* card stops repeating *More Action*: it shows
+where the order stands and its next step, and an order status is chosen in one
+place. Nothing about an existing configuration or the e-mails changes. The
+plugin is also quiet on PHP 8.4 and 8.5, and Move orders is tested past its
+first batch.
+
+### For shop staff
+
+- **The Order workflow card is shorter.** For the order status and the
+  shipping status it shows the status the order is on, which step of the
+  workflow that is, why nothing can be changed when nothing can (a canceled
+  order, an order with nothing to ship), and the **Next step →** button. The
+  *Move to…* list and the *Change* button are gone from both lines, and each
+  line says where they went: "Other statuses: More Action → Change Order
+  Status" (or "… → Change Shipping Status").
+- **Any other status is chosen from More Action.** *More Action → Change Order
+  Status* (added by this plugin in 0.6) for the order status, FluentCart's own
+  *More Action → Change Shipping Status* for the shipping status. FluentCart's
+  shipping dialog lists every shipping status it displays, including the
+  order's current one and a custom one whose *Selectable in the admin* is off;
+  choosing either is refused by FluentCart and changes nothing.
+- **A canceled order keeps its shipping list on the card.** FluentCart offers no
+  *Change Shipping Status* on a canceled order, although the shipping status can
+  still change (for example to *Delivered* after a return), so there the card
+  lists the shipping moves on screen, under a sentence saying why.
+- **The card keeps a way back for the order status.** Its order-status list
+  comes back, under a sentence saying why, when the *Change Order Status* entry
+  cannot be used on the page: four seconds after the card appears there is no
+  More Action trigger the entry can be added through, or the page is not this
+  order's own view; the More Action menu opens but the entry cannot be added to
+  it; or the entry's dialog cannot load the order because of a network failure
+  or a server error — and then the dialog's message points to the list. When
+  the dialog is refused because the page has been open too long (its session
+  has expired), it says to reload the page instead, and shows no list that
+  would be refused the same way. The rules are the same as before: *Completed*
+  and *Canceled* ask first, *Completed* only on a paid order, and a cancel
+  returns the items to stock.
+- After a change from the card, a page that stays where it is — FluentCart asks
+  "Leave site?" when the order has unsaved edits, and the answer was *Stay* —
+  brings the card up to date and lets its buttons be used again, instead of
+  leaving them greyed out.
+- On a server running PHP 8.4 or newer that logs deprecation notices (for
+  example with `WP_DEBUG` on), the plugin no longer writes "Implicitly marking
+  parameter … as nullable is deprecated" lines to the PHP error log.
+
+### Changed (technical)
+
+- `OrderWidget::renderChanger()` — the widget's content and the `html` of
+  `GET orders/{id}/state` — draws, per axis, the head (badge, `standing` note,
+  step), then either the lock sentence, "There is nowhere for this order to move
+  on this axis.", or the Next step button in its own
+  `<p class="ys-fct-changer-row">`, then `<p class="ys-fct-changer-hint"
+  data-ys-changer-hint="<axis>">` naming the More Action entry. When the order
+  axis has targets it also carries `<div class="ys-fct-changer-fallback"
+  data-ys-changer-fallback="order" hidden>`: a note, the
+  `data-ys-changer-select="order"` select with the same options and
+  `data-ys-confirm` flags as before, and the `data-ys-changer-go="order"` button.
+  The shipping axis has a select and a Change button only on a canceled order
+  (the order axis's `current` is `canceled`) with shipping targets: `<div
+  class="ys-fct-changer-direct" data-ys-changer-direct="shipping">`, not hidden
+  and without a hint line, holding a note, `data-ys-changer-select="shipping"`
+  and `data-ys-changer-go="shipping"`. The widget's `subtitle` now describes the
+  card's role and where statuses are changed; FluentCart 1.6.0 and 1.6.3 hand it
+  to their card header, which does not display it.
+- `assets/admin/order-changer.js` reveals the fallback (removes `hidden`, and
+  hides that axis's `data-ys-changer-hint` line) when the More Action entry
+  cannot be used: 4 s after the card appears (checked every 250 ms) the page is
+  not the card's own `#/orders/<id>/view` route or has no
+  `.fct-order-bulk-action-modal .fct-more-option-wrap [aria-controls]`; the
+  menu lookup after activity on the trigger runs out (21 tries, 50 ms apart),
+  or keeps throwing, while the trigger says `aria-expanded="true"`; or the
+  dialog's `GET orders/{id}/state` fails without an HTTP status (network), with
+  a `5xx`, or answers without an order axis. A card is noticed by one
+  `MutationObserver` whose callback queues at most one `querySelectorAll` every
+  100 ms. Once revealed for an order, the fallback is revealed at once on every
+  card re-rendered for it until the page is left. The submit path is unchanged —
+  `submit()` → `changeStatus()` → `POST orders/{id}/change` — and so are the
+  confirmation, `confirmed: true` and the server's rules.
+- More activity on the More Action trigger while the menu lookup is running
+  restarts its count (it used to be ignored), so a click near the end of a
+  hover's lookup still finds a menu created late.
+- `fetchState()` rejects with the HTTP `status` on the Error. The dialog's
+  `loadFailed` sentence names the list it has just revealed; when there is none
+  to reveal (an order with no move, or no card on the page) the dialog shows the
+  server's reason or the new `notLoaded` sentence. On a `401` or `403` it shows
+  the new `reloadPage` sentence ("%s Reload the page and try again.", `%s` the
+  server's reason) and reveals nothing; on any other `4xx`, the server's reason.
+- After a successful change, `afterChange()` no longer gives up when the page
+  has fired `beforeunload`: 1.5 s on, a page still marked as leaving is looked
+  at again after `STAY_WAIT` (5 s), and if it is still there the cards are
+  re-rendered from `GET orders/{id}/state`, `leaving` is cleared and the card's
+  busy state (`busy`, `.is-busy`) is released; that second look never reloads
+  the page itself. A card re-rendered in place is released the same way.
+  Before, both left the card's buttons inert until a manual reload.
+- `assets/admin/order-changer.css`: `.ys-fct-changer [hidden] { display: none
+  !important; }`, so the attribute holds whatever display rule FluentCart's page
+  brings, and spacing for the fallback, the canceled order's shipping list and
+  the hint line.
+- Strings: new — the card's subtitle, the two "Other statuses: More Action → …"
+  lines, the fallback's note, the canceled order's shipping-list note,
+  `notLoaded`, `reloadPage`; changed — `loadFailed`; dropped — the old
+  subtitle. zh_TW updated and recompiled; FluentCart's *Change Shipping Status*
+  reads 「變更出貨狀態」 in every zh_TW string, as it already did on the settings
+  screen.
+
+### Fixed (technical)
+
+- The 22 optional array parameters that default to `null` now say so in their
+  type: `?array $settings = null` instead of `array $settings = null`, in
+  `Settings`, `Pipeline\Changer`, `Email\NotificationRegistry`,
+  `Support\Labels` and `Reports\DailySummary`. PHP 8.4 deprecated the implicit
+  form. Nullable types exist since PHP 7.1, so the minimum stays PHP 7.4; no
+  caller, argument or return value changes. Every shipped PHP file now lints
+  without a deprecation notice on PHP 8.5.
+
+### Tests
+
+- New unit group W (`tests/OrderCardTest.php`) renders the card from
+  hand-written states: nothing to choose from on screen, one fallback, on the
+  order axis, rendered hidden, with exactly the targets in order and the
+  confirmation flags; the hint line on each open axis; on a canceled physical
+  order, the shipping list on screen with no hint and no fallback, and none on a
+  canceled digital one; Next step on both; the no-next-step, nowhere-to-move and
+  locked lines; the notes; escaping of labels in the list and in the Next step
+  button's attributes. For the stylesheet and the script it only matches source
+  text: the `[hidden]` rule, and the lines that watch, reveal, handle the
+  dialog's statuses and release the card.
+- What the script does is run in a browser by the new
+  `tests/order-changer-browser.py` (Playwright and Chrome, 56 checks): a page
+  shaped like FluentCart's order view with the cards `OrderWidget` renders,
+  every REST answer scripted and the page's clock paused. The fallback stays
+  hidden while More Action works, also under a page rule setting `display` on
+  every `div`; it is shown after the wait with no trigger or on another route,
+  not before, and at once on a re-rendered card; an open menu that cannot take
+  the entry shows it, a hover does not, and a late menu still gets the entry;
+  the dialog's 401, 403, 404, 500, network failure and empty answer each give
+  the right sentence and reveal or not, a server reason holding `$&` included;
+  a page that stayed after `beforeunload`, or refreshed in place, gets a
+  working card back; and a canceled order's shipping list posts the shipping
+  axis. Each of 15 mutations
+  of the script — the wait's reveal removed, a reveal at once, the re-render
+  path, the initial scan, the menu-open reveal, the 401/403 and 4xx branches,
+  the release, the stay check and others — fails it.
+- `changer-scenarios` C5 and S6, `guard-scenarios` A1 and N restate the card
+  for 0.7 from real orders: no list or Change button on screen; the hint lines;
+  the order-axis list present, hidden, with the same targets and flags as the
+  dialog (no *Completed* on an unpaid order, *Canceled* and *Completed*
+  flagged); nothing on the shipping axis; Next step intact; the state route's
+  `html` byte for byte the order page's widget; a canceled order's card with its
+  lock sentence, no fallback, and its shipping moves on screen — exactly the
+  ones the route accepts and the state route reports. S6's escaping probe is
+  now an order status, since an open order's card lists no shipping moves.
+- `guard-scenarios` A4b puts 1001 orders on a status of their own and empties
+  it with `POST migrate`. It watches the statements the move sends — two full
+  batches of 500 and a partial third, each one `UPDATE` of the orders and one
+  history `INSERT` of the same size — then checks every order, not a sample:
+  the count the route reports, nothing left on the source, each order on the
+  target with `updated_at` refreshed, exactly one `migrate` history row and
+  one activity line per order, and no mail. The orders are copies of one
+  fixture order's row and are removed again once the section passes. All
+  suites run on FluentCart 1.6.0 and 1.6.3, on PHP 8.2 and 8.5.
+
 ## [0.6.0] — 2026-10-04
 
 Guard rails and records. Nothing about an existing configuration changes on

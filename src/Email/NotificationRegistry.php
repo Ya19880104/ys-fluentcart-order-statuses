@@ -313,7 +313,7 @@ final class NotificationRegistry {
 	 * @param array|null $definition Optional pre-read definition.
 	 * @return array{heading:string,message:string}
 	 */
-	public static function contentFor( $axis, $slug, $recipient, array $definition = null ) {
+	public static function contentFor( $axis, $slug, $recipient, ?array $definition = null ) {
 		$stored = ContentStore::get( self::nameFor( $axis, $slug, $recipient ) );
 
 		if ( null !== $stored ) {
@@ -330,7 +330,7 @@ final class NotificationRegistry {
 	 * @param array|null $definition Optional pre-read definition.
 	 * @return array{heading:string,message:string}
 	 */
-	public static function defaultContent( $axis, $slug, $recipient, array $definition = null ) {
+	public static function defaultContent( $axis, $slug, $recipient, ?array $definition = null ) {
 		if ( null === $definition ) {
 			$custom     = Settings::customStatuses( $axis, StatusRegistry::settings() );
 			$definition = isset( $custom[ $slug ] ) ? $custom[ $slug ] : array( 'label' => $slug );

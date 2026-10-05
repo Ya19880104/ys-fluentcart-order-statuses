@@ -142,7 +142,7 @@ final class Changer {
 	 * @param array|null $row     Optional pre-read order row.
 	 * @return array<int,array<string,string>> `['slug','label','color']`.
 	 */
-	public static function targets( $orderId, $axis, array $row = null ) {
+	public static function targets( $orderId, $axis, ?array $row = null ) {
 		$orderId = (int) $orderId;
 		$axis    = 'shipping' === $axis ? 'shipping' : 'order';
 		$row     = null === $row ? OrderRepository::find( $orderId ) : $row;
@@ -194,7 +194,7 @@ final class Changer {
 	 * @param array|null $targets Optional pre-computed `targets()`.
 	 * @return array<string,string>|null `['slug','label','color']`.
 	 */
-	public static function nextStep( $orderId, $axis, array $row = null, array $targets = null ) {
+	public static function nextStep( $orderId, $axis, ?array $row = null, ?array $targets = null ) {
 		$orderId = (int) $orderId;
 		$axis    = 'shipping' === $axis ? 'shipping' : 'order';
 		$row     = null === $row ? OrderRepository::find( $orderId ) : $row;
@@ -239,7 +239,7 @@ final class Changer {
 	 * @param array|null $row     Optional pre-read order row.
 	 * @return string|null Human-readable reason.
 	 */
-	public static function rejectionFor( $orderId, $axis, $slug, array $row = null ) {
+	public static function rejectionFor( $orderId, $axis, $slug, ?array $row = null ) {
 		$orderId = (int) $orderId;
 		$axis    = 'shipping' === $axis ? 'shipping' : 'order';
 		$slug    = (string) $slug;

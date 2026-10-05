@@ -2,14 +2,14 @@
 # This file is distributed under the same license as the YS FluentCart Order Statuses plugin.
 msgid ""
 msgstr ""
-"Project-Id-Version: YS FluentCart Order Statuses 0.6.0\n"
+"Project-Id-Version: YS FluentCart Order Statuses 0.7.0\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/ys-fluentcart-order-statuses\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-10-04T15:31:24+08:00\n"
+"POT-Creation-Date: 2026-10-05T03:23:40+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: ys-fluentcart-order-statuses\n"
@@ -191,12 +191,12 @@ msgid "Workflow to report on:"
 msgstr ""
 
 #: src/Admin/AdminMenu.php:244
-#: src/Admin/OrderWidget.php:400
+#: src/Admin/OrderWidget.php:478
 msgid "Order status"
 msgstr ""
 
 #: src/Admin/AdminMenu.php:248
-#: src/Admin/OrderWidget.php:399
+#: src/Admin/OrderWidget.php:477
 msgid "Shipping status"
 msgstr ""
 
@@ -272,7 +272,7 @@ msgid "The order-axis version of the same workflow is on the Order statuses tab.
 msgstr ""
 
 #: src/Admin/AdminMenu.php:302
-#: src/Admin/OrderWidget.php:161
+#: src/Admin/OrderWidget.php:171
 msgid "Order workflow"
 msgstr ""
 
@@ -293,7 +293,7 @@ msgid "day(s) on the same step"
 msgstr ""
 
 #: src/Admin/AdminMenu.php:321
-#: src/Admin/OrderWidget.php:185
+#: src/Admin/OrderWidget.php:195
 msgid "Status history"
 msgstr ""
 
@@ -592,7 +592,7 @@ msgid "“%1$s” is on %2$d order(s). Switched off, it stays on those orders, b
 msgstr ""
 
 #: src/Admin/AdminMenu.php:470
-#: src/Admin/OrderWidget.php:238
+#: src/Admin/OrderWidget.php:255
 msgid "disabled"
 msgstr ""
 
@@ -772,96 +772,98 @@ msgstr ""
 msgid "shipping status"
 msgstr ""
 
-#: src/Admin/OrderWidget.php:103
+#: src/Admin/OrderWidget.php:110
 msgid "Changing…"
 msgstr ""
 
-#: src/Admin/OrderWidget.php:104
+#: src/Admin/OrderWidget.php:111
 msgid "The status could not be changed."
 msgstr ""
 
-#: src/Admin/OrderWidget.php:105
+#: src/Admin/OrderWidget.php:112
 msgid "Choose a status first."
 msgstr ""
 
 #. translators: %s: status label
-#: src/Admin/OrderWidget.php:107
+#: src/Admin/OrderWidget.php:114
 #, php-format
 msgid "Move this order to “%s”? This marks the order as finished."
 msgstr ""
 
 #. translators: %s: status label
-#: src/Admin/OrderWidget.php:109
+#: src/Admin/OrderWidget.php:116
 #, php-format
 msgid "Move this order to “%s”? A canceled order cannot be changed afterwards: FluentCart refuses every later change to its order status."
 msgstr ""
 
-#: src/Admin/OrderWidget.php:111
+#: src/Admin/OrderWidget.php:118
 msgid "Change Order Status"
 msgstr ""
 
-#: src/Admin/OrderWidget.php:112
+#: src/Admin/OrderWidget.php:119
 msgid "Update Order Status"
 msgstr ""
 
-#: src/Admin/OrderWidget.php:113
+#: src/Admin/OrderWidget.php:120
 msgid "Order Status"
 msgstr ""
 
-#: src/Admin/OrderWidget.php:114
+#: src/Admin/OrderWidget.php:121
 msgid "Update"
 msgstr ""
 
-#: src/Admin/OrderWidget.php:115
+#: src/Admin/OrderWidget.php:122
 msgid "Close this dialog"
 msgstr ""
 
-#: src/Admin/OrderWidget.php:116
+#: src/Admin/OrderWidget.php:123
 msgid "Loading…"
 msgstr ""
 
-#: src/Admin/OrderWidget.php:117
-msgid "The order could not be loaded. The Order workflow card on this page can still change it."
+#: src/Admin/OrderWidget.php:124
+msgid "The order could not be loaded. Use the status list now shown in the Order workflow card on this page instead."
 msgstr ""
 
-#: src/Admin/OrderWidget.php:118
-#: src/Admin/OrderWidget.php:261
+#: src/Admin/OrderWidget.php:125
+msgid "The order could not be loaded."
+msgstr ""
+
+#. translators: %s: the server's reason, such as "Cookie check failed."
+#: src/Admin/OrderWidget.php:127
+#, php-format
+msgid "%s Reload the page and try again."
+msgstr ""
+
+#: src/Admin/OrderWidget.php:128
+#: src/Admin/OrderWidget.php:278
 msgid "There is nowhere for this order to move on this axis."
 msgstr ""
 
-#: src/Admin/OrderWidget.php:119
-#: src/Admin/OrderWidget.php:323
+#: src/Admin/OrderWidget.php:129
+#: src/Admin/OrderWidget.php:401
 msgid "no status"
 msgstr ""
 
-#: src/Admin/OrderWidget.php:120
+#: src/Admin/OrderWidget.php:130
 msgid "The order status was changed."
 msgstr ""
 
-#: src/Admin/OrderWidget.php:162
-msgid "Move this order along the workflow. The list offers only the moves this order is allowed to make."
+#: src/Admin/OrderWidget.php:172
+msgid "Where this order stands in the workflow, and its next step. To choose any other status, use More Action → Change Order Status (or Change Shipping Status)."
 msgstr ""
 
-#: src/Admin/OrderWidget.php:186
+#: src/Admin/OrderWidget.php:196
 msgid "Every order and shipping status this order has been through, and how long it stayed."
 msgstr ""
 
-#: src/Admin/OrderWidget.php:236
+#: src/Admin/OrderWidget.php:253
 msgid "not defined — this status was removed"
 msgstr ""
 
 #. translators: 1: step number, 2: how many steps the workflow has
-#: src/Admin/OrderWidget.php:245
+#: src/Admin/OrderWidget.php:262
 #, php-format
 msgid "step %1$d of %2$d"
-msgstr ""
-
-#: src/Admin/OrderWidget.php:271
-msgid "Move to…"
-msgstr ""
-
-#: src/Admin/OrderWidget.php:281
-msgid "Change"
 msgstr ""
 
 #. translators: %s: the next workflow step's label
@@ -871,23 +873,47 @@ msgid "Next step: %s →"
 msgstr ""
 
 #: src/Admin/OrderWidget.php:312
-msgid "Move the shipping status to"
+msgid "Other statuses: More Action → Change Shipping Status"
 msgstr ""
 
 #: src/Admin/OrderWidget.php:313
+msgid "Other statuses: More Action → Change Order Status"
+msgstr ""
+
+#: src/Admin/OrderWidget.php:361
+msgid "Change Order Status could not be used from the More Action menu on this page, so the order status can be changed here instead."
+msgstr ""
+
+#: src/Admin/OrderWidget.php:365
+msgid "FluentCart’s More Action menu has no Change Shipping Status on a canceled order, so the shipping status is changed here."
+msgstr ""
+
+#: src/Admin/OrderWidget.php:372
+msgid "Move the shipping status to"
+msgstr ""
+
+#: src/Admin/OrderWidget.php:373
 msgid "Move the order status to"
 msgstr ""
 
-#: src/Admin/OrderWidget.php:322
+#: src/Admin/OrderWidget.php:377
+msgid "Move to…"
+msgstr ""
+
+#: src/Admin/OrderWidget.php:387
+msgid "Change"
+msgstr ""
+
+#: src/Admin/OrderWidget.php:400
 msgid "nothing to ship"
 msgstr ""
 
-#: src/Admin/OrderWidget.php:359
+#: src/Admin/OrderWidget.php:437
 msgid "new order"
 msgstr ""
 
 #. translators: %d: number of older status changes not listed
-#: src/Admin/OrderWidget.php:384
+#: src/Admin/OrderWidget.php:462
 #, php-format
 msgid "%d older change not shown."
 msgid_plural "%d older changes not shown."
@@ -895,13 +921,13 @@ msgstr[0] ""
 msgstr[1] ""
 
 #. translators: %s: a duration such as "2 days"
-#: src/Admin/OrderWidget.php:453
+#: src/Admin/OrderWidget.php:531
 #, php-format
 msgid "here for %s"
 msgstr ""
 
 #. translators: %s: a duration such as "2 days"
-#: src/Admin/OrderWidget.php:458
+#: src/Admin/OrderWidget.php:536
 #, php-format
 msgid "stayed %s"
 msgstr ""

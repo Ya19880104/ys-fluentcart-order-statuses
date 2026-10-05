@@ -9,9 +9,15 @@
  * survive the widget appearing, disappearing and being rebuilt as the operator
  * moves around the app.
  *
- * Hence one delegated listener on `document` and no element references kept
+ * Hence delegated listeners on `document` and no element references kept
  * anywhere. Nothing here runs, or costs anything, until a click lands inside a
- * `[data-ys-changer]` block.
+ * `[data-ys-changer]` block or on FluentCart's More Action menu — apart from
+ * one MutationObserver whose callback only queues a look for a newly rendered
+ * card's hidden fallback (see "the card's fallback" at the end).
+ *
+ * Since 0.7 the card shows where the order stands and its next step; any other
+ * order status is chosen from the More Action entry this script adds, and the
+ * card's own list is shown only when that entry cannot be used.
  *
  * Every order-status write from this script goes through `changeStatus()`:
  * the confirmation, the request and the reading of its answer are one function,
@@ -108,6 +114,7 @@
 	// ── after a change: tell, then bring the page up to date ─────────────────
 
 	var leaving = false;
+	var STAY_WAIT = 5000;
 
 	window.addEventListener( 'beforeunload', function () {
 		leaving = true;
@@ -230,6 +237,11 @@
 		}
 	}
 
+	/**
+	 * `GET orders/{id}/state`. A refusal rejects with an Error carrying the
+	 * server's sentence and the HTTP `status`; a network failure rejects
+	 * without one.
+	 */
 	function fetchState( orderId ) {
 		return window.fetch( cfg.restUrl + 'orders/' + encodeURIComponent( orderId ) + '/state', {
 			method: 'GET',
@@ -240,7 +252,10 @@
 				return {};
 			} ).then( function ( payload ) {
 				if ( ! response.ok ) {
-					throw new Error( ( payload && payload.message ) || t( 'loadFailed' ) );
+					var error = new Error( ( payload && payload.message ) || t( 'notLoaded' ) );
+
+					error.status = response.status;
+					throw error;
 				}
 
 				return payload || {};
@@ -248,9 +263,14 @@
 		} );
 	}
 
+	/** Every Order workflow card on the page for this order. */
+	function cardsFor( orderId ) {
+		return document.querySelectorAll( '[data-ys-changer][data-ys-order="' + String( orderId ).replace( /[^0-9]/g, '' ) + '"]' );
+	}
+
 	/** Re-render every Order workflow card for this order from the server's own markup. */
 	function refreshCards( orderId ) {
-		var cards = document.querySelectorAll( '[data-ys-changer][data-ys-order="' + String( orderId ).replace( /[^0-9]/g, '' ) + '"]' );
+		var cards = cardsFor( orderId );
 
 		if ( ! cards.length ) {
 			return Promise.resolve();
@@ -264,6 +284,15 @@
 			Array.prototype.forEach.call( cards, function ( card ) {
 				card.outerHTML = state.html;
 			} );
+		} );
+	}
+
+	/** A change from the card is over: its controls answer again. */
+	function release( orderId ) {
+		busy = false;
+
+		Array.prototype.forEach.call( cardsFor( orderId ), function ( card ) {
+			card.classList.remove( 'is-busy' );
 		} );
 	}
 
@@ -286,16 +315,47 @@
 
 		if ( ! emitReload( orderId ) ) {
 			hardReload();
-			return;
 		}
 
 		window.setTimeout( function () {
-			if ( leaving ) {
+			catchUp( orderId, false );
+		}, 1500 );
+	}
+
+	/**
+	 * Bring the cards up to date in place, unless the page is on its way out.
+	 *
+	 * `beforeunload` does not prove that it is: FluentCart asks before leaving
+	 * an order with unsaved edits, and an operator who answers "Stay" cancels
+	 * the unload with no event to say so. A page still here STAY_WAIT ms after
+	 * it said it was leaving has stayed: its cards are refreshed and released,
+	 * and never reloaded from here again, so that question is not asked twice.
+	 *
+	 * @param {string}  orderId Order id.
+	 * @param {boolean} waited  Whether this is the look after STAY_WAIT.
+	 * @return {void}
+	 */
+	function catchUp( orderId, waited ) {
+		if ( leaving && ! waited ) {
+			window.setTimeout( function () {
+				catchUp( orderId, true );
+			}, STAY_WAIT );
+			return;
+		}
+
+		leaving = false;
+
+		refreshCards( orderId ).then( function () {
+			release( orderId );
+		}, function () {
+			if ( waited ) {
+				release( orderId );
 				return;
 			}
 
-			refreshCards( orderId ).catch( hardReload );
-		}, 1500 );
+			hardReload();
+			catchUp( orderId, false );
+		} );
 	}
 
 	/**
@@ -433,6 +493,9 @@
 	var CARET_ICON = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" aria-hidden="true" focusable="false"><path fill="currentColor" d="M831.872 340.864 512 652.672 192.128 340.864a30.592 30.592 0 0 0-42.752 0 29.12 29.12 0 0 0 0 41.6L489.664 714.24a32 32 0 0 0 44.672 0l340.288-331.712a29.12 29.12 0 0 0 0-41.728 30.592 30.592 0 0 0-42.752 0z"/></svg>';
 
 	var polling = false;
+	var pollTries = 0;
+	var pollTrigger = null;
+	var pollOrder = '';
 	var dialog = null;
 
 	/** The order on screen, from FluentCart's `#/orders/<id>/view` route, or ''. */
@@ -522,27 +585,47 @@
 		return true;
 	}
 
-	/** The menu is created on first open, so look for it a few times. */
+	/**
+	 * The menu is created on first open, so look for it a few times.
+	 *
+	 * More activity on the trigger while a look is running starts its count
+	 * again, so a click near the end of a hover's look still gets a full
+	 * second. When the look runs out — or `inject()` keeps throwing — while
+	 * the menu is open, the entry cannot be added: the menu exists but is not
+	 * where `aria-controls` says. The card's own list is shown instead.
+	 */
 	function scheduleInject( trigger, orderId ) {
+		pollTries = 0;
+		pollTrigger = trigger;
+		pollOrder = orderId;
+
 		if ( polling ) {
 			return;
 		}
 
 		polling = true;
 
-		var tries = 0;
-
 		( function attempt() {
 			var done = false;
 
 			try {
-				done = inject( trigger, orderId );
+				done = inject( pollTrigger, pollOrder );
 			} catch ( e ) {
-				done = true;
+				done = false;
 			}
 
-			if ( done || ++tries > 20 ) {
+			if ( done ) {
 				polling = false;
+				return;
+			}
+
+			if ( ++pollTries > 20 ) {
+				polling = false;
+
+				if ( 'true' === pollTrigger.getAttribute( 'aria-expanded' ) ) {
+					revealFallback( pollOrder );
+				}
+
 				return;
 			}
 
@@ -867,7 +950,7 @@
 		var axis = state && state.axes ? state.axes.order : null;
 
 		if ( ! axis ) {
-			throw new Error( t( 'loadFailed' ) );
+			throw new Error( t( 'notLoaded' ) );
 		}
 
 		d.placeholder.firstChild.textContent = axis.label || t( 'noStatus' );
@@ -1075,7 +1158,34 @@
 			}
 
 			d.placeholder.firstChild.textContent = '—';
-			setError( d, ( error && error.message ) || t( 'loadFailed' ) );
+
+			var status = error && error.status ? error.status : 0;
+			var reason = ( error && error.message ) || t( 'notLoaded' );
+
+			// A 401 or 403 is this page's session — the nonce it was loaded
+			// with has expired, or the login has — and the card's list would
+			// post with the same nonce and be refused the same way. Reloading
+			// the page is what helps, so that is what the sentence says.
+			if ( 401 === status || 403 === status ) {
+				setError( d, String( t( 'reloadPage' ) ).replace( '%s', function () {
+					return reason;
+				} ) );
+				return;
+			}
+
+			// Any other refusal (a 4xx) is the server's reason about this
+			// order, and the list would meet the same rules. Only a network
+			// failure, a server error or an answer without the order axis
+			// means the entry cannot be used, so only then is the card's own
+			// list shown, and the sentence says where. When the card has no
+			// list to show — it offers no move, or it is not on the page —
+			// the reason is all there is to say.
+			if ( status && status < 500 ) {
+				setError( d, reason );
+				return;
+			}
+
+			setError( d, revealFallback( orderId ) > 0 ? t( 'loadFailed' ) : reason );
 		} );
 	}
 
@@ -1084,4 +1194,143 @@
 	window.addEventListener( 'resize', function () {
 		closeList( dialog );
 	} );
+
+	// ── the card's fallback: its order-status list, when the entry cannot be used
+	//
+	// The entry above rests on FluentCart markup this plugin does not own, so
+	// the card still carries its "Move to…" list for the order axis, hidden
+	// (`[data-ys-changer-fallback]`), and it is shown when the entry cannot be
+	// used:
+	//
+	// - FALLBACK_WAIT ms after the card appeared, the page still has no More
+	//   Action trigger with `aria-controls` — the only kind `inject()` can add
+	//   the entry through — or is not this order's `#/orders/<id>/view`, the
+	//   only route the entry is added on;
+	// - the menu was opened and the entry could not be added to it
+	//   (`scheduleInject()` above);
+	// - the entry's dialog could not load the order for a reason other than the
+	//   page's session or the server's refusal (`openDialog()` above).
+	//
+	// Once shown for an order it stays shown while the page lives, on every card
+	// for that order the app or `refreshCards()` renders again, and it replaces
+	// its axis's "Other statuses" line. The list posts through `submit()` and
+	// `changeStatus()`, like the Next step button. The shipping axis's list on a
+	// canceled order is not a fallback: it is rendered on screen.
+
+	var TRIGGER = '.fct-order-bulk-action-modal .fct-more-option-wrap [aria-controls]';
+	var FALLBACK = 'data-ys-changer-fallback';
+	var WATCHED = 'data-ys-changer-watched';
+	var FALLBACK_WAIT = 4000;
+	var FALLBACK_POLL = 250;
+	var revealed = {};
+	var scanQueued = false;
+
+	/** The order id of the card a node is in, or ''. */
+	function cardOrder( node ) {
+		var card = node && node.closest ? node.closest( '[data-ys-changer]' ) : null;
+
+		return card ? String( card.getAttribute( 'data-ys-order' ) || '' ) : '';
+	}
+
+	/** Whether the More Action entry can be added for this order now. */
+	function entryUsable( orderId ) {
+		return '' !== orderId && viewedOrderId() === orderId && null !== document.querySelector( TRIGGER );
+	}
+
+	/**
+	 * Show one list, and take away its axis's "Other statuses: More Action →"
+	 * line, which the list's own note now contradicts.
+	 *
+	 * @param {HTMLElement} node The `[data-ys-changer-fallback]` block.
+	 * @return {void}
+	 */
+	function showList( node ) {
+		var axis = node.closest ? node.closest( '[data-ys-axis]' ) : null;
+		var hint = axis ? axis.querySelector( '[data-ys-changer-hint]' ) : null;
+
+		node.hidden = false;
+
+		if ( hint ) {
+			hint.hidden = true;
+		}
+	}
+
+	/**
+	 * Show the list on every card for this order, and keep showing it.
+	 *
+	 * @param {string} orderId Order id.
+	 * @return {number} How many cards for this order show it now.
+	 */
+	function revealFallback( orderId ) {
+		var shown = 0;
+
+		orderId = String( orderId || '' );
+
+		if ( ! orderId ) {
+			return 0;
+		}
+
+		revealed[ orderId ] = true;
+
+		Array.prototype.forEach.call( document.querySelectorAll( '[' + FALLBACK + ']' ), function ( node ) {
+			if ( cardOrder( node ) === orderId ) {
+				showList( node );
+				shown++;
+			}
+		} );
+
+		return shown;
+	}
+
+	/** Watch one newly rendered list until the entry proves usable or the wait runs out. */
+	function watchFallback( node ) {
+		var orderId = cardOrder( node );
+		var started = Date.now();
+
+		if ( revealed[ orderId ] ) {
+			showList( node );
+			return;
+		}
+
+		( function check() {
+			// Shown already (by a dialog that could not load), re-rendered away,
+			// or the entry is there: nothing left to decide.
+			if ( ! node.hidden || ! document.documentElement.contains( node ) || entryUsable( orderId ) ) {
+				return;
+			}
+
+			if ( Date.now() - started >= FALLBACK_WAIT ) {
+				if ( ! revealFallback( orderId ) ) {
+					showList( node );
+				}
+
+				return;
+			}
+
+			window.setTimeout( check, FALLBACK_POLL );
+		}() );
+	}
+
+	function scanFallbacks() {
+		scanQueued = false;
+
+		Array.prototype.forEach.call( document.querySelectorAll( '[' + FALLBACK + ']:not([' + WATCHED + '])' ), function ( node ) {
+			node.setAttribute( WATCHED, '' );
+			watchFallback( node );
+		} );
+	}
+
+	/** At most one look every 100 ms, however busy the app is. */
+	function queueScan() {
+		if ( ! scanQueued ) {
+			scanQueued = true;
+			window.setTimeout( scanFallbacks, 100 );
+		}
+	}
+
+	if ( 'function' === typeof window.MutationObserver ) {
+		new window.MutationObserver( queueScan ).observe( document.documentElement, { childList: true, subtree: true } );
+	}
+
+	queueScan();
 }() );

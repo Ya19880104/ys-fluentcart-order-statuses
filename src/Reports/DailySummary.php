@@ -213,7 +213,7 @@ final class DailySummary {
 	 * @param array $settings Optional pre-read settings.
 	 * @return bool
 	 */
-	public static function isEnabled( array $settings = null ) {
+	public static function isEnabled( ?array $settings = null ) {
 		$settings = null === $settings ? Settings::all() : $settings;
 
 		return 'yes' === $settings['daily_summary']['enabled'] && '' !== $settings['daily_summary']['email'];

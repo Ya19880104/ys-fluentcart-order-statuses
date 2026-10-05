@@ -68,7 +68,7 @@ final class Labels {
 	 * @param array  $settings Optional pre-read settings.
 	 * @return array<string,string>
 	 */
-	public static function resolved( $axis, array $settings = null ) {
+	public static function resolved( $axis, ?array $settings = null ) {
 		$settings = null === $settings ? StatusRegistry::settings() : $settings;
 		$builtin  = self::builtin();
 
@@ -97,7 +97,7 @@ final class Labels {
 	 * @param array  $settings Optional pre-read settings.
 	 * @return string The label, or the slug when nothing knows it.
 	 */
-	public static function forSlug( $axis, $slug, array $settings = null ) {
+	public static function forSlug( $axis, $slug, ?array $settings = null ) {
 		$labels = self::resolved( $axis, $settings );
 
 		return isset( $labels[ $slug ] ) ? $labels[ $slug ] : (string) $slug;
@@ -108,7 +108,7 @@ final class Labels {
 	 * @param array  $settings Optional pre-read settings.
 	 * @return array<string,string> slug => `#rrggbb`, only where one is set.
 	 */
-	public static function colors( $axis, array $settings = null ) {
+	public static function colors( $axis, ?array $settings = null ) {
 		$settings = null === $settings ? StatusRegistry::settings() : $settings;
 		$colors   = array();
 

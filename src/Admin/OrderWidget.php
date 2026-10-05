@@ -40,10 +40,16 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * Two entries are contributed, in this order:
  *
- * - **Order workflow** — the control. Where the order stands on both axes, the
- *   moves it may make, and a one-click "next step". It exists because
- *   FluentCart's admin has no control for choosing an order status at all, on
- *   any order, paid or not; see `Rest\ChangeController` for what was measured.
+ * - **Order workflow** — where the order stands on both axes, which step of
+ *   the workflow that is, and a one-click "next step". Since 0.7 any other
+ *   status is chosen in FluentCart's own More Action menu: *Change Order
+ *   Status*, which the script adds there because FluentCart's admin has no
+ *   control for choosing an order status at all (see `Rest\ChangeController`
+ *   for what was measured), and FluentCart's own *Change Shipping Status*;
+ *   a line on each axis says which. The card still carries the order-status
+ *   choice, hidden, as the fallback for a page where that menu entry cannot
+ *   be used, and draws the shipping-status choice on screen on a canceled
+ *   order, where FluentCart's menu has none; see `renderList()`.
  * - **Status history** — 0.2's timeline, unchanged, and still only when there
  *   is something to show.
  */
@@ -67,8 +73,9 @@ final class OrderWidget {
 	 *
 	 * Not only on the order page: the admin is a single-page app, so there is
 	 * no page load when the operator opens an order. The script is a few
-	 * kilobytes and does nothing at all until a widget with `[data-ys-changer]`
-	 * appears in the DOM.
+	 * kilobytes and, until a widget with `[data-ys-changer]` appears in the DOM
+	 * or the More Action menu is used, does nothing but notice that the DOM
+	 * changed (one MutationObserver, at most one look every 100 ms).
 	 *
 	 * @param string $hook Current admin page hook.
 	 * @return void
@@ -114,7 +121,10 @@ final class OrderWidget {
 					'update'           => __( 'Update', 'ys-fluentcart-order-statuses' ),
 					'close'            => __( 'Close this dialog', 'ys-fluentcart-order-statuses' ),
 					'loading'          => __( 'Loading…', 'ys-fluentcart-order-statuses' ),
-					'loadFailed'       => __( 'The order could not be loaded. The Order workflow card on this page can still change it.', 'ys-fluentcart-order-statuses' ),
+					'loadFailed'       => __( 'The order could not be loaded. Use the status list now shown in the Order workflow card on this page instead.', 'ys-fluentcart-order-statuses' ),
+					'notLoaded'        => __( 'The order could not be loaded.', 'ys-fluentcart-order-statuses' ),
+					/* translators: %s: the server's reason, such as "Cookie check failed." */
+					'reloadPage'       => __( '%s Reload the page and try again.', 'ys-fluentcart-order-statuses' ),
 					'nowhere'          => __( 'There is nowhere for this order to move on this axis.', 'ys-fluentcart-order-statuses' ),
 					'noStatus'         => __( 'no status', 'ys-fluentcart-order-statuses' ),
 					'changed'          => __( 'The order status was changed.', 'ys-fluentcart-order-statuses' ),
@@ -159,7 +169,7 @@ final class OrderWidget {
 				$widgets[] = array(
 					'type'     => 'html',
 					'title'    => __( 'Order workflow', 'ys-fluentcart-order-statuses' ),
-					'subtitle' => __( 'Move this order along the workflow. The list offers only the moves this order is allowed to make.', 'ys-fluentcart-order-statuses' ),
+					'subtitle' => __( 'Where this order stands in the workflow, and its next step. To choose any other status, use More Action → Change Order Status (or Change Shipping Status).', 'ys-fluentcart-order-statuses' ),
 					'use_card' => true,
 					'content'  => self::renderChanger( $state ),
 				);
@@ -192,7 +202,7 @@ final class OrderWidget {
 	}
 
 	/**
-	 * The status control.
+	 * The Order workflow card: per axis, the status, its step and the next one.
 	 *
 	 * @param array $state `Pipeline\Changer::state()`.
 	 * @return string Escaped HTML.
@@ -200,10 +210,16 @@ final class OrderWidget {
 	public static function renderChanger( array $state ) {
 		$orderId = (int) $state['order_id'];
 
+		// FluentCart 1.6.0 and 1.6.3 draw *Change Shipping Status* in More
+		// Action only while the order is not canceled, yet the shipping axis
+		// stays open on a canceled order, as it does in core. There the card is
+		// the one place left to choose a shipping status.
+		$canceled = Changer::CANCELED === (string) $state['axes']['order']['current'];
+
 		$out = '<div class="ys-fct-changer" data-ys-changer data-ys-order="' . esc_attr( (string) $orderId ) . '">';
 
 		foreach ( array( 'order', 'shipping' ) as $axis ) {
-			$out .= self::renderAxis( $orderId, $axis, $state['axes'][ $axis ] );
+			$out .= self::renderAxis( $orderId, $axis, $state['axes'][ $axis ], 'shipping' === $axis && $canceled );
 		}
 
 		$out .= '<p class="ys-fct-changer-message" data-ys-changer-message role="status" aria-live="polite"></p>';
@@ -213,14 +229,15 @@ final class OrderWidget {
 	}
 
 	/**
-	 * @param int    $orderId Order id.
-	 * @param string $axis    'order' or 'shipping'.
+	 * @param int    $orderId   Order id.
+	 * @param string $axis      'order' or 'shipping'.
 	 * @param array  $axisState One entry of `Changer::state()['axes']`.
+	 * @param bool   $onCard    Whether More Action offers no way to change
+	 *                          this axis, so the card lists its moves on screen.
 	 * @return string
 	 */
-	private static function renderAxis( $orderId, $axis, array $axisState ) {
-		$fieldId = 'ys-fct-changer-' . $axis . '-' . (int) $orderId;
-		$color   = '' === $axisState['color'] ? '#64748b' : $axisState['color'];
+	private static function renderAxis( $orderId, $axis, array $axisState, $onCard = false ) {
+		$color = '' === $axisState['color'] ? '#64748b' : $axisState['color'];
 
 		$out = '<div class="ys-fct-changer-axis" data-ys-axis="' . esc_attr( $axis ) . '">';
 
@@ -263,26 +280,9 @@ final class OrderWidget {
 			return $out;
 		}
 
-		$out .= '<p class="ys-fct-changer-row">'
-			. '<label class="screen-reader-text" for="' . esc_attr( $fieldId ) . '">'
-			. esc_html( self::moveLabel( $axis ) )
-			. '</label>'
-			. '<select id="' . esc_attr( $fieldId ) . '" class="ys-fct-changer-select" data-ys-changer-select="' . esc_attr( $axis ) . '">'
-			. '<option value="">' . esc_html__( 'Move to…', 'ys-fluentcart-order-statuses' ) . '</option>';
-
-		foreach ( $axisState['targets'] as $target ) {
-			$out .= '<option value="' . esc_attr( $target['slug'] ) . '"'
-				. ( empty( $target['confirm'] ) ? '' : ' data-ys-confirm="' . esc_attr( $target['slug'] ) . '"' )
-				. '>' . esc_html( $target['label'] ) . '</option>';
-		}
-
-		$out .= '</select>'
-			. '<button type="button" class="button ys-fct-changer-go" data-ys-changer-go="' . esc_attr( $axis ) . '">'
-			. esc_html__( 'Change', 'ys-fluentcart-order-statuses' )
-			. '</button>';
-
 		if ( is_array( $axisState['next'] ) ) {
-			$out .= '<button type="button" class="button button-primary ys-fct-changer-next"'
+			$out .= '<p class="ys-fct-changer-row">'
+				. '<button type="button" class="button button-primary ys-fct-changer-next"'
 				. ' data-ys-changer-next="' . esc_attr( $axis ) . '"'
 				. ' data-ys-changer-status="' . esc_attr( $axisState['next']['slug'] ) . '"'
 				. ' data-ys-changer-label="' . esc_attr( $axisState['next']['label'] ) . '"'
@@ -295,22 +295,100 @@ final class OrderWidget {
 						$axisState['next']['label']
 					)
 				)
-				. '</button>';
+				. '</button></p>';
 		}
 
-		$out .= '</p></div>';
+		// Any other move is made from More Action, and the card says where on
+		// screen: FluentCart does not display a widget's subtitle. The order
+		// axis also keeps its list, hidden, as the fallback for the entry the
+		// script adds. A canceled order has no Change Shipping Status in that
+		// menu, so there the shipping list is drawn on screen instead.
+		if ( $onCard ) {
+			$out .= self::renderList( $orderId, $axis, $axisState['targets'] );
+		} else {
+			$out .= '<p class="ys-fct-changer-hint" data-ys-changer-hint="' . esc_attr( $axis ) . '">'
+				. esc_html(
+					'shipping' === $axis
+						? __( 'Other statuses: More Action → Change Shipping Status', 'ys-fluentcart-order-statuses' )
+						: __( 'Other statuses: More Action → Change Order Status', 'ys-fluentcart-order-statuses' )
+				)
+				. '</p>';
+
+			if ( 'order' === $axis ) {
+				$out .= self::renderList( $orderId, $axis, $axisState['targets'] );
+			}
+		}
+
+		$out .= '</div>';
 
 		return $out;
 	}
 
 	/**
-	 * @param string $axis Axis key.
+	 * A "Move to…" list and its Change button, for the two places More Action
+	 * cannot be relied on.
+	 *
+	 * Until 0.7 the card showed one on both axes. Two remain:
+	 *
+	 * - **The order axis's, hidden.** The order status is chosen from
+	 *   FluentCart's More Action menu, whose *Change Order Status* entry
+	 *   `assets/admin/order-changer.js` adds on the fly; that entry rests on
+	 *   FluentCart markup this plugin does not own, so the list stays here as
+	 *   the fallback. The script removes `hidden` only when the entry cannot be
+	 *   used: no More Action trigger a few seconds after the card appeared, a
+	 *   menu opened that the entry could not be added to, or a dialog that
+	 *   could not load the order for a reason other than the page's session.
+	 * - **The shipping axis's, on screen, on a canceled order only.** FluentCart
+	 *   offers no *Change Shipping Status* there, while core still accepts the
+	 *   change.
+	 *
+	 * Both post through the same `changeStatus()` as the dialog and the Next
+	 * step button. `hidden` alone is not enough inside FluentCart's page; the
+	 * stylesheet holds it at `display: none` (`.ys-fct-changer [hidden]`).
+	 *
+	 * @param int    $orderId Order id.
+	 * @param string $axis    'order' (the hidden fallback) or 'shipping' (on screen).
+	 * @param array  $targets `Changer::targets()` for that axis, not empty.
 	 * @return string
 	 */
-	private static function moveLabel( $axis ) {
-		return 'shipping' === $axis
-			? __( 'Move the shipping status to', 'ys-fluentcart-order-statuses' )
-			: __( 'Move the order status to', 'ys-fluentcart-order-statuses' );
+	private static function renderList( $orderId, $axis, array $targets ) {
+		$axis    = 'shipping' === $axis ? 'shipping' : 'order';
+		$fieldId = 'ys-fct-changer-' . $axis . '-' . (int) $orderId;
+
+		$out = 'order' === $axis
+			? '<div class="ys-fct-changer-fallback" data-ys-changer-fallback="order" hidden>'
+				. '<p class="ys-fct-changer-fallback-note">'
+				. esc_html__( 'Change Order Status could not be used from the More Action menu on this page, so the order status can be changed here instead.', 'ys-fluentcart-order-statuses' )
+				. '</p>'
+			: '<div class="ys-fct-changer-direct" data-ys-changer-direct="shipping">'
+				. '<p class="ys-fct-changer-direct-note">'
+				. esc_html__( 'FluentCart’s More Action menu has no Change Shipping Status on a canceled order, so the shipping status is changed here.', 'ys-fluentcart-order-statuses' )
+				. '</p>';
+
+		$out .= '<p class="ys-fct-changer-row">'
+			. '<label class="screen-reader-text" for="' . esc_attr( $fieldId ) . '">'
+			. esc_html(
+				'shipping' === $axis
+					? __( 'Move the shipping status to', 'ys-fluentcart-order-statuses' )
+					: __( 'Move the order status to', 'ys-fluentcart-order-statuses' )
+			)
+			. '</label>'
+			. '<select id="' . esc_attr( $fieldId ) . '" class="ys-fct-changer-select" data-ys-changer-select="' . esc_attr( $axis ) . '">'
+			. '<option value="">' . esc_html__( 'Move to…', 'ys-fluentcart-order-statuses' ) . '</option>';
+
+		foreach ( $targets as $target ) {
+			$out .= '<option value="' . esc_attr( $target['slug'] ) . '"'
+				. ( empty( $target['confirm'] ) ? '' : ' data-ys-confirm="' . esc_attr( $target['slug'] ) . '"' )
+				. '>' . esc_html( $target['label'] ) . '</option>';
+		}
+
+		$out .= '</select>'
+			. '<button type="button" class="button ys-fct-changer-go" data-ys-changer-go="' . esc_attr( $axis ) . '">'
+			. esc_html__( 'Change', 'ys-fluentcart-order-statuses' )
+			. '</button>'
+			. '</p></div>';
+
+		return $out;
 	}
 
 	/**

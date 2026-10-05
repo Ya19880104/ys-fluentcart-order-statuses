@@ -63,6 +63,38 @@
 	min-width: 12em;
 }
 
+/* The order-axis "Move to…" list, kept as the fallback for More Action →
+   Change Order Status (0.7). It is rendered with `hidden`, and a stylesheet
+   rule that sets `display` on an element wins over the browser's own
+   `[hidden]` rule, so `hidden` is made to hold here whatever FluentCart's
+   page brings; the script shows the list by removing the attribute. */
+.ys-fct-changer [hidden] {
+	display: none !important;
+}
+
+.ys-fct-changer-row + .ys-fct-changer-fallback,
+.ys-fct-changer-hint + .ys-fct-changer-fallback,
+.ys-fct-changer-row + .ys-fct-changer-direct {
+	margin-top: 10px;
+}
+
+.ys-fct-changer-fallback-note,
+.ys-fct-changer-direct-note {
+	margin: 0 0 8px;
+	opacity: .75;
+}
+
+/* "Other statuses: More Action → …" — where the card's old lists went. */
+.ys-fct-changer-hint {
+	margin: 0;
+	font-size: 12px;
+	opacity: .7;
+}
+
+.ys-fct-changer-row + .ys-fct-changer-hint {
+	margin-top: 6px;
+}
+
 .ys-fct-changer-locked {
 	margin: 0;
 	opacity: .7;

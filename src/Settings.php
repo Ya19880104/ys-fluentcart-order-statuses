@@ -431,7 +431,7 @@ final class Settings {
 	 * @param array $settings Optional pre-read normalised settings.
 	 * @return string
 	 */
-	public static function revision( array $settings = null ) {
+	public static function revision( ?array $settings = null ) {
 		$settings = null === $settings ? self::all() : $settings;
 
 		return substr( md5( (string) wp_json_encode( $settings ) ), 0, 12 );
@@ -459,7 +459,7 @@ final class Settings {
 	 * @param array  $settings Optional pre-read settings.
 	 * @return array<string,array>
 	 */
-	public static function customStatuses( $axis, array $settings = null ) {
+	public static function customStatuses( $axis, ?array $settings = null ) {
 		$settings = null === $settings ? self::all() : $settings;
 		$out      = array();
 
@@ -489,7 +489,7 @@ final class Settings {
 	 * @param array  $settings Optional pre-read settings.
 	 * @return array|null
 	 */
-	public static function definition( $axis, $slug, array $settings = null ) {
+	public static function definition( $axis, $slug, ?array $settings = null ) {
 		$settings = null === $settings ? self::all() : $settings;
 
 		if ( ! isset( $settings[ $axis ] ) || ! is_array( $settings[ $axis ] ) ) {
@@ -512,7 +512,7 @@ final class Settings {
 	 * @param array  $settings Optional pre-read settings.
 	 * @return string[] Slugs: the waiting built-ins, then every enabled custom status.
 	 */
-	public static function moveTargets( $axis, array $settings = null ) {
+	public static function moveTargets( $axis, ?array $settings = null ) {
 		$settings = null === $settings ? self::all() : $settings;
 		$targets  = 'shipping' === $axis ? self::MOVE_TARGETS_SHIPPING : self::MOVE_TARGETS_ORDER;
 
@@ -537,7 +537,7 @@ final class Settings {
 	 * @param array  $settings Optional pre-read settings.
 	 * @return string|null 'from_builtin', 'bad_target' or null.
 	 */
-	public static function moveError( $axis, $from, $to, array $settings = null ) {
+	public static function moveError( $axis, $from, $to, ?array $settings = null ) {
 		$builtin = 'shipping' === $axis ? self::BUILTIN_SHIPPING : self::BUILTIN_ORDER;
 
 		if ( in_array( (string) $from, $builtin, true ) ) {
@@ -564,7 +564,7 @@ final class Settings {
 	 * @param array             $settings Optional pre-read settings.
 	 * @return array<string,int> slug => count, sorted by slug.
 	 */
-	public static function orphanCounts( $axis, array $counts, array $settings = null ) {
+	public static function orphanCounts( $axis, array $counts, ?array $settings = null ) {
 		$settings = null === $settings ? self::all() : $settings;
 		$axis     = 'shipping' === $axis ? 'shipping' : 'order';
 		$builtin  = 'shipping' === $axis ? self::BUILTIN_SHIPPING : self::BUILTIN_ORDER;
@@ -609,7 +609,7 @@ final class Settings {
 	 * @param array $settings Optional pre-read settings.
 	 * @return string[] Slugs, index 0 first.
 	 */
-	public static function pipeline( array $settings = null ) {
+	public static function pipeline( ?array $settings = null ) {
 		return self::pipelineFor( 'order', $settings );
 	}
 
@@ -630,7 +630,7 @@ final class Settings {
 	 * @param array  $settings Optional pre-read settings.
 	 * @return string[] Slugs, index 0 first.
 	 */
-	public static function pipelineFor( $axis, array $settings = null ) {
+	public static function pipelineFor( $axis, ?array $settings = null ) {
 		$settings = null === $settings ? self::all() : $settings;
 		$axis     = 'shipping' === $axis ? 'shipping' : 'order';
 
@@ -652,7 +652,7 @@ final class Settings {
 	 * @param array  $settings Optional pre-read settings.
 	 * @return int Zero-based pipeline position, or -1 when the slug is not in it.
 	 */
-	public static function pipelinePosition( $slug, array $settings = null ) {
+	public static function pipelinePosition( $slug, ?array $settings = null ) {
 		return self::pipelinePositionFor( 'order', $slug, $settings );
 	}
 
@@ -662,7 +662,7 @@ final class Settings {
 	 * @param array  $settings Optional pre-read settings.
 	 * @return int Zero-based pipeline position, or -1 when the slug is not in it.
 	 */
-	public static function pipelinePositionFor( $axis, $slug, array $settings = null ) {
+	public static function pipelinePositionFor( $axis, $slug, ?array $settings = null ) {
 		$position = array_search( (string) $slug, self::pipelineFor( $axis, $settings ), true );
 
 		return false === $position ? -1 : (int) $position;
@@ -672,7 +672,7 @@ final class Settings {
 	 * @param array $settings Optional pre-read settings.
 	 * @return bool Whether only single steps along the pipeline are allowed.
 	 */
-	public static function pipelineStrict( array $settings = null ) {
+	public static function pipelineStrict( ?array $settings = null ) {
 		$settings = null === $settings ? self::all() : $settings;
 
 		return 'yes' === $settings['pipeline_strict'];
@@ -682,7 +682,7 @@ final class Settings {
 	 * @param array $settings Optional pre-read settings.
 	 * @return int Days after which an order is reported as stuck.
 	 */
-	public static function stallDays( array $settings = null ) {
+	public static function stallDays( ?array $settings = null ) {
 		$settings = null === $settings ? self::all() : $settings;
 
 		return (int) $settings['stall_days'];

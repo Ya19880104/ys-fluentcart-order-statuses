@@ -1,14 +1,14 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: YS FluentCart Order Statuses 0.6.0\n"
+"Project-Id-Version: YS FluentCart Order Statuses 0.7.0\n"
 "Report-Msgid-Bugs-To: https://yangsheep.com.tw\n"
 "Last-Translator: YANGSHEEP DESIGN\n"
 "Language-Team: Traditional Chinese (Taiwan)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-10-04T00:00:00+08:00\n"
-"PO-Revision-Date: 2026-10-04T00:00:00+00:00\n"
+"POT-Creation-Date: 2026-10-05T00:00:00+08:00\n"
+"PO-Revision-Date: 2026-10-05T00:00:00+00:00\n"
 "Language: zh_TW\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 "X-Generator: WP-CLI 2.12.0\n"
@@ -218,7 +218,7 @@ msgid "Stuck orders"
 msgstr "卡住的訂單"
 
 #: src/Admin/AdminMenu.php:302
-#: src/Admin/OrderWidget.php:161
+#: src/Admin/OrderWidget.php:171
 msgid "Order workflow"
 msgstr "訂單流程"
 
@@ -239,7 +239,7 @@ msgid "day(s) on the same step"
 msgstr "天就列為卡住"
 
 #: src/Admin/AdminMenu.php:321
-#: src/Admin/OrderWidget.php:185
+#: src/Admin/OrderWidget.php:195
 msgid "Status history"
 msgstr "狀態歷程"
 
@@ -572,32 +572,32 @@ msgstr "這個商店有一種以上的幣別（%s）。下方金額是直接加�
 msgid "No status history has been recorded yet, so the timings below are empty. Import the history from the activity log on the Tools tab, or wait for the next status change."
 msgstr "目前還沒有任何狀態歷程，所以下方的時間是空的。可以到「工具」分頁從活動紀錄回填，或等下一次狀態變更。"
 
-#: src/Admin/OrderWidget.php:186
+#: src/Admin/OrderWidget.php:196
 msgid "Every order and shipping status this order has been through, and how long it stayed."
 msgstr "這筆訂單經過的每個訂單狀態與出貨狀態，以及各自停留多久。"
 
-#: src/Admin/OrderWidget.php:359
+#: src/Admin/OrderWidget.php:437
 msgid "new order"
 msgstr "新訂單"
 
 #: src/Admin/AdminMenu.php:248
-#: src/Admin/OrderWidget.php:399
+#: src/Admin/OrderWidget.php:477
 msgid "Shipping status"
 msgstr "出貨狀態"
 
 #: src/Admin/AdminMenu.php:244
-#: src/Admin/OrderWidget.php:400
+#: src/Admin/OrderWidget.php:478
 msgid "Order status"
 msgstr "訂單狀態"
 
 #. translators: %s: a duration such as "2 days"
-#: src/Admin/OrderWidget.php:453
+#: src/Admin/OrderWidget.php:531
 #, php-format
 msgid "here for %s"
 msgstr "已停留 %s"
 
 #. translators: %s: a duration such as "2 days"
-#: src/Admin/OrderWidget.php:458
+#: src/Admin/OrderWidget.php:536
 #, php-format
 msgid "stayed %s"
 msgstr "停留了 %s"
@@ -1005,38 +1005,34 @@ msgstr "訂單狀態"
 msgid "shipping status"
 msgstr "出貨狀態"
 
-#: src/Admin/OrderWidget.php:103
+#: src/Admin/OrderWidget.php:110
 msgid "Changing…"
 msgstr "變更中…"
 
-#: src/Admin/OrderWidget.php:104
+#: src/Admin/OrderWidget.php:111
 msgid "The status could not be changed."
 msgstr "狀態無法變更。"
 
-#: src/Admin/OrderWidget.php:105
+#: src/Admin/OrderWidget.php:112
 msgid "Choose a status first."
 msgstr "請先選擇一個狀態。"
 
-#: src/Admin/OrderWidget.php:162
-msgid "Move this order along the workflow. The list offers only the moves this order is allowed to make."
-msgstr "把這筆訂單往流程的下一步推進。清單只會列出這筆訂單被允許的變更。"
-
 #. translators: 1: step number, 2: how many steps the workflow has
-#: src/Admin/OrderWidget.php:245
+#: src/Admin/OrderWidget.php:262
 #, php-format
 msgid "step %1$d of %2$d"
 msgstr "第 %1$d 步，共 %2$d 步"
 
-#: src/Admin/OrderWidget.php:118
-#: src/Admin/OrderWidget.php:261
+#: src/Admin/OrderWidget.php:128
+#: src/Admin/OrderWidget.php:278
 msgid "There is nowhere for this order to move on this axis."
 msgstr "這筆訂單在這個軸上沒有可以移動的目標。"
 
-#: src/Admin/OrderWidget.php:271
+#: src/Admin/OrderWidget.php:377
 msgid "Move to…"
 msgstr "移動到…"
 
-#: src/Admin/OrderWidget.php:281
+#: src/Admin/OrderWidget.php:387
 msgid "Change"
 msgstr "變更"
 
@@ -1046,20 +1042,16 @@ msgstr "變更"
 msgid "Next step: %s →"
 msgstr "下一步：%s →"
 
-#: src/Admin/OrderWidget.php:312
-msgid "Move the shipping status to"
-msgstr "將出貨狀態移動到"
-
-#: src/Admin/OrderWidget.php:313
+#: src/Admin/OrderWidget.php:373
 msgid "Move the order status to"
 msgstr "將訂單狀態移動到"
 
-#: src/Admin/OrderWidget.php:322
+#: src/Admin/OrderWidget.php:400
 msgid "nothing to ship"
 msgstr "無需出貨"
 
-#: src/Admin/OrderWidget.php:119
-#: src/Admin/OrderWidget.php:323
+#: src/Admin/OrderWidget.php:129
+#: src/Admin/OrderWidget.php:401
 msgid "no status"
 msgstr "無狀態"
 
@@ -1347,46 +1339,42 @@ msgid "Move %1$d order(s) from “%2$s” to “%3$s”? This writes straight to
 msgstr "要把 %1$d 筆訂單從「%2$s」搬到「%3$s」嗎？這會直接寫入訂單：不會寄出任何郵件，FluentCart 本身的自動化也不會執行。"
 
 #. translators: %s: status label
-#: src/Admin/OrderWidget.php:107
+#: src/Admin/OrderWidget.php:114
 #, php-format
 msgid "Move this order to “%s”? This marks the order as finished."
 msgstr "要把這筆訂單改為「%s」嗎？這會把訂單標記為已完成。"
 
 #. translators: %s: status label
-#: src/Admin/OrderWidget.php:109
+#: src/Admin/OrderWidget.php:116
 #, php-format
 msgid "Move this order to “%s”? A canceled order cannot be changed afterwards: FluentCart refuses every later change to its order status."
 msgstr "要把這筆訂單改為「%s」嗎？已取消的訂單之後無法再變更：FluentCart 會拒絕之後任何訂單狀態的變更。"
 
-#: src/Admin/OrderWidget.php:111
+#: src/Admin/OrderWidget.php:118
 msgid "Change Order Status"
 msgstr "變更訂單狀態"
 
-#: src/Admin/OrderWidget.php:112
+#: src/Admin/OrderWidget.php:119
 msgid "Update Order Status"
 msgstr "更新訂單狀態"
 
-#: src/Admin/OrderWidget.php:113
+#: src/Admin/OrderWidget.php:120
 msgid "Order Status"
 msgstr "訂單狀態"
 
-#: src/Admin/OrderWidget.php:114
+#: src/Admin/OrderWidget.php:121
 msgid "Update"
 msgstr "更新"
 
-#: src/Admin/OrderWidget.php:115
+#: src/Admin/OrderWidget.php:122
 msgid "Close this dialog"
 msgstr "關閉這個對話框"
 
-#: src/Admin/OrderWidget.php:116
+#: src/Admin/OrderWidget.php:123
 msgid "Loading…"
 msgstr "載入中…"
 
-#: src/Admin/OrderWidget.php:117
-msgid "The order could not be loaded. The Order workflow card on this page can still change it."
-msgstr "無法載入這筆訂單。仍可以用這個頁面上的「訂單流程」卡片變更狀態。"
-
-#: src/Admin/OrderWidget.php:120
+#: src/Admin/OrderWidget.php:130
 msgid "The order status was changed."
 msgstr "訂單狀態已變更。"
 
@@ -1532,7 +1520,7 @@ msgid "“%1$s” is on %2$d order(s). Switched off, it stays on those orders, b
 msgstr "「%1$s」目前有 %2$d 筆訂單在使用。停用後這些訂單仍會停在這個狀態，但它無法再被選用、FluentCart 會顯示它的原始代稱、不會寄出任何郵件，而且這些訂單一旦記錄付款就會變成「處理中」。仍要停用嗎？"
 
 #: src/Admin/AdminMenu.php:470
-#: src/Admin/OrderWidget.php:238
+#: src/Admin/OrderWidget.php:255
 msgid "disabled"
 msgstr "已停用"
 
@@ -1556,12 +1544,12 @@ msgstr "每筆訂單都使用這裡定義的狀態或 FluentCart 內建的狀態
 msgid "%d order(s)"
 msgstr "%d 筆訂單"
 
-#: src/Admin/OrderWidget.php:236
+#: src/Admin/OrderWidget.php:253
 msgid "not defined — this status was removed"
 msgstr "未定義——這個狀態已被移除"
 
 #. translators: %d: number of older status changes not listed
-#: src/Admin/OrderWidget.php:384
+#: src/Admin/OrderWidget.php:462
 #, php-format
 msgid "%d older change not shown."
 msgid_plural "%d older changes not shown."
@@ -1580,3 +1568,41 @@ msgstr "在你開啟這個頁面之後，這些設定已被其他人變更。請
 #, php-format
 msgid "“%s” is already the slug of one of FluentCart’s own statuses on another axis (order, payment or shipping). Pick another one — otherwise FluentCart’s own badge for that status would take this status’s name and colour."
 msgstr "「%s」已經是 FluentCart 在另一個面向（訂單、付款或出貨）內建狀態的代稱。請改用其他代稱——否則 FluentCart 該內建狀態的標籤會變成這個狀態的名稱和顏色。"
+
+#: src/Admin/OrderWidget.php:124
+msgid "The order could not be loaded. Use the status list now shown in the Order workflow card on this page instead."
+msgstr "無法載入這筆訂單。請改用這個頁面「訂單流程」卡片中現在顯示的狀態清單。"
+
+#: src/Admin/OrderWidget.php:125
+msgid "The order could not be loaded."
+msgstr "無法載入這筆訂單。"
+
+#: src/Admin/OrderWidget.php:172
+msgid "Where this order stands in the workflow, and its next step. To choose any other status, use More Action → Change Order Status (or Change Shipping Status)."
+msgstr "這筆訂單在流程中的位置與下一步。要改成其他狀態，請用 More Action →「變更訂單狀態」（出貨狀態用「變更出貨狀態」）。"
+
+#: src/Admin/OrderWidget.php:361
+msgid "Change Order Status could not be used from the More Action menu on this page, so the order status can be changed here instead."
+msgstr "這個頁面無法從 More Action 選單使用「變更訂單狀態」，所以可以改在這裡變更訂單狀態。"
+
+#. translators: %s: the server's reason, such as "Cookie check failed."
+#: src/Admin/OrderWidget.php:127
+#, php-format
+msgid "%s Reload the page and try again."
+msgstr "%s 請重新整理頁面後再試一次。"
+
+#: src/Admin/OrderWidget.php:312
+msgid "Other statuses: More Action → Change Shipping Status"
+msgstr "其他狀態：More Action →「變更出貨狀態」"
+
+#: src/Admin/OrderWidget.php:313
+msgid "Other statuses: More Action → Change Order Status"
+msgstr "其他狀態：More Action →「變更訂單狀態」"
+
+#: src/Admin/OrderWidget.php:365
+msgid "FluentCart’s More Action menu has no Change Shipping Status on a canceled order, so the shipping status is changed here."
+msgstr "已取消的訂單在 FluentCart 的 More Action 選單中沒有「變更出貨狀態」，所以出貨狀態改在這裡變更。"
+
+#: src/Admin/OrderWidget.php:372
+msgid "Move the shipping status to"
+msgstr "將出貨狀態移動到"
